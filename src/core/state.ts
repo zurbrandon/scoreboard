@@ -41,10 +41,14 @@ export interface MusicState {
 
 export interface AppState {
   teams: Record<TeamId, TeamState>
-  /** Jokey audience tally with an editable label; can be hidden from the board. */
+  /** Audience tally the operator edits (draft). Only reaches the board via
+   *  audienceLive on Reveal / update silently. */
   audience: { score: number; label: string; visible: boolean }
-  /** Toggling the half swaps which side each team renders on. */
+  audienceLive: { score: number; label: string; visible: boolean }
+  /** Match phase the operator has selected (draft). The projector renders
+   *  halfLive; the two sync on Reveal / update silently. */
   half: Half
+  halfLive: Half
   scene: Scene
   /** Logo scene selection. draftId is what the operator has picked (preview);
    *  liveId is what the projector shows. Reveal commits draft → live. */
@@ -70,7 +74,9 @@ export function createInitialState(): AppState {
       red: { name: 'Red', liveScore: 0, pendingScore: 0, mood: '' },
     },
     audience: { score: 0, label: 'Audience', visible: true },
+    audienceLive: { score: 0, label: 'Audience', visible: true },
     half: 'first',
+    halfLive: 'first',
     scene: 'scoreboard',
     logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
     text: { draft: '', live: '' },

@@ -31,10 +31,15 @@ export function OperatorApp() {
   const dispatch = useDispatch()
   const programScene = useAppState((s) => s.scene)
   const half = useAppState((s) => s.half)
+  // Any un-published board change (scores, half, or audience) arms the Reveal.
   const anyDirty = useAppState(
     (s) =>
       s.teams.blue.pendingScore !== s.teams.blue.liveScore ||
-      s.teams.red.pendingScore !== s.teams.red.liveScore,
+      s.teams.red.pendingScore !== s.teams.red.liveScore ||
+      s.half !== s.halfLive ||
+      s.audience.score !== s.audienceLive.score ||
+      s.audience.label !== s.audienceLive.label ||
+      s.audience.visible !== s.audienceLive.visible,
   )
 
   const draftLogoId = useAppState((s) => s.logo.draftId)

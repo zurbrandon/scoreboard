@@ -21,10 +21,10 @@ const CONFETTI_COLORS: Record<'blue' | 'red' | 'tie', string[]> = {
 }
 
 export function Scoreboard() {
-  const half = useAppState((s) => s.half)
-  const audienceScore = useAppState((s) => s.audience.score)
-  const audienceLabel = useAppState((s) => s.audience.label)
-  const audienceVisible = useAppState((s) => s.audience.visible)
+  const half = useAppState((s) => s.halfLive)
+  const audienceScore = useAppState((s) => s.audienceLive.score)
+  const audienceLabel = useAppState((s) => s.audienceLive.label)
+  const audienceVisible = useAppState((s) => s.audienceLive.visible)
   const winner = useAppState((s) => s.lastWinner)
   const revealNonce = useAppState((s) => s.revealNonce)
   const revealPhase = useAppState((s) => s.revealPhase)

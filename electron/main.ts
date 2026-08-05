@@ -46,13 +46,27 @@ function loadState(): AppState {
       // build (missing logo/text) can't leave the renderer with undefined fields,
       // and an unknown scene id resets to the scoreboard.
       const KNOWN_SCENES = ['scoreboard', 'logo', 'text', 'slideshow', 'black']
+      const liveHalf = ['first', 'second', 'end'].includes(parsed.halfLive ?? parsed.half)
+        ? (parsed.halfLive ?? parsed.half)
+        : 'first'
+      // audienceLive supports the new shape and the older flat `audience`.
+      const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
       return {
         ...fresh,
         ...parsed,
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
         logo: { ...fresh.logo, ...parsed.logo },
         text: { ...fresh.text, ...parsed.text },
-        audience: { ...fresh.audience, ...parsed.audience },
+        // Reset every draft to its live value on launch — no stale pending
+        // board changes carried across restarts.
+        teams: {
+          blue: { ...fresh.teams.blue, ...parsed.teams.blue, pendingScore: parsed.teams.blue.liveScore ?? 0 },
+          red: { ...fresh.teams.red, ...parsed.teams.red, pendingScore: parsed.teams.red.liveScore ?? 0 },
+        },
+        half: liveHalf,
+        halfLive: liveHalf,
+        audience: audienceLive,
+        audienceLive,
         revealPhase: 'idle',
         music: {
           ...fresh.music,

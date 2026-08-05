@@ -222,6 +222,39 @@ describe('robustness', () => {
   })
 })
 
+describe('board staging: half + audience only go live on publish', () => {
+  it('half.set stages; halfLive changes only on reveal', () => {
+    const s = run({ type: 'half.set', half: 'second' })
+    expect(s.half).toBe('second')
+    expect(s.halfLive).toBe('first') // not published yet
+    const r = reduce(s, { type: 'score.reveal' })
+    expect(r.halfLive).toBe('second')
+  })
+
+  it('audience edits stage; audienceLive changes only on publish', () => {
+    const s = run(
+      { type: 'audience.setVisible', visible: false },
+      { type: 'audience.increment' },
+    )
+    expect(s.audience.visible).toBe(false)
+    expect(s.audienceLive.visible).toBe(true) // still what's on the board
+    expect(s.audienceLive.score).toBe(0)
+    const c = reduce(s, { type: 'score.commitSilent' })
+    expect(c.audienceLive.visible).toBe(false)
+    expect(c.audienceLive.score).toBe(1)
+  })
+
+  it('revertPending pulls half and audience back to live', () => {
+    const s = run(
+      { type: 'half.set', half: 'second' },
+      { type: 'audience.setLabel', label: 'Ref' },
+      { type: 'score.revertPending' },
+    )
+    expect(s.half).toBe('first')
+    expect(s.audience.label).toBe('Audience')
+  })
+})
+
 describe('state stays serializable', () => {
   it('survives a JSON round-trip', () => {
     const s = run({ type: 'blue.increment' }, { type: 'display.set', scene: 'black' })

@@ -22,6 +22,24 @@ function bumpPending(state: AppState, team: TeamId, delta: number): AppState {
   return setTeam(state, team, { pendingScore: state.teams[team].pendingScore + delta })
 }
 
+// Publish the drafted board — scores, half, and audience — to the live values
+// the projector renders. Nothing on the board reaches the audience until this
+// runs (via Reveal or update-silently). Winner is derived from the new scores.
+function publishBoard(state: AppState): AppState {
+  const blueLive = state.teams.blue.pendingScore
+  const redLive = state.teams.red.pendingScore
+  return {
+    ...state,
+    teams: {
+      blue: { ...state.teams.blue, liveScore: blueLive },
+      red: { ...state.teams.red, liveScore: redLive },
+    },
+    halfLive: state.half,
+    audienceLive: { ...state.audience },
+    lastWinner: determineWinner(blueLive, redLive),
+  }
+}
+
 export function reduce(state: AppState, command: Command): AppState {
   switch (command.type) {
     case 'blue.increment':
@@ -72,51 +90,33 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'slideshow.setUrl':
       return { ...state, slideshowUrl: command.url }
 
-    case 'score.reveal': {
-      // Reveal is atomic: both teams' pending become live in one step, then the
-      // winner is derived from the freshly-revealed live scores. Animation and
-      // music are orchestrated OUTSIDE the reducer (M2/M3) off revealPhase.
-      const blueLive = state.teams.blue.pendingScore
-      const redLive = state.teams.red.pendingScore
+    case 'score.reveal':
+      // Publish the whole board, then run the reveal ceremony. At the 'end'
+      // phase Reveal is the finale (bigger winner celebration).
       return {
-        ...state,
-        teams: {
-          blue: { ...state.teams.blue, liveScore: blueLive },
-          red: { ...state.teams.red, liveScore: redLive },
-        },
-        lastWinner: determineWinner(blueLive, redLive),
-        // At the 'end' phase, Reveal is the finale (bigger winner celebration).
+        ...publishBoard(state),
         revealPhase: state.half === 'end' ? 'finale' : 'revealing',
         revealNonce: state.revealNonce + 1,
       }
-    }
 
     case 'reveal.finish':
       return { ...state, revealPhase: 'idle' }
 
-    case 'score.commitSilent': {
-      // Quick correction: push pending → live with no ceremony. Crucially it
-      // does NOT bump revealNonce or touch revealPhase, so the reveal service
-      // and audio controller stay silent.
-      const blueLive = state.teams.blue.pendingScore
-      const redLive = state.teams.red.pendingScore
-      return {
-        ...state,
-        teams: {
-          blue: { ...state.teams.blue, liveScore: blueLive },
-          red: { ...state.teams.red, liveScore: redLive },
-        },
-        lastWinner: determineWinner(blueLive, redLive),
-      }
-    }
+    case 'score.commitSilent':
+      // Publish the board with no ceremony — no revealNonce/revealPhase change,
+      // so the reveal service and audio controller stay silent.
+      return publishBoard(state)
 
     case 'score.revertPending':
+      // Discard every drafted board change back to what's live.
       return {
         ...state,
         teams: {
           blue: { ...state.teams.blue, pendingScore: state.teams.blue.liveScore },
           red: { ...state.teams.red, pendingScore: state.teams.red.liveScore },
         },
+        half: state.halfLive,
+        audience: { ...state.audienceLive },
       }
 
     case 'music.setVolume':
