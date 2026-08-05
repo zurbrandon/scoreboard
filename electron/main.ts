@@ -117,6 +117,8 @@ function loadState(): AppState {
           lastTrackId: null,
           lastTrackName: null,
           librarySize: 0, // tracks are re-scanned from the folder on launch
+          library: [], // re-populated when the scanned tracks are pushed
+          nextTrackId: null, // one-shot pick; never carried across launches
         },
       }
     }

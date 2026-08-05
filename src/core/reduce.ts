@@ -189,8 +189,22 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, music: { ...state.music, volume: command.volume } }
     case 'music.setEnabled':
       return { ...state, music: { ...state.music, enabled: command.enabled } }
-    case 'music.setLibrarySize':
-      return { ...state, music: { ...state.music, librarySize: command.size } }
+    case 'music.setLibrary':
+      return {
+        ...state,
+        music: {
+          ...state.music,
+          library: command.tracks,
+          librarySize: command.tracks.length,
+          // Drop a stale pick if that track is no longer in the library.
+          nextTrackId:
+            state.music.nextTrackId && command.tracks.some((t) => t.id === state.music.nextTrackId)
+              ? state.music.nextTrackId
+              : null,
+        },
+      }
+    case 'music.setNextTrack':
+      return { ...state, music: { ...state.music, nextTrackId: command.id } }
     case 'music.trackPlayed':
       return {
         ...state,

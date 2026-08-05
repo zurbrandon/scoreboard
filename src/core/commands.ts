@@ -2,6 +2,7 @@
 // — becomes one of these commands. Business logic executes commands and never
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
+import type { BumperTrack } from './bumper'
 import type { Half, Scene, TeamId, TextTemplate } from './state'
 
 export type Command =
@@ -42,7 +43,8 @@ export type Command =
   // Music.
   | { type: 'music.setVolume'; volume: number }
   | { type: 'music.setEnabled'; enabled: boolean }
-  | { type: 'music.setLibrarySize'; size: number }
+  | { type: 'music.setLibrary'; tracks: BumperTrack[] } // {id,name} of every loaded bumper
+  | { type: 'music.setNextTrack'; id: string | null } // pick the next reveal's bumper (null = random)
   | { type: 'music.trackPlayed'; id: string; name: string } // records the bumper that just started
 
 export type CommandType = Command['type']

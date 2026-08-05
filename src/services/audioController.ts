@@ -71,11 +71,20 @@ export function createAudioController(store: Store): AudioController {
     }, FADE_AFTER_MS)
   }
 
-  function playRandomBumper(): void {
+  // Play a bumper. On a reveal (useSelection), honor the operator's "next song"
+  // pick if one is set and still loaded; otherwise fall back to random. The Test
+  // button ignores the pick — it's just a sound-check.
+  function playBumper(useSelection: boolean): void {
     const { music } = store.getState()
     if (!music.enabled || tracks.length === 0) return
 
-    const track = pickBumper(tracks, music.lastTrackId, Math.random)
+    let track: LoadedTrack | null = null
+    if (useSelection && music.nextTrackId) {
+      track = tracks.find((t) => t.id === music.nextTrackId) ?? null
+    }
+    const wasChosen = track !== null
+    // An explicit pick overrides the no-repeat rule; random still avoids repeats.
+    if (!track) track = pickBumper(tracks, music.lastTrackId, Math.random)
     if (!track) return
 
     try {
@@ -91,6 +100,8 @@ export function createAudioController(store: Store): AudioController {
       })
       scheduleFade()
       store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
+      // A picked track is a one-shot: consume it so the next reveal is random again.
+      if (wasChosen) store.dispatch({ type: 'music.setNextTrack', id: null })
     } catch (err) {
       console.warn('[audio] could not start bumper; continuing show:', err)
     }
@@ -100,7 +111,7 @@ export function createAudioController(store: Store): AudioController {
     const s = store.getState()
     if (s.revealNonce !== lastNonce) {
       lastNonce = s.revealNonce
-      playRandomBumper()
+      playBumper(true)
     }
     // Keep a playing track's volume in sync with the operator's slider
     // (respecting any in-progress fade).
@@ -112,10 +123,14 @@ export function createAudioController(store: Store): AudioController {
       // Revoke previous object URLs; harmless no-op for sbmedia:// URLs.
       for (const t of tracks) URL.revokeObjectURL(t.url)
       tracks = next
-      store.dispatch({ type: 'music.setLibrarySize', size: tracks.length })
+      // Publish the serializable {id,name} list for the "next song" picker.
+      store.dispatch({
+        type: 'music.setLibrary',
+        tracks: tracks.map(({ id, name }) => ({ id, name })),
+      })
     },
     test() {
-      playRandomBumper()
+      playBumper(false)
     },
     stop() {
       clearFade()

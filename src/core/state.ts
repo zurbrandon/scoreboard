@@ -2,6 +2,7 @@
 // times (Engineering Principles: "State Is Serializable"). There is exactly one
 // of these — see src/store/store.ts for the single owner.
 
+import type { BumperTrack } from './bumper'
 import { LOGO_LIBRARY } from './logos'
 
 export type TeamId = 'blue' | 'red'
@@ -72,6 +73,12 @@ export interface MusicState {
   lastTrackName: string | null
   /** How many bumpers are currently loaded (for status; tracks live in the service). */
   librarySize: number
+  /** Serializable {id,name} of every loaded bumper — powers the "next song"
+   *  picker. The playable URLs stay in the audio service. */
+  library: BumperTrack[]
+  /** The operator's pick for the next reveal's bumper. null = random (default).
+   *  Consumed one-shot: after a chosen track plays it resets to null. */
+  nextTrackId: string | null
 }
 
 export interface AppState {
@@ -134,6 +141,8 @@ export function createInitialState(): AppState {
       lastTrackId: null,
       lastTrackName: null,
       librarySize: 0,
+      library: [],
+      nextTrackId: null,
     },
   }
 }

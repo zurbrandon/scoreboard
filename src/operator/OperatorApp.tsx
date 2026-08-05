@@ -174,6 +174,8 @@ function ScoreboardConfig() {
   const audienceScore = useAppState((s) => s.audience.score)
   const audienceLabel = useAppState((s) => s.audience.label)
   const audienceVisible = useAppState((s) => s.audience.visible)
+  const musicLibrary = useAppState((s) => s.music.library)
+  const nextTrackId = useAppState((s) => s.music.nextTrackId)
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
 
@@ -227,6 +229,26 @@ function ScoreboardConfig() {
             <span className="switch__thumb" />
           </span>
         </label>
+      </div>
+      <div className="extra nextsong-row">
+        <span className="nextsong__label">🎵 Next song</span>
+        <select
+          className="nextsong__select"
+          value={nextTrackId ?? ''}
+          disabled={musicLibrary.length === 0}
+          aria-label="Next song"
+          title={
+            musicLibrary.length === 0 ? 'Load bumpers in Settings to pick a song' : undefined
+          }
+          onChange={(e) => dispatch({ type: 'music.setNextTrack', id: e.target.value || null })}
+        >
+          <option value="">🎲 Random</option>
+          {musicLibrary.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
       </div>
     </>
   )

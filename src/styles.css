@@ -250,6 +250,25 @@ button { font-family: inherit; cursor: pointer; }
 }
 .audience-label:focus { outline: none; border-color: var(--accent); }
 
+/* "Next song" picker — defaults to Random; shows the queued bumper's name. */
+.nextsong-row { gap: 12px; }
+.nextsong__label { color: var(--muted); font-size: 14px; white-space: nowrap; }
+.nextsong__select {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.nextsong__select:focus { outline: none; border-color: var(--accent); }
+.nextsong__select:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .switch { flex: none; display: inline-flex; cursor: pointer; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .switch__track {

@@ -261,6 +261,26 @@ describe('bumper selection', () => {
     expect(s.music.lastTrackId).toBe('b')
     expect(s.music.lastTrackName).toBe('B')
   })
+
+  it('next-song pick: set, and drop it when the library no longer has it', () => {
+    const lib = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+    ]
+    let s = run({ type: 'music.setLibrary', tracks: lib })
+    expect(s.music.librarySize).toBe(2)
+
+    s = reduce(s, { type: 'music.setNextTrack', id: 'b' })
+    expect(s.music.nextTrackId).toBe('b')
+
+    // Re-scanning a folder that still has 'b' keeps the pick...
+    s = reduce(s, { type: 'music.setLibrary', tracks: lib })
+    expect(s.music.nextTrackId).toBe('b')
+
+    // ...but a library without 'b' drops the stale pick back to random.
+    s = reduce(s, { type: 'music.setLibrary', tracks: [{ id: 'a', name: 'A' }] })
+    expect(s.music.nextTrackId).toBeNull()
+  })
 })
 
 describe('robustness', () => {
