@@ -125,9 +125,8 @@ button { font-family: inherit; cursor: pointer; }
 .moodbox__choice { background: transparent; border: none; border-radius: 6px; font-size: 20px; padding: 6px 0; }
 .moodbox__choice:hover { background: var(--panel); }
 
-.team-control__body { display: flex; gap: 10px; align-items: stretch; }
+.team-control__body { display: flex; flex-direction: column; gap: 12px; }
 .team-control__scoreblock {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -142,7 +141,7 @@ button { font-family: inherit; cursor: pointer; }
   border: 2px solid #2c3346;
   border-radius: 10px;
   color: var(--text);
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 800;
   text-align: center;
   padding: 2px 0;
@@ -152,11 +151,11 @@ button { font-family: inherit; cursor: pointer; }
 .team-control__liveline--dirty, .team-control__liveline--dirty b { color: var(--accent); }
 
 /* stacked +/- with the Plus emphasized (used most) */
-.team-control__buttons { display: flex; flex-direction: column; gap: 6px; width: 78px; }
-.team-btn { border: none; border-radius: 10px; color: #fff; font-weight: 800; line-height: 1; }
+.team-control__buttons { display: flex; flex-direction: column; gap: 6px; }
+.team-btn { width: 100%; border: none; border-radius: 10px; color: #fff; font-weight: 800; line-height: 1; }
 .team-btn:active { transform: translateY(1px); }
-.team-btn--inc { flex: 2; font-size: 30px; }
-.team-btn--dec { flex: 1; font-size: 20px; background: #333a4d; }
+.team-btn--inc { font-size: 34px; padding: 20px 0; }
+.team-btn--dec { font-size: 22px; padding: 11px 0; background: #333a4d; }
 .team-control--blue .team-btn--inc { background: var(--blue); }
 .team-control--red .team-btn--inc { background: var(--red); }
 
