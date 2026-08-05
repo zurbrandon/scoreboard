@@ -67,7 +67,24 @@ function loadPersisted(): AppState {
     if (!raw) return createInitialState()
     const parsed = JSON.parse(raw)
     if (parsed?.teams?.blue && parsed?.teams?.red) {
-      return { ...createInitialState(), ...parsed }
+      // Deep-merge nested objects with fresh defaults so state saved by an older
+      // build (missing a newly-added nested field, e.g. music.library) can never
+      // leave the renderer reading `undefined`. Mirrors the Electron loader.
+      const fresh = createInitialState()
+      return {
+        ...fresh,
+        ...parsed,
+        teams: {
+          blue: { ...fresh.teams.blue, ...parsed.teams.blue },
+          red: { ...fresh.teams.red, ...parsed.teams.red },
+        },
+        audience: { ...fresh.audience, ...parsed.audience },
+        audienceLive: { ...fresh.audienceLive, ...parsed.audienceLive },
+        logo: { ...fresh.logo, ...parsed.logo },
+        music: { ...fresh.music, ...parsed.music },
+        text: { ...fresh.text, ...parsed.text },
+        slideshow: { ...fresh.slideshow, ...parsed.slideshow },
+      }
     }
   } catch {
     // Corrupt settings must never crash the app (Principles: "Error Handling").

@@ -31,9 +31,14 @@ export function useAnimatedNumber(target: number, durationMs = 1800): number {
     const start = performance.now()
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs)
+      if (t >= 1) {
+        setDisplay(target) // land exactly on the target (preserves decimals)
+        return
+      }
       const eased = 1 - Math.pow(1 - t, 3) // ease-out cubic
+      // Whole-number ticking while counting; the final frame above is exact.
       setDisplay(Math.round(from + (target - from) * eased))
-      if (t < 1) rafRef.current = requestAnimationFrame(step)
+      rafRef.current = requestAnimationFrame(step)
     }
     rafRef.current = requestAnimationFrame(step)
 

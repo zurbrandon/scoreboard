@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useAppState } from '../../store/react'
 import { determineWinner } from '../../core/winner'
+import { formatScore } from '../../core/score'
 import { sideOf, teamOnSide, type Side } from '../../core/sides'
 import type { TeamId } from '../../core/state'
 import { useAnimatedNumber } from '../useAnimatedNumber'
@@ -101,14 +102,14 @@ function FinaleOverlay() {
         <>
           <div className="finale__label">It's a tie</div>
           <div className="finale__score">
-            {blueScore} – {redScore}
+            {formatScore(blueScore)} – {formatScore(redScore)}
           </div>
         </>
       ) : (
         <>
           <div className="finale__label">Winner</div>
           <div className="finale__name">{winName}</div>
-          <div className="finale__score">{winScore}</div>
+          <div className="finale__score">{formatScore(winScore)}</div>
         </>
       )}
     </div>
@@ -183,7 +184,7 @@ function TeamPanel({ team, side }: { team: TeamId; side: Side }) {
           className={`team-panel__score ${isWinner ? 'team-panel__score--pop' : ''}`}
           key={isWinner ? `pop-${winner}` : 'rest'}
         >
-          {shownScore}
+          {formatScore(shownScore)}
         </div>
       </div>
     </section>

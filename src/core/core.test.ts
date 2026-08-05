@@ -4,6 +4,7 @@ import { reduce } from './reduce'
 import { determineWinner } from './winner'
 import { sideOf, teamOnSide } from './sides'
 import { pickBumper } from './bumper'
+import { formatScore } from './score'
 import type { Command } from './commands'
 
 // Small helper: run a list of commands from the initial state.
@@ -16,6 +17,21 @@ describe('pending vs live (the sacred rule)', () => {
     const s = run({ type: 'blue.increment' }, { type: 'blue.increment' })
     expect(s.teams.blue.pendingScore).toBe(2)
     expect(s.teams.blue.liveScore).toBe(0)
+  })
+
+  it('decimal scores stay decimal, and +1 keeps the fraction', () => {
+    // Type 3.5, then step up twice: 3.5 -> 4.5 -> 5.5.
+    let s = run({ type: 'team.setScore', team: 'blue', value: 3.5 })
+    expect(s.teams.blue.pendingScore).toBe(3.5)
+    s = reduce(s, { type: 'blue.increment' })
+    s = reduce(s, { type: 'blue.increment' })
+    expect(s.teams.blue.pendingScore).toBe(5.5)
+    // Reveal carries the decimal through to live, and it wins the comparison.
+    const revealed = reduce(reduce(s, { type: 'team.setScore', team: 'red', value: 5 }), {
+      type: 'score.reveal',
+    })
+    expect(revealed.teams.blue.liveScore).toBe(5.5)
+    expect(revealed.lastWinner).toBe('blue')
   })
 
   it('reveal copies pending to live for both teams atomically', () => {
@@ -300,6 +316,15 @@ describe('bumper selection', () => {
     // ...but a library without 'b' drops the stale pick back to random.
     s = reduce(s, { type: 'music.setLibrary', tracks: [{ id: 'a', name: 'A' }] })
     expect(s.music.nextTrackId).toBeNull()
+  })
+})
+
+describe('formatScore', () => {
+  it('shows whole numbers plainly and trims floating-point dust', () => {
+    expect(formatScore(4)).toBe('4')
+    expect(formatScore(3.5)).toBe('3.5')
+    expect(formatScore(0.1 + 0.2)).toBe('0.3') // not "0.30000000000000004"
+    expect(formatScore(-2.5)).toBe('-2.5')
   })
 })
 

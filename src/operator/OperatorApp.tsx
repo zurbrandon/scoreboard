@@ -183,8 +183,10 @@ function ScoreboardConfig() {
   const audienceScore = useAppState((s) => s.audience.score)
   const audienceLabel = useAppState((s) => s.audience.label)
   const audienceVisible = useAppState((s) => s.audience.visible)
-  const musicLibrary = useAppState((s) => s.music.library)
-  const nextTrackId = useAppState((s) => s.music.nextTrackId)
+  // Default at the usage site (not in the selector) so useSyncExternalStore
+  // still sees a stable reference; loadPersisted guarantees the field exists.
+  const musicLibrary = useAppState((s) => s.music.library) ?? []
+  const nextTrackId = useAppState((s) => s.music.nextTrackId) ?? null
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
 

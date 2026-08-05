@@ -7,6 +7,7 @@ import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react'
 import { useAppState, useDispatch } from '../store/react'
 import type { Side } from '../core/sides'
 import type { TeamId } from '../core/state'
+import { formatScore } from '../core/score'
 
 export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   const dispatch = useDispatch()
@@ -17,6 +18,12 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   const inc = team === 'blue' ? 'blue.increment' : 'red.increment'
   const dec = team === 'blue' ? 'blue.decrement' : 'red.decrement'
   const dirty = pendingScore !== liveScore
+
+  // Keep the exact text the operator is typing (e.g. "3." mid-entry) so a
+  // trailing decimal point survives round-tripping through the number. null =
+  // not editing, so the field mirrors the store (and any +/- changes).
+  const [draft, setDraft] = useState<string | null>(null)
+  const shown = draft ?? formatScore(pendingScore)
 
   return (
     <section className={`team-control team-control--${team}`} data-side={side}>
@@ -35,20 +42,36 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
           <span className="team-control__cap">Pending</span>
           <input
             className="team-control__pendinginput"
-            type="number"
-            value={pendingScore}
+            type="text"
+            inputMode="decimal"
+            value={shown}
             aria-label={`${team} pending score`}
-            onChange={(e) =>
-              dispatch({
-                type: 'team.setScore',
-                team,
-                value: e.target.value === '' ? 0 : parseInt(e.target.value, 10),
-              })
-            }
+            onFocus={(e) => e.target.select()}
+            onBlur={() => setDraft(null)}
+            onChange={(e) => {
+              const raw = e.target.value
+              // Accept only number-ish input: optional sign, digits, one dot.
+              if (!/^-?\d*\.?\d*$/.test(raw)) return
+              setDraft(raw)
+              const n = parseFloat(raw)
+              dispatch({ type: 'team.setScore', team, value: Number.isFinite(n) ? n : 0 })
+            }}
+            onKeyDown={(e) => {
+              // ↑/↓ step by 1, keeping the decimal part (3.5 → 4.5 → 5.5).
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setDraft(null)
+                dispatch({ type: inc })
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setDraft(null)
+                dispatch({ type: dec })
+              }
+            }}
           />
           <span className={`team-control__liveline ${dirty ? 'team-control__liveline--dirty' : ''}`}>
-            live {dirty ? `${liveScore} → ` : ''}
-            <b>{dirty ? pendingScore : liveScore}</b>
+            live {dirty ? `${formatScore(liveScore)} → ` : ''}
+            <b>{formatScore(dirty ? pendingScore : liveScore)}</b>
           </span>
         </div>
 
