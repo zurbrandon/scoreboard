@@ -26,6 +26,14 @@ const audio = role === 'operator' ? createAudioController(store) : null
 if (import.meta.env.DEV && audio) (window as unknown as { __audio: typeof audio }).__audio = audio
 if (role === 'operator') attachRevealService(store)
 
+// In Electron, auto-load the persisted music folder's bumpers at startup so
+// they're ready no matter whether the Settings panel is open. (The operator's
+// MusicPanel only mounts while Settings is open, so loading can't live there.)
+if (audio && window.showboard) {
+  window.showboard.onTracks((update) => audio.setTracks(update.tracks))
+  window.showboard.requestTracks()
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StoreProvider store={store}>
