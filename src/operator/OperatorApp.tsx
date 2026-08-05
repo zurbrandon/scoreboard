@@ -39,6 +39,8 @@ export function OperatorApp() {
 
   const draftLogoId = useAppState((s) => s.logo.draftId)
   const liveLogoId = useAppState((s) => s.logo.liveId)
+  const draftText = useAppState((s) => s.text.draft)
+  const liveText = useAppState((s) => s.text.live)
 
   // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
   const [activeTab, setActiveTab] = useState<Scene>(
@@ -55,6 +57,9 @@ export function OperatorApp() {
     } else if (activeTab === 'logo') {
       dispatch({ type: 'logo.commit' })
       dispatch({ type: 'display.set', scene: 'logo' })
+    } else if (activeTab === 'text') {
+      dispatch({ type: 'text.commit' })
+      dispatch({ type: 'display.set', scene: 'text' })
     } else {
       dispatch({ type: 'display.set', scene: activeTab })
     }
@@ -75,7 +80,9 @@ export function OperatorApp() {
       ? anyDirty || programScene !== 'scoreboard'
       : activeTab === 'logo'
         ? programScene !== 'logo' || draftLogoId !== liveLogoId
-        : programScene !== activeTab
+        : activeTab === 'text'
+          ? programScene !== 'text' || draftText !== liveText
+          : programScene !== activeTab
 
   return (
     <div className="operator">
@@ -112,11 +119,7 @@ export function OperatorApp() {
       <div className="scene-config">
         {activeTab === 'scoreboard' && <ScoreboardConfig />}
         {activeTab === 'logo' && <LogoConfig />}
-        {activeTab === 'text' && (
-          <p className="scene-config__hint">
-            Text screen. Editable text is coming next — for now, Reveal shows the text scene.
-          </p>
-        )}
+        {activeTab === 'text' && <TextConfig />}
         {activeTab === 'slideshow' && <SlideshowConfig />}
       </div>
 
@@ -189,6 +192,27 @@ function LogoConfig() {
           <span>{logo.name}</span>
         </button>
       ))}
+    </div>
+  )
+}
+
+function TextConfig() {
+  const dispatch = useDispatch()
+  const draft = useAppState((s) => s.text.draft)
+  const live = useAppState((s) => s.text.live)
+  return (
+    <div className="config-block">
+      <span className="config-block__label">On-screen text</span>
+      <textarea
+        className="text-input"
+        rows={4}
+        placeholder="Type what should show on the projector…"
+        value={draft}
+        onChange={(e) => dispatch({ type: 'text.setDraft', value: e.target.value })}
+      />
+      <span className="music-panel__status">
+        {draft === live ? 'Showing this when the text scene is on air.' : 'Press Reveal to push your changes.'}
+      </span>
     </div>
   )
 }

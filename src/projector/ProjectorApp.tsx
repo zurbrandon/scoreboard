@@ -5,6 +5,7 @@ import { useAppState } from '../store/react'
 import { findLogo } from '../core/logos'
 import { Scoreboard } from './scenes/Scoreboard'
 import { LogoScene } from './scenes/LogoScene'
+import { TextScene } from './scenes/TextScene'
 import { Slideshow } from './scenes/Slideshow'
 
 export function ProjectorApp() {
@@ -22,7 +23,7 @@ export function ProjectorApp() {
           file={liveLogo?.file}
         />
       )}
-      {scene === 'text' && <LogoScene label="Text" accent="#8e44ad" />}
+      {scene === 'text' && <TextScene />}
       {scene === 'slideshow' && <Slideshow />}
       {scene === 'black' && <div className="scene-black" />}
     </div>

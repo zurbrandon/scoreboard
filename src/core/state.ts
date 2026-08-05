@@ -48,6 +48,9 @@ export interface AppState {
   /** Logo scene selection. draftId is what the operator has picked (preview);
    *  liveId is what the projector shows. Reveal commits draft → live. */
   logo: { draftId: string; liveId: string }
+  /** Text scene content. draft = what the operator is typing (preview); live =
+   *  what the projector shows. Reveal commits draft → live. */
+  text: { draft: string; live: string }
   /** URL loaded in the Slideshow scene (e.g. a published Google Slides embed link). */
   slideshowUrl: string
   revealPhase: RevealPhase
@@ -69,6 +72,7 @@ export function createInitialState(): AppState {
     half: 'first',
     scene: 'scoreboard',
     logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
+    text: { draft: '', live: '' },
     slideshowUrl: '',
     revealPhase: 'idle',
     lastWinner: null,

@@ -24,6 +24,8 @@ export type Command =
   | { type: 'display.set'; scene: Scene }
   | { type: 'logo.select'; id: string } // preview a logo (draft)
   | { type: 'logo.commit' } // make the drafted logo live
+  | { type: 'text.setDraft'; value: string } // edit the text scene's draft
+  | { type: 'text.commit' } // make the drafted text live
   | { type: 'slideshow.setUrl'; url: string }
   // The main event.
   | { type: 'score.reveal' }

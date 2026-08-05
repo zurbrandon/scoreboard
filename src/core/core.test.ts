@@ -109,6 +109,14 @@ describe('scoring details', () => {
     expect(s2.logo.liveId).toBe('theater')
   })
 
+  it('text draft stages; commit makes it live', () => {
+    const s = run({ type: 'text.setDraft', value: 'Next up: The Improvisors' })
+    expect(s.text.draft).toBe('Next up: The Improvisors')
+    expect(s.text.live).toBe('') // not shown until committed
+    const s2 = reduce(s, { type: 'text.commit' })
+    expect(s2.text.live).toBe('Next up: The Improvisors')
+  })
+
   it('stores the slideshow URL', () => {
     const url = 'https://docs.google.com/presentation/d/e/abc/embed?start=true&loop=true'
     const s = run({ type: 'slideshow.setUrl', url })

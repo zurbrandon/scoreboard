@@ -60,6 +60,11 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'logo.commit':
       return { ...state, logo: { ...state.logo, liveId: state.logo.draftId } }
 
+    case 'text.setDraft':
+      return { ...state, text: { ...state.text, draft: command.value } }
+    case 'text.commit':
+      return { ...state, text: { ...state.text, live: state.text.draft } }
+
     case 'slideshow.setUrl':
       return { ...state, slideshowUrl: command.url }
 
