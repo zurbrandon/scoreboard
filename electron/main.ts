@@ -130,9 +130,9 @@ function createOperatorWindow() {
   const bounds = settings.operatorBounds
   operatorWin = new BrowserWindow({
     // Narrow column by default so it parks beside the sound program.
-    width: bounds?.width ?? 480,
+    width: bounds?.width ?? 560,
     height: bounds?.height ?? 900,
-    minWidth: 380,
+    minWidth: 460,
     x: bounds?.x,
     y: bounds?.y,
     title: 'Showboard — Operator',

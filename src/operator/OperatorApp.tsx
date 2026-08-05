@@ -162,8 +162,10 @@ function ScoreboardConfig() {
       <button className="pill half-toggle" onClick={() => dispatch({ type: 'half.toggle' })}>
         {half === 'first' ? '1st Half' : '2nd Half'} · swap sides
       </button>
-      <TeamControl team={leftTeam} side="left" />
-      <TeamControl team={rightTeam} side="right" />
+      <div className="teams-row">
+        <TeamControl team={leftTeam} side="left" />
+        <TeamControl team={rightTeam} side="right" />
+      </div>
       <div className="extra">
         <span className="extra__label">Audience</span>
         <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.decrement' })}>
