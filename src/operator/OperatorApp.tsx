@@ -154,7 +154,9 @@ export function OperatorApp() {
 function ScoreboardConfig() {
   const dispatch = useDispatch()
   const half = useAppState((s) => s.half)
-  const audienceScore = useAppState((s) => s.audienceScore)
+  const audienceScore = useAppState((s) => s.audience.score)
+  const audienceLabel = useAppState((s) => s.audience.label)
+  const audienceVisible = useAppState((s) => s.audience.visible)
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
 
@@ -184,8 +186,13 @@ function ScoreboardConfig() {
         <TeamControl team={leftTeam} side="left" />
         <TeamControl team={rightTeam} side="right" />
       </div>
-      <div className="extra">
-        <span className="extra__label">Audience</span>
+      <div className="extra audience-row">
+        <input
+          className="audience-label"
+          value={audienceLabel}
+          aria-label="Audience label"
+          onChange={(e) => dispatch({ type: 'audience.setLabel', label: e.target.value })}
+        />
         <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.decrement' })}>
           −
         </button>
@@ -193,6 +200,16 @@ function ScoreboardConfig() {
         <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.increment' })}>
           +
         </button>
+        <label className="switch" title={audienceVisible ? 'Showing on the board' : 'Hidden'}>
+          <input
+            type="checkbox"
+            checked={audienceVisible}
+            onChange={(e) => dispatch({ type: 'audience.setVisible', visible: e.target.checked })}
+          />
+          <span className="switch__track">
+            <span className="switch__thumb" />
+          </span>
+        </label>
       </div>
     </>
   )

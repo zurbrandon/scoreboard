@@ -224,6 +224,35 @@ button { font-family: inherit; cursor: pointer; }
 .extra__value { font-size: 22px; min-width: 32px; text-align: center; }
 .extra__checkbox { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
 
+/* audience row: editable label + score controls + show/hide switch */
+.audience-label {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 10px;
+}
+.audience-label:focus { outline: none; border-color: var(--accent); }
+
+.switch { flex: none; display: inline-flex; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch__track {
+  width: 40px; height: 22px; border-radius: 999px;
+  background: #333a4d; transition: background 0.15s ease;
+  display: flex; align-items: center; padding: 2px;
+}
+.switch__thumb {
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .switch__track { background: var(--blue); }
+.switch input:checked + .switch__track .switch__thumb { transform: translateX(18px); }
+.switch input:focus-visible + .switch__track { outline: 2px solid var(--accent); }
+
 .music-panel { flex-direction: column; align-items: stretch; gap: 10px; }
 .music-panel__row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .music-panel__status { color: var(--muted); font-size: 13px; }
@@ -282,8 +311,8 @@ button { font-family: inherit; cursor: pointer; }
 
 /* match-phase segmented toggle (1st / 2nd / Show end) */
 .phase-toggle {
-  align-self: flex-start;
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   gap: 2px;
   background: var(--panel);
   border: 1px solid #2c3346;
@@ -291,13 +320,15 @@ button { font-family: inherit; cursor: pointer; }
   padding: 3px;
 }
 .phase-seg {
+  flex: 1;
+  text-align: center;
   background: transparent;
   border: none;
   border-radius: 6px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 8px 6px;
 }
 .phase-seg:hover { color: var(--text); }
 .phase-seg--active { background: var(--panel-2); color: var(--accent); }

@@ -22,7 +22,9 @@ const CONFETTI_COLORS: Record<'blue' | 'red' | 'tie', string[]> = {
 
 export function Scoreboard() {
   const half = useAppState((s) => s.half)
-  const audienceScore = useAppState((s) => s.audienceScore)
+  const audienceScore = useAppState((s) => s.audience.score)
+  const audienceLabel = useAppState((s) => s.audience.label)
+  const audienceVisible = useAppState((s) => s.audience.visible)
   const winner = useAppState((s) => s.lastWinner)
   const revealNonce = useAppState((s) => s.revealNonce)
   const revealPhase = useAppState((s) => s.revealPhase)
@@ -65,7 +67,11 @@ export function Scoreboard() {
 
       <footer className="scoreboard__bottom">
         <span className="ribbon ribbon--home">HOME</span>
-        <span className="audience">AUDIENCE · {audienceScore}</span>
+        {audienceVisible && (
+          <span className="audience">
+            {audienceLabel} · {audienceScore}
+          </span>
+        )}
         <span className="ribbon ribbon--away">AWAY</span>
       </footer>
 

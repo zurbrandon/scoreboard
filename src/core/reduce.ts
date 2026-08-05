@@ -41,11 +41,15 @@ export function reduce(state: AppState, command: Command): AppState {
       return setTeam(state, command.team, { mood: command.mood })
 
     case 'audience.increment':
-      return { ...state, audienceScore: state.audienceScore + 1 }
+      return { ...state, audience: { ...state.audience, score: state.audience.score + 1 } }
     case 'audience.decrement':
-      return { ...state, audienceScore: state.audienceScore - 1 }
+      return { ...state, audience: { ...state.audience, score: state.audience.score - 1 } }
     case 'audience.setScore':
-      return { ...state, audienceScore: command.value }
+      return { ...state, audience: { ...state.audience, score: command.value } }
+    case 'audience.setLabel':
+      return { ...state, audience: { ...state.audience, label: command.label } }
+    case 'audience.setVisible':
+      return { ...state, audience: { ...state.audience, visible: command.visible } }
 
     case 'half.toggle':
       return { ...state, half: state.half === 'first' ? 'second' : 'first' }

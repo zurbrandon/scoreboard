@@ -41,8 +41,8 @@ export interface MusicState {
 
 export interface AppState {
   teams: Record<TeamId, TeamState>
-  /** Jokey audience tally. Updates immediately — no reveal ceremony. */
-  audienceScore: number
+  /** Jokey audience tally with an editable label; can be hidden from the board. */
+  audience: { score: number; label: string; visible: boolean }
   /** Toggling the half swaps which side each team renders on. */
   half: Half
   scene: Scene
@@ -69,7 +69,7 @@ export function createInitialState(): AppState {
       blue: { name: 'Blue', liveScore: 0, pendingScore: 0, mood: '' },
       red: { name: 'Red', liveScore: 0, pendingScore: 0, mood: '' },
     },
-    audienceScore: 0,
+    audience: { score: 0, label: 'Audience', visible: true },
     half: 'first',
     scene: 'scoreboard',
     logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },

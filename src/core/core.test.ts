@@ -98,7 +98,16 @@ describe('scoring details', () => {
 
   it('audience score updates immediately (no reveal)', () => {
     const s = run({ type: 'audience.increment' }, { type: 'audience.increment' })
-    expect(s.audienceScore).toBe(2)
+    expect(s.audience.score).toBe(2)
+  })
+
+  it('audience label and visibility are editable', () => {
+    const s = run(
+      { type: 'audience.setLabel', label: 'Ref' },
+      { type: 'audience.setVisible', visible: false },
+    )
+    expect(s.audience.label).toBe('Ref')
+    expect(s.audience.visible).toBe(false)
   })
 
   it('logo select stages a draft; commit makes it live', () => {

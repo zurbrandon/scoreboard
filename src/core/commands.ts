@@ -18,6 +18,8 @@ export type Command =
   | { type: 'audience.increment' }
   | { type: 'audience.decrement' }
   | { type: 'audience.setScore'; value: number }
+  | { type: 'audience.setLabel'; label: string }
+  | { type: 'audience.setVisible'; visible: boolean }
   // Match / display.
   | { type: 'half.toggle' }
   | { type: 'half.set'; half: Half }
