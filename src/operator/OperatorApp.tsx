@@ -230,6 +230,7 @@ function ScoreboardConfig() {
           </span>
         </label>
       </div>
+      <h3 className="section-head">Audio</h3>
       <div className="extra nextsong-row">
         <span className="nextsong__label">🎵 Next song</span>
         <select

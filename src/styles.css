@@ -104,7 +104,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* mood box + emoji picker */
 .moodbox { position: relative; flex: none; }
-.moodbox__btn {
+.moodbox__input {
   width: 44px;
   height: 100%;
   background: var(--panel-2);
@@ -113,29 +113,30 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 20px;
   line-height: 1;
   color: var(--text);
+  text-align: center;
+  padding: 0;
+}
+.moodbox__input:hover { border-color: var(--accent); }
+.moodbox__input:focus { outline: none; border-color: var(--accent); }
+.moodbox__input::placeholder { color: var(--muted); }
+.moodbox__clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
-.moodbox__btn:hover { border-color: var(--accent); }
-.moodbox__empty { color: var(--muted); font-size: 22px; }
-.moodbox__pop {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  width: 196px;
-  padding: 6px;
-  background: var(--panel-2);
-  border: 1px solid #2c3346;
-  border-radius: 10px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
-}
-.moodbox__choice { background: transparent; border: none; border-radius: 6px; font-size: 20px; padding: 6px 0; }
-.moodbox__choice:hover { background: var(--panel); }
+.moodbox__clear:hover { color: var(--red); }
 
 .team-control__body { display: flex; flex-direction: column; gap: 12px; }
 .team-control__scoreblock {
@@ -249,6 +250,16 @@ button { font-family: inherit; cursor: pointer; }
   padding: 7px 10px;
 }
 .audience-label:focus { outline: none; border-color: var(--accent); }
+
+/* Section divider inside a scene config (e.g. "Audio" over the music controls). */
+.section-head {
+  margin: 6px 0 -2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 /* "Next song" picker — defaults to Random; shows the queued bumper's name. */
 .nextsong-row { gap: 12px; }
