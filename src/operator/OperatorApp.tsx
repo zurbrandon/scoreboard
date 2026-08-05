@@ -9,8 +9,7 @@ import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
 import type { Scene } from '../core/state'
 import { TeamControl } from './TeamControl'
-import { MusicPanel } from './MusicPanel'
-import { ProjectorDisplayPicker } from './ProjectorDisplayPicker'
+import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
 
 const SCENE_TABS: { scene: Scene; label: string; primary?: boolean }[] = [
@@ -46,6 +45,7 @@ export function OperatorApp() {
   const [activeTab, setActiveTab] = useState<Scene>(
     SCENE_TABS.some((t) => t.scene === programScene) ? programScene : 'scoreboard',
   )
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // The deck pushes the ACTIVE tab to the projector. Nothing else changes what's
   // on air. Scoreboard reveal animates / silent commits quietly; logo commits the
@@ -89,12 +89,18 @@ export function OperatorApp() {
       <header className="operator__header">
         <h1>Showboard</h1>
         <div className="operator__header-right">
-          <ProjectorDisplayPicker />
           {!window.showboard && (
             <button className="pill" onClick={openProjector}>
               Open projector ↗
             </button>
           )}
+          <button
+            className="pill icon-pill"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            ⚙
+          </button>
         </div>
       </header>
 
@@ -144,6 +150,8 @@ export function OperatorApp() {
           update silently
         </button>
       </footer>
+
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }
@@ -172,7 +180,6 @@ function ScoreboardConfig() {
           +
         </button>
       </div>
-      <MusicPanel />
     </>
   )
 }
