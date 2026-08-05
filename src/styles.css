@@ -218,14 +218,29 @@ button { font-family: inherit; cursor: pointer; }
 .text-input:focus { outline: none; border-color: var(--accent); }
 .pill:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* scene tab grid */
-.scene-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: none; }
-.scene-tab {
-  background: var(--panel); border: 1.5px solid #2c3346; border-radius: 12px;
-  color: var(--text); font-size: 14px; font-weight: 600; padding: 12px 10px;
+/* scene nav — a single-row segmented control */
+.scene-tabs {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  background: var(--panel);
+  border: 1px solid #2c3346;
+  border-radius: 10px;
+  padding: 3px;
 }
-.scene-tab--primary { grid-column: 1 / -1; }
-.scene-tab--active { border-color: var(--accent); color: var(--accent); background: var(--panel-2); }
+.scene-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 6px;
+  white-space: nowrap;
+}
+.scene-tab:hover { color: var(--text); }
+.scene-tab--active { background: var(--panel-2); color: var(--accent); }
 
 /* the active scene's config; scrolls so the deck stays pinned to the bottom */
 .scene-config { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 4px; }

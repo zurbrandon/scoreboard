@@ -12,18 +12,18 @@ import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
 
-const SCENE_TABS: { scene: Scene; label: string; primary?: boolean }[] = [
-  { scene: 'scoreboard', label: 'Scoreboard', primary: true },
+const SCENE_TABS: { scene: Scene; label: string }[] = [
+  { scene: 'scoreboard', label: 'Score' },
   { scene: 'logo', label: 'Logo' },
   { scene: 'text', label: 'Text' },
-  { scene: 'slideshow', label: 'Slideshow' },
+  { scene: 'slideshow', label: 'Pre-show' },
 ]
 
 const ON_AIR_LABEL: Record<Scene, string> = {
-  scoreboard: 'Scoreboard',
+  scoreboard: 'Score',
   logo: 'Logo',
   text: 'Text',
-  slideshow: 'Slideshow',
+  slideshow: 'Pre-show',
   black: 'Black',
 }
 
@@ -105,16 +105,10 @@ export function OperatorApp() {
       </header>
 
       <nav className="scene-tabs">
-        {SCENE_TABS.map(({ scene, label, primary }) => (
+        {SCENE_TABS.map(({ scene, label }) => (
           <button
             key={scene}
-            className={[
-              'scene-tab',
-              primary ? 'scene-tab--primary' : '',
-              activeTab === scene ? 'scene-tab--active' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
+            className={`scene-tab ${activeTab === scene ? 'scene-tab--active' : ''}`}
             onClick={() => setActiveTab(scene)}
           >
             {label}
