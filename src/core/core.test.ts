@@ -30,6 +30,21 @@ describe('pending vs live (the sacred rule)', () => {
     expect(s.lastWinner).toBe('blue')
   })
 
+  it('commitSilent pushes pending to live without triggering a reveal', () => {
+    const s = run(
+      { type: 'blue.increment' },
+      { type: 'blue.increment' },
+      { type: 'red.increment' },
+      { type: 'score.commitSilent' },
+    )
+    expect(s.teams.blue.liveScore).toBe(2)
+    expect(s.teams.red.liveScore).toBe(1)
+    expect(s.lastWinner).toBe('blue')
+    // The tell-tale: no reveal ceremony fired.
+    expect(s.revealPhase).toBe('idle')
+    expect(s.revealNonce).toBe(0)
+  })
+
   it('revertPending discards pending edits back to live', () => {
     const s = run(
       { type: 'blue.increment' },

@@ -156,6 +156,17 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 0 40px rgba(255, 210, 63, 0.5);
 }
 .reveal:active { transform: scale(0.96); }
+.silent-btn {
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+.silent-btn:hover { border-color: var(--accent); }
+.silent-btn:active { transform: translateY(1px); }
 .link-btn { background: none; border: none; color: var(--muted); text-decoration: underline; font-size: 13px; }
 
 .operator__scenes { display: flex; gap: 10px; flex-wrap: wrap; }

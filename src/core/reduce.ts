@@ -79,6 +79,22 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'reveal.finish':
       return { ...state, revealPhase: 'idle' }
 
+    case 'score.commitSilent': {
+      // Quick correction: push pending → live with no ceremony. Crucially it
+      // does NOT bump revealNonce or touch revealPhase, so the reveal service
+      // and audio controller stay silent.
+      const blueLive = state.teams.blue.pendingScore
+      const redLive = state.teams.red.pendingScore
+      return {
+        ...state,
+        teams: {
+          blue: { ...state.teams.blue, liveScore: blueLive },
+          red: { ...state.teams.red, liveScore: redLive },
+        },
+        lastWinner: determineWinner(blueLive, redLive),
+      }
+    }
+
     case 'score.revertPending':
       return {
         ...state,

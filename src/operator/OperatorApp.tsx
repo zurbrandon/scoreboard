@@ -70,6 +70,13 @@ export function OperatorApp() {
             REVEAL
           </button>
           <button
+            className="silent-btn"
+            onClick={() => dispatch({ type: 'score.commitSilent' })}
+            title="Push the pending score with no animation or music"
+          >
+            update silently
+          </button>
+          <button
             className="link-btn"
             onClick={() => dispatch({ type: 'score.revertPending' })}
           >

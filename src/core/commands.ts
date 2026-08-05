@@ -26,6 +26,7 @@ export type Command =
   // The main event.
   | { type: 'score.reveal' }
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends
+  | { type: 'score.commitSilent' } // commit pending → live with NO animation/audio (quick fixes)
   | { type: 'score.revertPending' } // safety: discard pending edits back to live
   // Music.
   | { type: 'music.setVolume'; volume: number }
