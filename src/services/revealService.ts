@@ -15,6 +15,8 @@ import type { Store } from '../store/store'
 // separate and shorter — it fires once at the start. Interruptible: a new reveal
 // mid-celebration restarts this window.
 export const REVEAL_DURATION_MS = 10000
+// The winner finale ('end' phase) lingers longer than a normal reveal.
+export const FINALE_DURATION_MS = 16000
 
 export function attachRevealService(
   store: Store,
@@ -24,17 +26,18 @@ export function attachRevealService(
   let timer: ReturnType<typeof setTimeout> | undefined
 
   const unsubscribe = store.subscribe(() => {
-    const nonce = store.getState().revealNonce
-    if (nonce === lastNonce) return // some other state change; ignore
-    lastNonce = nonce
+    const state = store.getState()
+    if (state.revealNonce === lastNonce) return // some other state change; ignore
+    lastNonce = state.revealNonce
 
-    // A reveal just happened. (M3: start bumper music here.)
+    // A reveal just happened. The finale holds longer than a normal reveal.
     // Interruptible: a fresh reveal mid-sequence restarts the hold.
+    const hold = state.revealPhase === 'finale' ? FINALE_DURATION_MS : durationMs
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = undefined
       store.dispatch({ type: 'reveal.finish' })
-    }, durationMs)
+    }, hold)
   })
 
   return () => {

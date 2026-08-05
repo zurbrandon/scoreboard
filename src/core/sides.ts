@@ -6,7 +6,8 @@ export type Side = 'left' | 'right'
 // 1st half: Blue left / Red right. 2nd half: they swap. This is presentation
 // only — commands stay team-based (blue.increment always adds to Blue).
 export function sideOf(team: TeamId, half: Half): Side {
-  const blueOnLeft = half === 'first'
+  // Blue on the left except in the 2nd half; 'end' keeps the 1st-half sides.
+  const blueOnLeft = half !== 'second'
   if (team === 'blue') return blueOnLeft ? 'left' : 'right'
   return blueOnLeft ? 'right' : 'left'
 }

@@ -5,7 +5,8 @@
 import { LOGO_LIBRARY } from './logos'
 
 export type TeamId = 'blue' | 'red'
-export type Half = 'first' | 'second'
+// Match phase. 'end' is the finale — Reveal triggers the winner celebration.
+export type Half = 'first' | 'second' | 'end'
 
 export type Scene =
   | 'scoreboard'
@@ -14,7 +15,7 @@ export type Scene =
   | 'slideshow'
   | 'black'
 
-export type RevealPhase = 'idle' | 'revealing'
+export type RevealPhase = 'idle' | 'revealing' | 'finale'
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {

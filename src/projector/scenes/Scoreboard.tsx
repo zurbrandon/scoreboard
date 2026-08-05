@@ -12,7 +12,7 @@ import { useAnimatedNumber } from '../useAnimatedNumber'
 import { Confetti } from '../Confetti'
 import { EmojiRain } from '../EmojiRain'
 
-const HALF_LABEL = { first: '1st Half', second: '2nd Half' } as const
+const HALF_LABEL = { first: '1st Half', second: '2nd Half', end: 'Final' } as const
 
 const CONFETTI_COLORS: Record<'blue' | 'red' | 'tie', string[]> = {
   blue: ['#2f6bff', '#8fb0ff', '#ffffff'],
@@ -25,6 +25,7 @@ export function Scoreboard() {
   const audienceScore = useAppState((s) => s.audienceScore)
   const winner = useAppState((s) => s.lastWinner)
   const revealNonce = useAppState((s) => s.revealNonce)
+  const revealPhase = useAppState((s) => s.revealPhase)
 
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
@@ -68,8 +69,42 @@ export function Scoreboard() {
         <span className="ribbon ribbon--away">AWAY</span>
       </footer>
 
+      {revealPhase === 'finale' && <FinaleOverlay />}
       <Confetti nonce={revealNonce} colors={colors} originX={originX} />
       <EmojiRain nonce={revealNonce} emoji={winnerEmoji} />
+    </div>
+  )
+}
+
+// The "Show end" finale: a full-screen winner takeover. First pass — a bigger
+// celebration than a normal reveal; confetti and the emoji rain play over it.
+function FinaleOverlay() {
+  const winner = useAppState((s) => s.lastWinner)
+  const blueName = useAppState((s) => s.teams.blue.name)
+  const blueScore = useAppState((s) => s.teams.blue.liveScore)
+  const redName = useAppState((s) => s.teams.red.name)
+  const redScore = useAppState((s) => s.teams.red.liveScore)
+
+  const color = winner === 'blue' ? '#2f6bff' : winner === 'red' ? '#e23b3b' : '#ffd23f'
+  const winName = winner === 'blue' ? blueName : winner === 'red' ? redName : ''
+  const winScore = winner === 'blue' ? blueScore : redScore
+
+  return (
+    <div className="finale" style={{ ['--win' as string]: color }}>
+      {winner === 'tie' ? (
+        <>
+          <div className="finale__label">It's a tie</div>
+          <div className="finale__score">
+            {blueScore} – {redScore}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="finale__label">Winner</div>
+          <div className="finale__name">{winName}</div>
+          <div className="finale__score">{winScore}</div>
+        </>
+      )}
     </div>
   )
 }

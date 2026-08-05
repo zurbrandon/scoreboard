@@ -145,6 +145,18 @@ describe('half swaps sides but not scores', () => {
     expect(teamOnSide('left', 'second')).toBe('red')
   })
 
+  it('the end phase keeps the first-half sides', () => {
+    expect(sideOf('blue', 'end')).toBe('left')
+    expect(sideOf('red', 'end')).toBe('right')
+  })
+
+  it('reveal at the end phase becomes the finale', () => {
+    const s = run({ type: 'half.set', half: 'end' }, { type: 'score.reveal' })
+    expect(s.revealPhase).toBe('finale')
+    const normal = run({ type: 'score.reveal' })
+    expect(normal.revealPhase).toBe('revealing')
+  })
+
   it('toggling the half keeps each team score intact', () => {
     const s = run(
       { type: 'blue.increment' },

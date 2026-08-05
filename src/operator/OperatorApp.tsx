@@ -30,6 +30,7 @@ const ON_AIR_LABEL: Record<Scene, string> = {
 export function OperatorApp() {
   const dispatch = useDispatch()
   const programScene = useAppState((s) => s.scene)
+  const half = useAppState((s) => s.half)
   const anyDirty = useAppState(
     (s) =>
       s.teams.blue.pendingScore !== s.teams.blue.liveScore ||
@@ -77,7 +78,7 @@ export function OperatorApp() {
   // Reveal is "armed" when pressing it would actually change what's on air.
   const armed =
     activeTab === 'scoreboard'
-      ? anyDirty || programScene !== 'scoreboard'
+      ? anyDirty || programScene !== 'scoreboard' || half === 'end'
       : activeTab === 'logo'
         ? programScene !== 'logo' || draftLogoId !== liveLogoId
         : activeTab === 'text'
@@ -159,9 +160,26 @@ function ScoreboardConfig() {
 
   return (
     <>
-      <button className="pill half-toggle" onClick={() => dispatch({ type: 'half.toggle' })}>
-        {half === 'first' ? '1st Half' : '2nd Half'} · swap sides
-      </button>
+      <div className="phase-toggle">
+        <button
+          className={`phase-seg ${half === 'first' ? 'phase-seg--active' : ''}`}
+          onClick={() => dispatch({ type: 'half.set', half: 'first' })}
+        >
+          1st Half
+        </button>
+        <button
+          className={`phase-seg ${half === 'second' ? 'phase-seg--active' : ''}`}
+          onClick={() => dispatch({ type: 'half.set', half: 'second' })}
+        >
+          2nd Half
+        </button>
+        <button
+          className={`phase-seg phase-seg--end ${half === 'end' ? 'phase-seg--active' : ''}`}
+          onClick={() => dispatch({ type: 'half.set', half: 'end' })}
+        >
+          Show end
+        </button>
+      </div>
       <div className="teams-row">
         <TeamControl team={leftTeam} side="left" />
         <TeamControl team={rightTeam} side="right" />

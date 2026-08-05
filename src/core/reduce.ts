@@ -81,7 +81,8 @@ export function reduce(state: AppState, command: Command): AppState {
           red: { ...state.teams.red, liveScore: redLive },
         },
         lastWinner: determineWinner(blueLive, redLive),
-        revealPhase: 'revealing',
+        // At the 'end' phase, Reveal is the finale (bigger winner celebration).
+        revealPhase: state.half === 'end' ? 'finale' : 'revealing',
         revealNonce: state.revealNonce + 1,
       }
     }
