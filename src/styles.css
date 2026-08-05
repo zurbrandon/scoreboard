@@ -1,0 +1,495 @@
+@font-face {
+  font-family: 'Geist Pixel';
+  src: url('./assets/GeistPixel-Circle.otf') format('opentype');
+  font-display: swap;
+}
+
+:root {
+  --blue: #2f6bff;
+  --blue-dim: #1b3a86;
+  --red: #e23b3b;
+  --red-dim: #7d2020;
+  --bg: #0c0e14;
+  --panel: #161a26;
+  --panel-2: #1e2434;
+  --text: #eef1f7;
+  --muted: #8b93a7;
+  --accent: #ffd23f;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); }
+button { font-family: inherit; cursor: pointer; }
+
+/* ------------------------------------------------------------------ Operator */
+.operator {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+.operator__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.operator__header h1 { font-size: 18px; margin: 0; color: var(--muted); font-weight: 600; }
+.operator__header-right { display: flex; gap: 10px; }
+
+.pill {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid #2c3346;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.pill:hover { border-color: var(--accent); }
+
+.operator__stage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.team-control {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 3px solid transparent;
+}
+.team-control--blue { border-color: var(--blue-dim); }
+.team-control--red { border-color: var(--red-dim); }
+
+.team-control__name {
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 700;
+  padding: 10px 14px;
+  text-align: center;
+}
+.team-control__scores { display: flex; gap: 12px; align-items: flex-end; justify-content: center; }
+.team-control__pending { display: flex; flex-direction: column; gap: 4px; }
+.team-control__pending span, .team-control__live span {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center;
+}
+.team-control__pending input {
+  width: 160px;
+  background: var(--panel-2);
+  border: 2px solid #2c3346;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 64px;
+  font-weight: 800;
+  text-align: center;
+  padding: 4px;
+}
+.team-control__live { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.team-control__live strong { font-size: 28px; color: var(--muted); }
+.team-control__diff { text-align: center; color: var(--accent); font-size: 14px; }
+.team-control__diff b { color: var(--text); }
+
+.team-control__buttons { display: flex; gap: 12px; }
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: 14px;
+  font-size: 40px;
+  font-weight: 800;
+  padding: 18px 0;
+  color: #fff;
+  background: var(--panel-2);
+  line-height: 1;
+}
+.team-control--blue .btn--inc { background: var(--blue); }
+.team-control--red .btn--inc { background: var(--red); }
+.btn--dec { background: #333a4d; }
+.btn:active { transform: translateY(1px); }
+.btn--sm { flex: none; font-size: 22px; padding: 6px 16px; border-radius: 10px; }
+
+.team-control__mood {
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 20px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.operator__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 220px;
+}
+.reveal {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 6px solid #2c3346;
+  background: radial-gradient(circle at 50% 35%, #39415a, #20263a);
+  color: var(--muted);
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  transition: transform 0.08s ease, box-shadow 0.2s ease;
+}
+.reveal--armed {
+  border-color: var(--accent);
+  color: #1a1300;
+  background: radial-gradient(circle at 50% 35%, #ffe071, #f2b800);
+  box-shadow: 0 0 40px rgba(255, 210, 63, 0.5);
+}
+.reveal:active { transform: scale(0.96); }
+.link-btn { background: none; border: none; color: var(--muted); text-decoration: underline; font-size: 13px; }
+
+.operator__scenes { display: flex; gap: 10px; flex-wrap: wrap; }
+.scene-btn {
+  flex: 1;
+  min-width: 120px;
+  background: var(--panel);
+  border: 2px solid #2c3346;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 16px 10px;
+}
+.scene-btn--active { border-color: var(--accent); background: var(--panel-2); color: var(--accent); }
+
+.operator__extras { display: flex; gap: 24px; flex-wrap: wrap; }
+.extra { display: flex; align-items: center; gap: 10px; background: var(--panel); border-radius: 12px; padding: 10px 16px; }
+.extra__label { color: var(--muted); font-size: 14px; }
+.extra__value { font-size: 22px; min-width: 32px; text-align: center; }
+.extra__checkbox { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+
+.music-panel { flex-direction: column; align-items: stretch; gap: 10px; }
+.music-panel__row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.music-panel__status { color: var(--muted); font-size: 13px; }
+.url-input {
+  flex: 1;
+  min-width: 240px;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 8px 12px;
+}
+.url-input:focus { outline: none; border-color: var(--accent); }
+.pill:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.operator__legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.legend-item kbd {
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 12px;
+}
+
+/* ----------------------------------------------------------------- Projector */
+.projector { height: 100%; background: #000; }
+.scene-black { height: 100%; background: #000; }
+
+.scene-slideshow { width: 100%; height: 100%; border: 0; background: #000; display: block; }
+.scene-slideshow--empty {
+  display: grid; place-items: center;
+  color: var(--muted); font-size: 2.5vw; font-weight: 700; text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.scene-logo {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--accent) 30%, #000), #000);
+}
+.scene-logo__mark {
+  font-size: 6vw;
+  font-weight: 900;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.scene-logo__img {
+  max-width: 60%;
+  max-height: 70%;
+  object-fit: contain;
+  filter: drop-shadow(0 1vh 3vh rgba(0, 0, 0, 0.6));
+}
+
+.scoreboard {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 3vh 3vw 2.5vh;
+  gap: 2vh;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 18% 105%, rgba(47, 107, 255, 0.20), transparent 55%),
+    radial-gradient(120% 90% at 82% 105%, rgba(226, 59, 59, 0.20), transparent 55%),
+    radial-gradient(100% 80% at 50% -10%, #161d31, #05070d 72%);
+}
+/* vignette to frame the action */
+.scoreboard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 22vh rgba(0, 0, 0, 0.75);
+}
+
+.scoreboard__top { display: flex; align-items: center; justify-content: space-between; gap: 2vw; z-index: 1; }
+.scoreboard__logo {
+  display: grid; place-items: center;
+  min-width: 6.5vw; height: 6.5vw;
+  font-size: 2vw; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase;
+  color: #cdd6ee;
+  border: 0.25vw solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  background: linear-gradient(160deg, #1b2236, #0b0f1a);
+  box-shadow: inset 0 0 2vw rgba(255, 255, 255, 0.06), 0 0.5vh 1.5vh rgba(0, 0, 0, 0.55);
+}
+.scoreboard__logo--theater { color: #9aa6c4; }
+.scoreboard__logo-img {
+  height: 8vw;
+  width: auto;
+  max-width: 20vw;
+  object-fit: contain;
+  filter: drop-shadow(0 0.3vh 0.6vh rgba(0, 0, 0, 0.5));
+}
+.scoreboard__half {
+  font-size: 2.4vw; font-weight: 900; text-transform: uppercase; letter-spacing: 0.14em;
+  color: #04222c;
+  padding: 0.6vh 2vw;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7cf1ff, #16b6d6);
+  box-shadow: 0 0 2.5vw rgba(90, 220, 255, 0.5), inset 0 0.1vw 0.4vw rgba(255, 255, 255, 0.5);
+}
+
+.scoreboard__teams { position: relative; flex: 1; display: flex; align-items: stretch; gap: 0; z-index: 1; }
+
+.team-panel {
+  position: relative;
+  overflow: hidden; /* clip the winner sheen to the rounded corners */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  padding: 1.4vh 1.4vw 1.8vh;
+  border-radius: 0; /* outer corners rounded per-side below to form one pill */
+  border: 0.15vw solid rgba(255, 255, 255, 0.08);
+  border-top: 0.55vw solid var(--team);
+  background:
+    radial-gradient(120% 75% at 50% 0%, var(--team-soft), transparent 62%),
+    linear-gradient(180deg, #0e1524, #070a12);
+  box-shadow: 0 0 4vh var(--team-soft), inset 0 0 3vh rgba(0, 0, 0, 0.55);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+}
+.team-panel--blue { --team: #2f6bff; --team-soft: rgba(47, 107, 255, 0.22); }
+.team-panel--red { --team: #ff3b46; --team-soft: rgba(255, 59, 70, 0.22); }
+.team-panel--leading { box-shadow: 0 0 6vh rgba(255, 210, 63, 0.4), inset 0 0 3vh rgba(0, 0, 0, 0.55); }
+
+/* The two panels touch to form one big pill: outer corners rounded, inner edge
+   a straight seam. Rounding is by SIDE (not team) so it stays correct when the
+   teams swap sides at the half. */
+.team-panel[data-side='left'] { border-radius: 4vw 0 0 4vw; border-right: none; }
+.team-panel[data-side='right'] { border-radius: 0 4vw 4vw 0; border-left: none; }
+
+/* Nest the inner banner (top) and screen (bottom) into the pill's outer
+   corners so they don't sit square inside the rounded panel. Outer corner only;
+   the inner (seam-side) corners stay crisp against the straight middle. */
+.team-panel[data-side='left'] .team-panel__banner { border-top-left-radius: 2.4vw; }
+.team-panel[data-side='right'] .team-panel__banner { border-top-right-radius: 2.4vw; }
+.team-panel[data-side='left'] .led-screen { border-bottom-left-radius: 2.4vw; }
+.team-panel[data-side='right'] .led-screen { border-bottom-right-radius: 2.4vw; }
+
+/* team name banner */
+.team-panel__banner {
+  display: flex; align-items: center; justify-content: center; gap: 1vw;
+  padding: 0.9vh 1vw;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--team), color-mix(in srgb, var(--team) 55%, #000));
+  box-shadow: inset 0 0.1vw 0 rgba(255, 255, 255, 0.35), 0 0.3vh 1vh rgba(0, 0, 0, 0.4);
+}
+
+/* recessed LED screen holding the score */
+.led-screen {
+  position: relative;
+  flex: 1;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: #04060b;
+  box-shadow: inset 0 0 0 0.15vw rgba(255, 255, 255, 0.05), inset 0 0.6vh 2.2vh rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+.led-screen::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 4px);
+}
+
+/* Big VS medallion straddling the seam, joining the two halves. */
+.scoreboard__vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 9vw;
+  height: 9vw;
+  border-radius: 50%;
+  font-size: 4vw;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(160deg, #2a3350, #0b0e18);
+  border: 0.4vw solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 0 3.5vw rgba(0, 0, 0, 0.75),
+    0 0 2vw rgba(120, 160, 255, 0.25),
+    inset 0 0 1.6vw rgba(255, 255, 255, 0.12);
+  text-shadow: 0 0.2vw 0.5vw rgba(0, 0, 0, 0.6);
+}
+
+/* Emphasis while the reveal sequence plays (~10s): a punchy pop that settles
+   slightly enlarged, a continuously pulsing glow, and a sheen that sweeps back
+   and forth across the panel. All stop cleanly when the class is removed. */
+.team-panel--winner {
+  z-index: 1;
+  animation:
+    winner-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards,
+    winner-glow 1.8s ease-in-out infinite;
+}
+@keyframes winner-pop {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.14); }
+  100% { transform: scale(1.07); }
+}
+@keyframes winner-glow {
+  0%, 100% { box-shadow: 0 0 55px rgba(255, 210, 63, 0.45); }
+  50% { box-shadow: 0 0 130px rgba(255, 210, 63, 0.95); }
+}
+
+/* Moving sheen: a soft light band that glides across and back over the winner. */
+.team-panel--winner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.05) 45%,
+    rgba(255, 255, 255, 0.32) 50%,
+    rgba(255, 255, 255, 0.05) 55%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+  animation: winner-sheen 2.6s ease-in-out infinite;
+}
+@keyframes winner-sheen {
+  0% { background-position: 160% 0; }
+  50% { background-position: -60% 0; }
+  100% { background-position: 160% 0; }
+}
+
+/* The losing side recedes so the winner reads instantly. */
+.team-panel--dimmed {
+  filter: brightness(0.55) saturate(0.7);
+  transform: scale(0.97);
+}
+
+/* The winning score grows a touch and HOLDS, with a glow that keeps pulsing for
+   the whole reveal celebration (~10s). Both reset when the reveal ends and the
+   --pop class is removed. */
+.team-panel__score--pop {
+  animation:
+    score-grow 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) forwards,
+    score-glow 1.6s ease-in-out infinite;
+}
+@keyframes score-grow {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.16); }
+  100% { transform: scale(1.09); }
+}
+@keyframes score-glow {
+  0%, 100% {
+    text-shadow: 0 0 1vw rgba(255, 255, 255, 0.9), 0 0 3vw var(--team), 0 0 6vw var(--team);
+  }
+  50% {
+    text-shadow: 0 0 1.8vw rgba(255, 255, 255, 1), 0 0 5vw var(--team), 0 0 12vw var(--team);
+  }
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.emoji-rain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4; /* rains over the panels and VS */
+}
+
+.team-panel__name {
+  font-size: 3vw; font-weight: 900; font-style: italic;
+  text-transform: uppercase; letter-spacing: 0.02em; color: #fff;
+  text-shadow: 0 0.15vw 0.4vw rgba(0, 0, 0, 0.6);
+}
+.team-panel__mood { font-size: 3vw; line-height: 1; }
+
+/* glowing LED-style digits: white core with a team-colored halo */
+.team-panel__score {
+  font-family: 'Geist Pixel', 'Courier New', ui-monospace, monospace;
+  font-weight: 400; /* Geist Pixel is single-weight; heavier faux-bolds and merges the dots */
+  font-synthesis: none; /* never let the browser synthesize bold/italic */
+  font-variant-numeric: tabular-nums;
+  font-size: 15vw;
+  line-height: 0.9;
+  color: #eafcff;
+  text-shadow:
+    0 0 1vw rgba(255, 255, 255, 0.9),
+    0 0 3vw var(--team),
+    0 0 6vw var(--team);
+  transition: transform 0.35s ease; /* eases back to size when the reveal ends */
+}
+
+.scoreboard__bottom { display: flex; align-items: center; justify-content: space-between; gap: 2vw; z-index: 1; }
+.ribbon {
+  font-size: 1.6vw; font-weight: 900; letter-spacing: 0.3em; text-transform: uppercase; color: #fff;
+  padding: 0.8vh 3vw;
+  clip-path: polygon(7% 0, 100% 0, 93% 100%, 0 100%);
+  text-shadow: 0 0.1vw 0.3vw rgba(0, 0, 0, 0.5);
+}
+.ribbon--home { background: linear-gradient(180deg, var(--blue), var(--blue-dim)); }
+.ribbon--away { background: linear-gradient(180deg, var(--red), var(--red-dim)); }
+.audience { color: #9aa6c4; font-size: 1.5vw; font-weight: 800; letter-spacing: 0.15em; }
