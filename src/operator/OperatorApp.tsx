@@ -132,25 +132,24 @@ export function OperatorApp() {
       </div>
 
       <footer className="deck">
-        <div className="deck__onair">
-          <span className="deck__onair-dot" />
-          on air · {ON_AIR_LABEL[programScene]}
-        </div>
         <div className="deck__row">
           <button
             className={`deck-black ${programScene === 'black' ? 'deck-black--active' : ''}`}
             onClick={black}
           >
-            Black
+            Black screen
           </button>
           <button className={`reveal ${armed ? 'reveal--armed' : ''}`} onClick={reveal}>
             REVEAL
           </button>
-          <div className="deck__spacer" />
+          <button className="silent-btn" onClick={silent}>
+            update silently
+          </button>
         </div>
-        <button className="silent-btn" onClick={silent}>
-          update silently
-        </button>
+        <div className="deck__onair">
+          <span className="deck__onair-dot" />
+          on air · {ON_AIR_LABEL[programScene]}
+        </div>
       </footer>
 
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}

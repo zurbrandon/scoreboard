@@ -360,13 +360,13 @@ button { font-family: inherit; cursor: pointer; }
 
 /* persistent reveal deck */
 .deck { flex: none; z-index: 2; border-top: 1px solid #222838; box-shadow: 0 -7px 12px -7px rgba(0, 0, 0, 0.65); padding: 12px 14px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.deck__onair { align-self: stretch; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.deck__onair { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
-.deck__row { display: flex; align-items: center; gap: 16px; }
-.deck-black { width: 60px; height: 60px; border-radius: 12px; background: var(--panel); border: 1px solid #2c3346; color: var(--text); font-size: 12px; font-weight: 600; }
+.deck__row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; }
+.deck-black { justify-self: center; min-width: 88px; height: 52px; padding: 0 14px; border-radius: 12px; background: var(--panel); border: 1px solid #2c3346; color: var(--text); font-size: 13px; font-weight: 600; }
 .deck-black:hover { border-color: #fff; }
 .deck-black--active { border-color: #fff; color: #fff; }
-.deck__spacer { width: 60px; }
+.deck .silent-btn { justify-self: center; }
 
 /* settings gear + overlay */
 .icon-pill { font-size: 16px; padding: 7px 11px; line-height: 1; }
