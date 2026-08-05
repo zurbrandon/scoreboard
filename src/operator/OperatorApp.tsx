@@ -57,6 +57,10 @@ export function OperatorApp() {
       c.quads.some((q, i) => q !== L.quads[i])
     )
   })
+  const slideshowDirty = useAppState((s) => {
+    const slide = s.slideshow.slides.find((sl) => sl.id === s.slideshow.selectedId)
+    return !slide || slide.url !== s.slideshow.liveUrl
+  })
 
   // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
   const [activeTab, setActiveTab] = useState<Scene>(
@@ -77,6 +81,9 @@ export function OperatorApp() {
     } else if (activeTab === 'text') {
       dispatch({ type: 'text.commit' })
       dispatch({ type: 'display.set', scene: 'text' })
+    } else if (activeTab === 'slideshow') {
+      dispatch({ type: 'slideshow.commit' })
+      dispatch({ type: 'display.set', scene: 'slideshow' })
     } else {
       dispatch({ type: 'display.set', scene: activeTab })
     }
@@ -99,7 +106,9 @@ export function OperatorApp() {
         ? programScene !== 'logo' || draftLogoId !== liveLogoId
         : activeTab === 'text'
           ? programScene !== 'text' || textDirty
-          : programScene !== activeTab
+          : activeTab === 'slideshow'
+            ? programScene !== 'slideshow' || slideshowDirty
+            : programScene !== activeTab
 
   return (
     <div className="operator">
@@ -418,19 +427,57 @@ function TextConfig() {
 
 function SlideshowConfig() {
   const dispatch = useDispatch()
-  const slideshowUrl = useAppState((s) => s.slideshowUrl)
+  const slides = useAppState((s) => s.slideshow.slides)
+  const selectedId = useAppState((s) => s.slideshow.selectedId)
+
   return (
-    <div className="config-block">
-      <span className="config-block__label">Slideshow link</span>
-      <input
-        className="url-input"
-        type="url"
-        placeholder="Published Google Slides link…"
-        value={slideshowUrl}
-        onChange={(e) => dispatch({ type: 'slideshow.setUrl', url: e.target.value })}
-      />
+    <div className="cards">
+      {slides.map((slide, i) => (
+        <div
+          key={slide.id}
+          className={`text-card ${slide.id === selectedId ? 'text-card--active' : ''}`}
+          onClick={() => dispatch({ type: 'slideshow.selectSlide', id: slide.id })}
+        >
+          <div className="text-card__head">
+            <span className="slide-card__num">Slide {i + 1}</span>
+            {slides.length > 1 && (
+              <button
+                className="text-card__remove"
+                aria-label="Remove slide"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  dispatch({ type: 'slideshow.removeSlide', id: slide.id })
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <input
+            className="slide-card__url"
+            type="url"
+            value={slide.url}
+            placeholder="Published Google Slides link…"
+            aria-label={`Slide ${i + 1} link`}
+            onChange={(e) =>
+              dispatch({ type: 'slideshow.setSlideUrl', id: slide.id, url: e.target.value })
+            }
+          />
+        </div>
+      ))}
+      <button
+        className="add-card"
+        onClick={() =>
+          dispatch({
+            type: 'slideshow.addSlide',
+            id: `slide-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+          })
+        }
+      >
+        + Add slide
+      </button>
       <span className="music-panel__status">
-        Paste a published (embed) link, then press Reveal to show it.
+        Paste a published (embed) link, pick a slide, then press Reveal to show it.
       </span>
     </div>
   )

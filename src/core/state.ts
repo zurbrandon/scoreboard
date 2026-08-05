@@ -52,6 +52,16 @@ export function emptyTextCard(id: string, template: TextTemplate = 'basic'): Tex
   return { id, template, headline: '', body: '', quads: ['', '', '', ''], liveText: '' }
 }
 
+// One slideshow URL in the Pre-show queue.
+export interface SlideItem {
+  id: string
+  url: string
+}
+
+export function emptySlide(id: string): SlideItem {
+  return { id, url: '' }
+}
+
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {
@@ -103,8 +113,14 @@ export interface AppState {
     selectedId: string
     live: TextLive
   }
-  /** URL loaded in the Slideshow scene (e.g. a published Google Slides embed link). */
-  slideshowUrl: string
+  /** Pre-show scene: a queue of slideshow URLs (e.g. published Google Slides
+   *  embed links). The selected slide is published to `liveUrl` on Reveal, so
+   *  the operator can flip between pre-loaded decks. */
+  slideshow: {
+    slides: SlideItem[]
+    selectedId: string
+    liveUrl: string
+  }
   revealPhase: RevealPhase
   /** Result of the most recent reveal. null before the first reveal. */
   lastWinner: Winner | null
@@ -131,7 +147,11 @@ export function createInitialState(): AppState {
       selectedId: 'card-1',
       live: { cardId: '', template: 'basic', headline: '', body: '', quads: ['', '', '', ''], liveText: '' },
     },
-    slideshowUrl: '',
+    slideshow: {
+      slides: [emptySlide('slide-1')],
+      selectedId: 'slide-1',
+      liveUrl: '',
+    },
     revealPhase: 'idle',
     lastWinner: null,
     revealNonce: 0,

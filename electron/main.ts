@@ -94,12 +94,33 @@ function loadState(): AppState {
                 live: { ...emptyLive, headline: String(pt.live || '') },
               }
             : fresh.text
+      // Slideshow: use the slide-queue shape if present; migrate an older single
+      // `slideshowUrl` string into one slide; otherwise fall back to fresh.
+      const ps = parsed.slideshow
+      const slideshow =
+        ps && Array.isArray(ps.slides) && ps.slides.length
+          ? {
+              slides: ps.slides.map((sl: { id?: unknown; url?: unknown }) => ({
+                id: String(sl.id ?? `slide-${Math.random().toString(36).slice(2, 8)}`),
+                url: String(sl.url ?? ''),
+              })),
+              selectedId: String(ps.selectedId ?? ps.slides[0].id),
+              liveUrl: String(ps.liveUrl ?? ''),
+            }
+          : typeof parsed.slideshowUrl === 'string'
+            ? {
+                slides: [{ id: 'slide-1', url: parsed.slideshowUrl }],
+                selectedId: 'slide-1',
+                liveUrl: parsed.slideshowUrl,
+              }
+            : fresh.slideshow
       return {
         ...fresh,
         ...parsed,
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
         logo: { ...fresh.logo, ...parsed.logo },
         text,
+        slideshow,
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.
         teams: {

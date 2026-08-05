@@ -4,7 +4,7 @@
 
 import type { Command } from './commands'
 import type { AppState, TeamId, TeamState } from './state'
-import { emptyTextCard } from './state'
+import { emptySlide, emptyTextCard } from './state'
 import { determineWinner } from './winner'
 
 function setTeam(
@@ -153,8 +153,38 @@ export function reduce(state: AppState, command: Command): AppState {
       }
     }
 
-    case 'slideshow.setUrl':
-      return { ...state, slideshowUrl: command.url }
+    case 'slideshow.addSlide':
+      return {
+        ...state,
+        slideshow: {
+          ...state.slideshow,
+          slides: [...state.slideshow.slides, emptySlide(command.id)],
+          selectedId: command.id,
+        },
+      }
+    case 'slideshow.removeSlide': {
+      if (state.slideshow.slides.length <= 1) return state // always keep one
+      const slides = state.slideshow.slides.filter((s) => s.id !== command.id)
+      const selectedId =
+        state.slideshow.selectedId === command.id ? slides[0].id : state.slideshow.selectedId
+      return { ...state, slideshow: { ...state.slideshow, slides, selectedId } }
+    }
+    case 'slideshow.selectSlide':
+      return { ...state, slideshow: { ...state.slideshow, selectedId: command.id } }
+    case 'slideshow.setSlideUrl':
+      return {
+        ...state,
+        slideshow: {
+          ...state.slideshow,
+          slides: state.slideshow.slides.map((s) =>
+            s.id === command.id ? { ...s, url: command.url } : s,
+          ),
+        },
+      }
+    case 'slideshow.commit': {
+      const slide = state.slideshow.slides.find((s) => s.id === state.slideshow.selectedId)
+      return { ...state, slideshow: { ...state.slideshow, liveUrl: slide?.url ?? '' } }
+    }
 
     case 'score.reveal':
       // Publish the whole board, then run the reveal ceremony. At the 'end'

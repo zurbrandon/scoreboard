@@ -34,7 +34,11 @@ export type Command =
   | { type: 'text.setField'; id: string; field: 'headline' | 'body' | 'liveText'; value: string }
   | { type: 'text.setQuad'; id: string; index: number; value: string } // index 0..3 (TL,TR,BL,BR)
   | { type: 'text.commit' } // publish the selected card to the live snapshot
-  | { type: 'slideshow.setUrl'; url: string }
+  | { type: 'slideshow.addSlide'; id: string } // append a new (empty) slide and select it
+  | { type: 'slideshow.removeSlide'; id: string }
+  | { type: 'slideshow.selectSlide'; id: string }
+  | { type: 'slideshow.setSlideUrl'; id: string; url: string }
+  | { type: 'slideshow.commit' } // publish the selected slide's URL to liveUrl
   // The main event.
   | { type: 'score.reveal' }
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

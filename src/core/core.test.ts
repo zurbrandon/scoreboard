@@ -176,10 +176,30 @@ describe('scoring details', () => {
     expect(after.text.cards).toHaveLength(1)
   })
 
-  it('stores the slideshow URL', () => {
+  it('slideshow: edit stages; commit publishes the selected slide; add/select/remove', () => {
     const url = 'https://docs.google.com/presentation/d/e/abc/embed?start=true&loop=true'
-    const s = run({ type: 'slideshow.setUrl', url })
-    expect(s.slideshowUrl).toBe(url)
+    let s = run({ type: 'slideshow.setSlideUrl', id: 'slide-1', url })
+    expect(s.slideshow.slides[0].url).toBe(url)
+    expect(s.slideshow.liveUrl).toBe('') // not live until committed
+    expect(reduce(s, { type: 'slideshow.commit' }).slideshow.liveUrl).toBe(url)
+
+    // Add a second slide (auto-selected), give it a URL, commit publishes it.
+    const url2 = 'https://example.com/deck-two/embed'
+    s = reduce(s, { type: 'slideshow.addSlide', id: 'slide-2' })
+    expect(s.slideshow.slides).toHaveLength(2)
+    expect(s.slideshow.selectedId).toBe('slide-2')
+    s = reduce(s, { type: 'slideshow.setSlideUrl', id: 'slide-2', url: url2 })
+    expect(reduce(s, { type: 'slideshow.commit' }).slideshow.liveUrl).toBe(url2)
+
+    // Toggle back to the first and commit publishes it again.
+    s = reduce(s, { type: 'slideshow.selectSlide', id: 'slide-1' })
+    expect(reduce(s, { type: 'slideshow.commit' }).slideshow.liveUrl).toBe(url)
+
+    // Removing the selected slide falls back; the last slide can't be removed.
+    s = reduce(s, { type: 'slideshow.removeSlide', id: 'slide-1' })
+    expect(s.slideshow.slides).toHaveLength(1)
+    expect(s.slideshow.selectedId).toBe('slide-2')
+    expect(reduce(s, { type: 'slideshow.removeSlide', id: 'slide-2' }).slideshow.slides).toHaveLength(1)
   })
 })
 

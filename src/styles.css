@@ -360,7 +360,8 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .text-card textarea,
-.text-card__quad {
+.text-card__quad,
+.slide-card__url {
   width: 100%;
   background: var(--panel-2);
   border: 1px solid #2c3346;
@@ -370,6 +371,8 @@ button { font-family: inherit; cursor: pointer; }
   padding: 8px 10px;
   line-height: 1.35;
 }
+.slide-card__url:focus { outline: none; border-color: var(--accent); }
+.slide-card__num { color: var(--muted); font-size: 13px; font-weight: 600; }
 .text-card textarea {
   resize: none; /* grows with content instead of a drag handle */
   field-sizing: content;

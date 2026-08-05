@@ -6,7 +6,7 @@
 import { useAppState } from '../../store/react'
 
 export function Slideshow() {
-  const url = useAppState((s) => s.slideshowUrl)
+  const url = useAppState((s) => s.slideshow.liveUrl)
 
   if (!url.trim()) {
     return (
