@@ -55,6 +55,11 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'display.set':
       return { ...state, scene: command.scene }
 
+    case 'logo.select':
+      return { ...state, logo: { ...state.logo, draftId: command.id } }
+    case 'logo.commit':
+      return { ...state, logo: { ...state.logo, liveId: state.logo.draftId } }
+
     case 'slideshow.setUrl':
       return { ...state, slideshowUrl: command.url }
 

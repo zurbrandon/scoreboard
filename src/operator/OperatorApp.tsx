@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
+import { LOGO_LIBRARY } from '../core/logos'
 import type { Scene } from '../core/state'
 import { TeamControl } from './TeamControl'
 import { MusicPanel } from './MusicPanel'
@@ -14,16 +15,14 @@ import { useOperatorKeyboard } from './useOperatorKeyboard'
 
 const SCENE_TABS: { scene: Scene; label: string; primary?: boolean }[] = [
   { scene: 'scoreboard', label: 'Scoreboard', primary: true },
-  { scene: 'cszLogo', label: 'CSz Logo' },
-  { scene: 'theaterLogo', label: 'Theater Logo' },
+  { scene: 'logo', label: 'Logo' },
   { scene: 'text', label: 'Text' },
   { scene: 'slideshow', label: 'Slideshow' },
 ]
 
 const ON_AIR_LABEL: Record<Scene, string> = {
   scoreboard: 'Scoreboard',
-  cszLogo: 'CSz logo',
-  theaterLogo: 'Theater logo',
+  logo: 'Logo',
   text: 'Text',
   slideshow: 'Slideshow',
   black: 'Black',
@@ -38,15 +37,24 @@ export function OperatorApp() {
       s.teams.red.pendingScore !== s.teams.red.liveScore,
   )
 
-  const [activeTab, setActiveTab] = useState<Scene>(programScene)
+  const draftLogoId = useAppState((s) => s.logo.draftId)
+  const liveLogoId = useAppState((s) => s.logo.liveId)
+
+  // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
+  const [activeTab, setActiveTab] = useState<Scene>(
+    SCENE_TABS.some((t) => t.scene === programScene) ? programScene : 'scoreboard',
+  )
 
   // The deck pushes the ACTIVE tab to the projector. Nothing else changes what's
-  // on air. For the scoreboard, reveal animates and silent commits quietly; other
-  // scenes just cut in (they have no animation yet).
+  // on air. Scoreboard reveal animates / silent commits quietly; logo commits the
+  // picked logo; other scenes just cut in (no animation yet).
   function pushActive(withReveal: boolean) {
     if (activeTab === 'scoreboard') {
       dispatch({ type: 'display.set', scene: 'scoreboard' })
       dispatch({ type: withReveal ? 'score.reveal' : 'score.commitSilent' })
+    } else if (activeTab === 'logo') {
+      dispatch({ type: 'logo.commit' })
+      dispatch({ type: 'display.set', scene: 'logo' })
     } else {
       dispatch({ type: 'display.set', scene: activeTab })
     }
@@ -62,7 +70,12 @@ export function OperatorApp() {
   }
 
   // Reveal is "armed" when pressing it would actually change what's on air.
-  const armed = activeTab === 'scoreboard' ? anyDirty : programScene !== activeTab
+  const armed =
+    activeTab === 'scoreboard'
+      ? anyDirty || programScene !== 'scoreboard'
+      : activeTab === 'logo'
+        ? programScene !== 'logo' || draftLogoId !== liveLogoId
+        : programScene !== activeTab
 
   return (
     <div className="operator">
@@ -98,16 +111,7 @@ export function OperatorApp() {
 
       <div className="scene-config">
         {activeTab === 'scoreboard' && <ScoreboardConfig />}
-        {activeTab === 'cszLogo' && (
-          <p className="scene-config__hint">
-            Press Reveal to put the ComedySportz logo on the projector.
-          </p>
-        )}
-        {activeTab === 'theaterLogo' && (
-          <p className="scene-config__hint">
-            Press Reveal to put the Seattle Comedy Theater logo on the projector.
-          </p>
-        )}
+        {activeTab === 'logo' && <LogoConfig />}
         {activeTab === 'text' && (
           <p className="scene-config__hint">
             Text screen. Editable text is coming next — for now, Reveal shows the text scene.
@@ -167,6 +171,25 @@ function ScoreboardConfig() {
       </div>
       <MusicPanel />
     </>
+  )
+}
+
+function LogoConfig() {
+  const dispatch = useDispatch()
+  const draftId = useAppState((s) => s.logo.draftId)
+  return (
+    <div className="logo-picker">
+      {LOGO_LIBRARY.map((logo) => (
+        <button
+          key={logo.id}
+          className={`logo-tile ${draftId === logo.id ? 'logo-tile--active' : ''}`}
+          onClick={() => dispatch({ type: 'logo.select', id: logo.id })}
+        >
+          <img src={`${import.meta.env.BASE_URL}logos/${logo.file}`} alt="" />
+          <span>{logo.name}</span>
+        </button>
+      ))}
+    </div>
   )
 }
 

@@ -9,10 +9,9 @@ import type { Scene } from '../core/state'
 
 const SCENE_KEYS: Record<string, Scene> = {
   '1': 'scoreboard',
-  '2': 'cszLogo',
-  '3': 'theaterLogo',
-  '4': 'text',
-  '5': 'slideshow',
+  '2': 'logo',
+  '3': 'text',
+  '4': 'slideshow',
 }
 
 export interface KeyboardHandlers {

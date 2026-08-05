@@ -101,6 +101,14 @@ describe('scoring details', () => {
     expect(s.audienceScore).toBe(2)
   })
 
+  it('logo select stages a draft; commit makes it live', () => {
+    const s = run({ type: 'logo.select', id: 'theater' })
+    expect(s.logo.draftId).toBe('theater')
+    expect(s.logo.liveId).not.toBe('theater') // still the default until committed
+    const s2 = reduce(s, { type: 'logo.commit' })
+    expect(s2.logo.liveId).toBe('theater')
+  })
+
   it('stores the slideshow URL', () => {
     const url = 'https://docs.google.com/presentation/d/e/abc/embed?start=true&loop=true'
     const s = run({ type: 'slideshow.setUrl', url })

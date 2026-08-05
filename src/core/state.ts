@@ -2,13 +2,14 @@
 // times (Engineering Principles: "State Is Serializable"). There is exactly one
 // of these — see src/store/store.ts for the single owner.
 
+import { LOGO_LIBRARY } from './logos'
+
 export type TeamId = 'blue' | 'red'
 export type Half = 'first' | 'second'
 
 export type Scene =
   | 'scoreboard'
-  | 'cszLogo'
-  | 'theaterLogo'
+  | 'logo'
   | 'text'
   | 'slideshow'
   | 'black'
@@ -44,6 +45,9 @@ export interface AppState {
   /** Toggling the half swaps which side each team renders on. */
   half: Half
   scene: Scene
+  /** Logo scene selection. draftId is what the operator has picked (preview);
+   *  liveId is what the projector shows. Reveal commits draft → live. */
+  logo: { draftId: string; liveId: string }
   /** URL loaded in the Slideshow scene (e.g. a published Google Slides embed link). */
   slideshowUrl: string
   revealPhase: RevealPhase
@@ -64,6 +68,7 @@ export function createInitialState(): AppState {
     audienceScore: 0,
     half: 'first',
     scene: 'scoreboard',
+    logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
     slideshowUrl: '',
     revealPhase: 'idle',
     lastWinner: null,

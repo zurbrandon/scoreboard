@@ -22,6 +22,8 @@ export type Command =
   | { type: 'half.toggle' }
   | { type: 'half.set'; half: Half }
   | { type: 'display.set'; scene: Scene }
+  | { type: 'logo.select'; id: string } // preview a logo (draft)
+  | { type: 'logo.commit' } // make the drafted logo live
   | { type: 'slideshow.setUrl'; url: string }
   // The main event.
   | { type: 'score.reveal' }
