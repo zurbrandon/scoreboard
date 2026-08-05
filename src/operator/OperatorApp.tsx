@@ -255,20 +255,22 @@ function TextConfig() {
           className={`text-card ${card.id === selectedId ? 'text-card--active' : ''}`}
           onClick={() => dispatch({ type: 'text.selectCard', id: card.id })}
         >
-          <input
+          <textarea
             className="text-card__headline"
             value={card.headline}
             placeholder="Headline (e.g. Skiing)"
             aria-label="Card headline"
+            rows={1}
             onChange={(e) =>
               dispatch({ type: 'text.setCardHeadline', id: card.id, value: e.target.value })
             }
           />
-          <input
+          <textarea
             className="text-card__body"
             value={card.body}
-            placeholder="Body (e.g. but with pizza sauce)"
+            placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
             aria-label="Card body"
+            rows={1}
             onChange={(e) =>
               dispatch({ type: 'text.setCardBody', id: card.id, value: e.target.value })
             }
