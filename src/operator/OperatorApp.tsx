@@ -92,6 +92,7 @@ export function OperatorApp() {
 
   return (
     <div className="operator">
+      <div className="operator__topbar">
       <header className="operator__header">
         <h1>Showboard</h1>
         <div className="operator__header-right">
@@ -121,6 +122,7 @@ export function OperatorApp() {
           </button>
         ))}
       </nav>
+      </div>
 
       <div className="scene-config">
         {activeTab === 'scoreboard' && <ScoreboardConfig />}
