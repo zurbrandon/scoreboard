@@ -97,6 +97,11 @@ export interface AppState {
    *  audienceLive on Reveal / update silently. */
   audience: { score: number; label: string; visible: boolean }
   audienceLive: { score: number; label: string; visible: boolean }
+  /** The HOME/AWAY corner labels. `home` belongs to Blue, `away` to Red — so
+   *  they follow their team across the halftime side-swap. Editable, optional,
+   *  and staged (draft) → ribbonsLive on Reveal / update silently. */
+  ribbons: { home: string; away: string; visible: boolean }
+  ribbonsLive: { home: string; away: string; visible: boolean }
   /** Match phase the operator has selected (draft). The projector renders
    *  halfLive; the two sync on Reveal / update silently. */
   half: Half
@@ -138,6 +143,8 @@ export function createInitialState(): AppState {
     },
     audience: { score: 0, label: 'Audience', visible: true },
     audienceLive: { score: 0, label: 'Audience', visible: true },
+    ribbons: { home: 'Home', away: 'Away', visible: true },
+    ribbonsLive: { home: 'Home', away: 'Away', visible: true },
     half: 'first',
     halfLive: 'first',
     scene: 'scoreboard',

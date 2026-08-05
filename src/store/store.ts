@@ -80,6 +80,8 @@ function loadPersisted(): AppState {
         },
         audience: { ...fresh.audience, ...parsed.audience },
         audienceLive: { ...fresh.audienceLive, ...parsed.audienceLive },
+        ribbons: { ...fresh.ribbons, ...parsed.ribbons },
+        ribbonsLive: { ...fresh.ribbonsLive, ...parsed.ribbonsLive },
         logo: { ...fresh.logo, ...parsed.logo },
         music: { ...fresh.music, ...parsed.music },
         text: { ...fresh.text, ...parsed.text },

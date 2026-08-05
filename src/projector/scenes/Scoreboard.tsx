@@ -26,6 +26,7 @@ export function Scoreboard() {
   const audienceScore = useAppState((s) => s.audienceLive.score)
   const audienceLabel = useAppState((s) => s.audienceLive.label)
   const audienceVisible = useAppState((s) => s.audienceLive.visible)
+  const ribbons = useAppState((s) => s.ribbonsLive)
   const winner = useAppState((s) => s.lastWinner)
   const revealNonce = useAppState((s) => s.revealNonce)
   const revealPhase = useAppState((s) => s.revealPhase)
@@ -67,13 +68,30 @@ export function Scoreboard() {
       </div>
 
       <footer className="scoreboard__bottom">
-        <span className="ribbon ribbon--home">HOME</span>
-        {audienceVisible && (
-          <span className="audience">
-            {audienceLabel} · {audienceScore}
-          </span>
-        )}
-        <span className="ribbon ribbon--away">AWAY</span>
+        {/* Ribbons follow their team across the halftime side-swap: the label +
+            color are keyed to whichever team sits on that side. Fixed left/center/
+            right slots keep the audience centered even when parts are hidden. */}
+        <span className="ribbon-slot ribbon-slot--left">
+          {ribbons.visible && (
+            <span className={`ribbon ribbon--${leftTeam}`}>
+              {leftTeam === 'blue' ? ribbons.home : ribbons.away}
+            </span>
+          )}
+        </span>
+        <span className="ribbon-slot ribbon-slot--center">
+          {audienceVisible && (
+            <span className="audience">
+              {audienceLabel} · {audienceScore}
+            </span>
+          )}
+        </span>
+        <span className="ribbon-slot ribbon-slot--right">
+          {ribbons.visible && (
+            <span className={`ribbon ribbon--${rightTeam}`}>
+              {rightTeam === 'blue' ? ribbons.home : ribbons.away}
+            </span>
+          )}
+        </span>
       </footer>
 
       {revealPhase === 'finale' && <FinaleOverlay />}

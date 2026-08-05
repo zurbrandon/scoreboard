@@ -21,6 +21,10 @@ export type Command =
   | { type: 'audience.setScore'; value: number }
   | { type: 'audience.setLabel'; label: string }
   | { type: 'audience.setVisible'; visible: boolean }
+  // HOME/AWAY corner labels (home = Blue, away = Red). Staged like the audience.
+  | { type: 'ribbons.setHome'; value: string }
+  | { type: 'ribbons.setAway'; value: string }
+  | { type: 'ribbons.setVisible'; visible: boolean }
   // Match / display.
   | { type: 'half.toggle' }
   | { type: 'half.set'; half: Half }

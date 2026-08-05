@@ -31,7 +31,7 @@ export function OperatorApp() {
   const dispatch = useDispatch()
   const programScene = useAppState((s) => s.scene)
   const half = useAppState((s) => s.half)
-  // Any un-published board change (scores, half, or audience) arms the Reveal.
+  // Any un-published board change (scores, half, audience, or ribbons) arms Reveal.
   const anyDirty = useAppState(
     (s) =>
       s.teams.blue.pendingScore !== s.teams.blue.liveScore ||
@@ -39,7 +39,10 @@ export function OperatorApp() {
       s.half !== s.halfLive ||
       s.audience.score !== s.audienceLive.score ||
       s.audience.label !== s.audienceLive.label ||
-      s.audience.visible !== s.audienceLive.visible,
+      s.audience.visible !== s.audienceLive.visible ||
+      s.ribbons.home !== s.ribbonsLive.home ||
+      s.ribbons.away !== s.ribbonsLive.away ||
+      s.ribbons.visible !== s.ribbonsLive.visible,
   )
 
   const draftLogoId = useAppState((s) => s.logo.draftId)
@@ -183,6 +186,9 @@ function ScoreboardConfig() {
   const audienceScore = useAppState((s) => s.audience.score)
   const audienceLabel = useAppState((s) => s.audience.label)
   const audienceVisible = useAppState((s) => s.audience.visible)
+  const ribbonHome = useAppState((s) => s.ribbons.home)
+  const ribbonAway = useAppState((s) => s.ribbons.away)
+  const ribbonsVisible = useAppState((s) => s.ribbons.visible)
   // Default at the usage site (not in the selector) so useSyncExternalStore
   // still sees a stable reference; loadPersisted guarantees the field exists.
   const musicLibrary = useAppState((s) => s.music.library) ?? []
@@ -216,6 +222,35 @@ function ScoreboardConfig() {
         <TeamControl team={leftTeam} side="left" />
         <TeamControl team={rightTeam} side="right" />
       </div>
+
+      <h3 className="section-head">Custom</h3>
+      <div className="extra ribbons-row">
+        <input
+          className="ribbon-input ribbon-input--blue"
+          value={ribbonHome}
+          placeholder="Home"
+          aria-label="Home label (Blue)"
+          onChange={(e) => dispatch({ type: 'ribbons.setHome', value: e.target.value })}
+        />
+        <input
+          className="ribbon-input ribbon-input--red"
+          value={ribbonAway}
+          placeholder="Away"
+          aria-label="Away label (Red)"
+          onChange={(e) => dispatch({ type: 'ribbons.setAway', value: e.target.value })}
+        />
+        <label className="switch" title={ribbonsVisible ? 'Showing on the board' : 'Hidden'}>
+          <input
+            type="checkbox"
+            checked={ribbonsVisible}
+            onChange={(e) => dispatch({ type: 'ribbons.setVisible', visible: e.target.checked })}
+          />
+          <span className="switch__track">
+            <span className="switch__thumb" />
+          </span>
+        </label>
+      </div>
+
       <div className="extra audience-row">
         <input
           className="audience-label"

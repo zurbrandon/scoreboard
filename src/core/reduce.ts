@@ -37,6 +37,7 @@ function publishBoard(state: AppState): AppState {
     },
     halfLive: state.half,
     audienceLive: { ...state.audience },
+    ribbonsLive: { ...state.ribbons },
     lastWinner: determineWinner(blueLive, redLive),
   }
 }
@@ -69,6 +70,13 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, audience: { ...state.audience, label: command.label } }
     case 'audience.setVisible':
       return { ...state, audience: { ...state.audience, visible: command.visible } }
+
+    case 'ribbons.setHome':
+      return { ...state, ribbons: { ...state.ribbons, home: command.value } }
+    case 'ribbons.setAway':
+      return { ...state, ribbons: { ...state.ribbons, away: command.value } }
+    case 'ribbons.setVisible':
+      return { ...state, ribbons: { ...state.ribbons, visible: command.visible } }
 
     case 'half.toggle':
       return { ...state, half: state.half === 'first' ? 'second' : 'first' }
@@ -213,6 +221,7 @@ export function reduce(state: AppState, command: Command): AppState {
         },
         half: state.halfLive,
         audience: { ...state.audienceLive },
+        ribbons: { ...state.ribbonsLive },
       }
 
     case 'music.setVolume':

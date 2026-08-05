@@ -51,6 +51,8 @@ function loadState(): AppState {
         : 'first'
       // audienceLive supports the new shape and the older flat `audience`.
       const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
+      // ribbonsLive backfills from fresh so older state (no ribbons) can't break.
+      const ribbonsLive = { ...fresh.ribbonsLive, ...(parsed.ribbonsLive ?? parsed.ribbons) }
       // Text: normalize each card to the full template shape (template, quads,
       // liveText), migrate an older single-string text into one card, or fall
       // back to a fresh empty card.
@@ -131,6 +133,8 @@ function loadState(): AppState {
         halfLive: liveHalf,
         audience: audienceLive,
         audienceLive,
+        ribbons: ribbonsLive,
+        ribbonsLive,
         revealPhase: 'idle',
         music: {
           ...fresh.music,

@@ -262,6 +262,23 @@ button { font-family: inherit; cursor: pointer; }
 }
 .audience-label:focus { outline: none; border-color: var(--accent); }
 
+/* Home/Away label inputs — a left color bar hints which team each maps to. */
+.ribbon-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-left-width: 4px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 10px;
+}
+.ribbon-input:focus { outline: none; border-color: var(--accent); }
+.ribbon-input--blue { border-left-color: var(--blue); }
+.ribbon-input--red { border-left-color: var(--red); }
+
 /* Section divider inside a scene config (e.g. "Audio" over the music controls). */
 .section-head {
   margin: 6px 0 -2px;
@@ -830,15 +847,21 @@ button { font-family: inherit; cursor: pointer; }
   transition: transform 0.35s ease; /* eases back to size when the reveal ends */
 }
 
-.scoreboard__bottom { display: flex; align-items: center; justify-content: space-between; gap: 2vw; z-index: 1; }
+.scoreboard__bottom { display: flex; align-items: center; gap: 2vw; z-index: 1; }
+/* Three fixed slots keep the audience centered while the edge ribbons come and
+   go (and swap sides at halftime). */
+.ribbon-slot--left { display: flex; justify-content: flex-start; }
+.ribbon-slot--right { display: flex; justify-content: flex-end; }
+.ribbon-slot--center { flex: 1; text-align: center; }
 .ribbon {
+  display: inline-block;
   font-size: 1.6vw; font-weight: 900; letter-spacing: 0.3em; text-transform: uppercase; color: #fff;
   padding: 0.8vh 3vw;
   clip-path: polygon(7% 0, 100% 0, 93% 100%, 0 100%);
   text-shadow: 0 0.1vw 0.3vw rgba(0, 0, 0, 0.5);
 }
-.ribbon--home { background: linear-gradient(180deg, var(--blue), var(--blue-dim)); }
-.ribbon--away { background: linear-gradient(180deg, var(--red), var(--red-dim)); }
+.ribbon--blue { background: linear-gradient(180deg, var(--blue), var(--blue-dim)); }
+.ribbon--red { background: linear-gradient(180deg, var(--red), var(--red-dim)); }
 .audience { color: #9aa6c4; font-size: 1.5vw; font-weight: 800; letter-spacing: 0.15em; }
 
 /* "Show end" finale takeover */

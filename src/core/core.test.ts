@@ -319,6 +319,26 @@ describe('bumper selection', () => {
   })
 })
 
+describe('home/away ribbons', () => {
+  it('stage like the audience: edits publish only on reveal', () => {
+    let s = run({ type: 'ribbons.setHome', value: 'Chickens' })
+    s = reduce(s, { type: 'ribbons.setAway', value: 'Turkeys' })
+    s = reduce(s, { type: 'ribbons.setVisible', visible: false })
+    // Draft changed; live still the defaults until a reveal.
+    expect(s.ribbons).toEqual({ home: 'Chickens', away: 'Turkeys', visible: false })
+    expect(s.ribbonsLive).toEqual({ home: 'Home', away: 'Away', visible: true })
+    const revealed = reduce(s, { type: 'score.reveal' })
+    expect(revealed.ribbonsLive).toEqual({ home: 'Chickens', away: 'Turkeys', visible: false })
+  })
+
+  it('home follows Blue and away follows Red across the halftime swap', () => {
+    // The ribbon label for a side is chosen by which team sits there, and
+    // teamOnSide flips at the 2nd half — so the labels swap with the teams.
+    expect(teamOnSide('left', 'first')).toBe('blue') // 1st half: Home (Blue) on the left
+    expect(teamOnSide('left', 'second')).toBe('red') // 2nd half: Away (Red) on the left
+  })
+})
+
 describe('formatScore', () => {
   it('shows whole numbers plainly and trims floating-point dust', () => {
     expect(formatScore(4)).toBe('4')
