@@ -122,8 +122,10 @@ function loadRoute(win: BrowserWindow, view: 'operator' | 'projector') {
 function createOperatorWindow() {
   const bounds = settings.operatorBounds
   operatorWin = new BrowserWindow({
-    width: bounds?.width ?? 1280,
-    height: bounds?.height ?? 800,
+    // Narrow column by default so it parks beside the sound program.
+    width: bounds?.width ?? 480,
+    height: bounds?.height ?? 900,
+    minWidth: 380,
     x: bounds?.x,
     y: bounds?.y,
     title: 'Showboard — Operator',

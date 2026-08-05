@@ -1,7 +1,9 @@
-// Application-level keyboard shortcuts (PRD: v1 is app-level only). Each key maps
-// to exactly the same Command the on-screen buttons dispatch — no special-casing.
+// Application-level keyboard shortcuts. Score +/- and half-toggle are plain
+// commands; scene selection and reveal/black go through handlers so the keyboard
+// obeys the same Preview/Program rules as the on-screen deck (selecting a scene
+// only previews it; reveal/black are what actually change the projector).
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Command } from '../core/commands'
 import type { Scene } from '../core/state'
 
@@ -11,40 +13,42 @@ const SCENE_KEYS: Record<string, Scene> = {
   '3': 'theaterLogo',
   '4': 'text',
   '5': 'slideshow',
-  '6': 'black',
 }
 
-export const SHORTCUT_LEGEND = [
-  ['A / Z', 'Blue +/−'],
-  ['K / M', 'Red +/−'],
-  ['Space', 'Reveal'],
-  ['H', 'Swap half'],
-  ['1–6', 'Scenes'],
-] as const
+export interface KeyboardHandlers {
+  selectScene: (scene: Scene) => void
+  reveal: () => void
+  black: () => void
+}
 
-export function useOperatorKeyboard(dispatch: (command: Command) => void) {
+export function useOperatorKeyboard(
+  dispatch: (command: Command) => void,
+  handlers: KeyboardHandlers,
+) {
+  const handlersRef = useRef(handlers)
+  handlersRef.current = handlers
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      // Never hijack typing in a text field (names, score entry, mood).
       const el = e.target as HTMLElement | null
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
 
       const key = e.key.toLowerCase()
-      let command: Command | null = null
+      const h = handlersRef.current
+      let matched = true
 
-      if (key === 'a') command = { type: 'blue.increment' }
-      else if (key === 'z') command = { type: 'blue.decrement' }
-      else if (key === 'k') command = { type: 'red.increment' }
-      else if (key === 'm') command = { type: 'red.decrement' }
-      else if (key === ' ') command = { type: 'score.reveal' }
-      else if (key === 'h') command = { type: 'half.toggle' }
-      else if (SCENE_KEYS[key]) command = { type: 'display.set', scene: SCENE_KEYS[key] }
+      if (key === 'a') dispatch({ type: 'blue.increment' })
+      else if (key === 'z') dispatch({ type: 'blue.decrement' })
+      else if (key === 'k') dispatch({ type: 'red.increment' })
+      else if (key === 'm') dispatch({ type: 'red.decrement' })
+      else if (key === ' ') h.reveal()
+      else if (key === 'h') dispatch({ type: 'half.toggle' })
+      else if (key === 'b') h.black()
+      else if (SCENE_KEYS[key]) h.selectScene(SCENE_KEYS[key])
+      else matched = false
 
-      if (command) {
-        e.preventDefault()
-        dispatch(command)
-      }
+      if (matched) e.preventDefault()
     }
 
     window.addEventListener('keydown', onKeyDown)
