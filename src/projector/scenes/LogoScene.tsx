@@ -1,6 +1,6 @@
-// Full-screen scene for logos / comic / slideshow. Shows a logo image from
+// Full-screen scene for logos / text / slideshow. Shows a logo image from
 // public/logos/ when `file` is given, falling back to the text label if the
-// image is missing (comic/slideshow have no art yet, so they stay text).
+// image is missing (text/slideshow have no art yet, so they stay text).
 
 import { useState } from 'react'
 

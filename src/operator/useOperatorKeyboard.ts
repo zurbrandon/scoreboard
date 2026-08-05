@@ -9,7 +9,7 @@ const SCENE_KEYS: Record<string, Scene> = {
   '1': 'scoreboard',
   '2': 'cszLogo',
   '3': 'theaterLogo',
-  '4': 'comic',
+  '4': 'text',
   '5': 'slideshow',
   '6': 'black',
 }

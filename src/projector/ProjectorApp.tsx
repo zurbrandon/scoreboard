@@ -22,7 +22,7 @@ export function ProjectorApp() {
           file="seattle-comedy-theater.png"
         />
       )}
-      {scene === 'comic' && <LogoScene label="Comic" accent="#8e44ad" />}
+      {scene === 'text' && <LogoScene label="Text" accent="#8e44ad" />}
       {scene === 'slideshow' && <Slideshow />}
       {scene === 'black' && <div className="scene-black" />}
     </div>

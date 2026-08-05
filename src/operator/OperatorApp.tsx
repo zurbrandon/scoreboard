@@ -14,7 +14,7 @@ const SCENES: { scene: Scene; label: string }[] = [
   { scene: 'scoreboard', label: 'Scoreboard' },
   { scene: 'cszLogo', label: 'CSz Logo' },
   { scene: 'theaterLogo', label: 'Theater Logo' },
-  { scene: 'comic', label: 'Comic' },
+  { scene: 'text', label: 'Text' },
   { scene: 'slideshow', label: 'Slideshow' },
   { scene: 'black', label: 'Black' },
 ]

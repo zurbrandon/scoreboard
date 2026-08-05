@@ -9,7 +9,7 @@ export type Scene =
   | 'scoreboard'
   | 'cszLogo'
   | 'theaterLogo'
-  | 'comic'
+  | 'text'
   | 'slideshow'
   | 'black'
 
