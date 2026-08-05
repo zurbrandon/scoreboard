@@ -52,6 +52,7 @@ function loadState(): AppState {
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
         logo: { ...fresh.logo, ...parsed.logo },
         text: { ...fresh.text, ...parsed.text },
+        audience: { ...fresh.audience, ...parsed.audience },
         revealPhase: 'idle',
         music: {
           ...fresh.music,
