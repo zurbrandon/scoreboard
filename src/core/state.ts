@@ -16,6 +16,13 @@ export type Scene =
   | 'black'
 
 export type RevealPhase = 'idle' | 'revealing' | 'finale'
+
+// One clue/message in the Text scene queue.
+export interface TextCard {
+  id: string
+  headline: string
+  body: string
+}
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {
@@ -53,9 +60,14 @@ export interface AppState {
   /** Logo scene selection. draftId is what the operator has picked (preview);
    *  liveId is what the projector shows. Reveal commits draft → live. */
   logo: { draftId: string; liveId: string }
-  /** Text scene content. draft = what the operator is typing (preview); live =
-   *  what the projector shows. Reveal commits draft → live. */
-  text: { draft: string; live: string }
+  /** Text scene: a queue of cards (headline + body) the operator sets up. The
+   *  selected card is published to `live` on Reveal, so you can flip between
+   *  pre-loaded clues quickly. */
+  text: {
+    cards: TextCard[]
+    selectedId: string
+    live: { headline: string; body: string }
+  }
   /** URL loaded in the Slideshow scene (e.g. a published Google Slides embed link). */
   slideshowUrl: string
   revealPhase: RevealPhase
@@ -79,7 +91,11 @@ export function createInitialState(): AppState {
     halfLive: 'first',
     scene: 'scoreboard',
     logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
-    text: { draft: '', live: '' },
+    text: {
+      cards: [{ id: 'card-1', headline: '', body: '' }],
+      selectedId: 'card-1',
+      live: { headline: '', body: '' },
+    },
     slideshowUrl: '',
     revealPhase: 'idle',
     lastWinner: null,

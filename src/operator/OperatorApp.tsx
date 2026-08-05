@@ -44,8 +44,10 @@ export function OperatorApp() {
 
   const draftLogoId = useAppState((s) => s.logo.draftId)
   const liveLogoId = useAppState((s) => s.logo.liveId)
-  const draftText = useAppState((s) => s.text.draft)
-  const liveText = useAppState((s) => s.text.live)
+  const textDirty = useAppState((s) => {
+    const card = s.text.cards.find((c) => c.id === s.text.selectedId)
+    return !card || card.headline !== s.text.live.headline || card.body !== s.text.live.body
+  })
 
   // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
   const [activeTab, setActiveTab] = useState<Scene>(
@@ -87,7 +89,7 @@ export function OperatorApp() {
       : activeTab === 'logo'
         ? programScene !== 'logo' || draftLogoId !== liveLogoId
         : activeTab === 'text'
-          ? programScene !== 'text' || draftText !== liveText
+          ? programScene !== 'text' || textDirty
           : programScene !== activeTab
 
   return (
@@ -242,21 +244,60 @@ function LogoConfig() {
 
 function TextConfig() {
   const dispatch = useDispatch()
-  const draft = useAppState((s) => s.text.draft)
-  const live = useAppState((s) => s.text.live)
+  const cards = useAppState((s) => s.text.cards)
+  const selectedId = useAppState((s) => s.text.selectedId)
+
   return (
-    <div className="config-block">
-      <span className="config-block__label">On-screen text</span>
-      <textarea
-        className="text-input"
-        rows={4}
-        placeholder="Type what should show on the projector…"
-        value={draft}
-        onChange={(e) => dispatch({ type: 'text.setDraft', value: e.target.value })}
-      />
-      <span className="music-panel__status">
-        {draft === live ? 'Showing this when the text scene is on air.' : 'Press Reveal to push your changes.'}
-      </span>
+    <div className="cards">
+      {cards.map((card) => (
+        <div
+          key={card.id}
+          className={`text-card ${card.id === selectedId ? 'text-card--active' : ''}`}
+          onClick={() => dispatch({ type: 'text.selectCard', id: card.id })}
+        >
+          <input
+            className="text-card__headline"
+            value={card.headline}
+            placeholder="Headline (e.g. Skiing)"
+            aria-label="Card headline"
+            onChange={(e) =>
+              dispatch({ type: 'text.setCardHeadline', id: card.id, value: e.target.value })
+            }
+          />
+          <input
+            className="text-card__body"
+            value={card.body}
+            placeholder="Body (e.g. but with pizza sauce)"
+            aria-label="Card body"
+            onChange={(e) =>
+              dispatch({ type: 'text.setCardBody', id: card.id, value: e.target.value })
+            }
+          />
+          {cards.length > 1 && (
+            <button
+              className="text-card__remove"
+              aria-label="Remove card"
+              onClick={(e) => {
+                e.stopPropagation()
+                dispatch({ type: 'text.removeCard', id: card.id })
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        className="add-card"
+        onClick={() =>
+          dispatch({
+            type: 'text.addCard',
+            id: `card-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+          })
+        }
+      >
+        + Add card
+      </button>
     </div>
   )
 }

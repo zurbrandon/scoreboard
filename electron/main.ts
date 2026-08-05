@@ -51,12 +51,33 @@ function loadState(): AppState {
         : 'first'
       // audienceLive supports the new shape and the older flat `audience`.
       const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
+      // Text: use the card shape if present; migrate an older single-string text
+      // into one card; otherwise fall back to a fresh empty card.
+      const pt = parsed.text
+      const text =
+        pt && Array.isArray(pt.cards) && pt.cards.length
+          ? {
+              cards: pt.cards.map((c: { id?: unknown; headline?: unknown; body?: unknown }) => ({
+                id: String(c.id ?? `card-${Math.random().toString(36).slice(2, 8)}`),
+                headline: String(c.headline ?? ''),
+                body: String(c.body ?? ''),
+              })),
+              selectedId: String(pt.selectedId ?? pt.cards[0].id),
+              live: { headline: String(pt.live?.headline ?? ''), body: String(pt.live?.body ?? '') },
+            }
+          : pt && typeof pt.live === 'string'
+            ? {
+                cards: [{ id: 'card-1', headline: String(pt.live || pt.draft || ''), body: '' }],
+                selectedId: 'card-1',
+                live: { headline: String(pt.live || ''), body: '' },
+              }
+            : fresh.text
       return {
         ...fresh,
         ...parsed,
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
         logo: { ...fresh.logo, ...parsed.logo },
-        text: { ...fresh.text, ...parsed.text },
+        text,
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.
         teams: {

@@ -82,10 +82,54 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'logo.commit':
       return { ...state, logo: { ...state.logo, liveId: state.logo.draftId } }
 
-    case 'text.setDraft':
-      return { ...state, text: { ...state.text, draft: command.value } }
-    case 'text.commit':
-      return { ...state, text: { ...state.text, live: state.text.draft } }
+    case 'text.addCard':
+      return {
+        ...state,
+        text: {
+          ...state.text,
+          cards: [...state.text.cards, { id: command.id, headline: '', body: '' }],
+          selectedId: command.id,
+        },
+      }
+    case 'text.removeCard': {
+      if (state.text.cards.length <= 1) return state // always keep one
+      const cards = state.text.cards.filter((c) => c.id !== command.id)
+      const selectedId =
+        state.text.selectedId === command.id ? cards[0].id : state.text.selectedId
+      return { ...state, text: { ...state.text, cards, selectedId } }
+    }
+    case 'text.selectCard':
+      return { ...state, text: { ...state.text, selectedId: command.id } }
+    case 'text.setCardHeadline':
+      return {
+        ...state,
+        text: {
+          ...state.text,
+          cards: state.text.cards.map((c) =>
+            c.id === command.id ? { ...c, headline: command.value } : c,
+          ),
+        },
+      }
+    case 'text.setCardBody':
+      return {
+        ...state,
+        text: {
+          ...state.text,
+          cards: state.text.cards.map((c) =>
+            c.id === command.id ? { ...c, body: command.value } : c,
+          ),
+        },
+      }
+    case 'text.commit': {
+      const card = state.text.cards.find((c) => c.id === state.text.selectedId)
+      return {
+        ...state,
+        text: {
+          ...state.text,
+          live: { headline: card?.headline ?? '', body: card?.body ?? '' },
+        },
+      }
+    }
 
     case 'slideshow.setUrl':
       return { ...state, slideshowUrl: command.url }

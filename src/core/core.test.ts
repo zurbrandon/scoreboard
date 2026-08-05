@@ -118,12 +118,39 @@ describe('scoring details', () => {
     expect(s2.logo.liveId).toBe('theater')
   })
 
-  it('text draft stages; commit makes it live', () => {
-    const s = run({ type: 'text.setDraft', value: 'Next up: The Improvisors' })
-    expect(s.text.draft).toBe('Next up: The Improvisors')
-    expect(s.text.live).toBe('') // not shown until committed
-    const s2 = reduce(s, { type: 'text.commit' })
-    expect(s2.text.live).toBe('Next up: The Improvisors')
+  it('text: editing a card stages; commit publishes the selected card', () => {
+    // Fill in the default card, then commit — live shows headline + body.
+    let s = run({ type: 'text.setCardHeadline', id: 'card-1', value: 'Skiing' })
+    s = reduce(s, { type: 'text.setCardBody', id: 'card-1', value: 'but with pizza sauce' })
+    expect(s.text.cards[0]).toMatchObject({ headline: 'Skiing', body: 'but with pizza sauce' })
+    expect(s.text.live).toEqual({ headline: '', body: '' }) // not shown until committed
+    const committed = reduce(s, { type: 'text.commit' })
+    expect(committed.text.live).toEqual({ headline: 'Skiing', body: 'but with pizza sauce' })
+  })
+
+  it('text: add / select / remove cards; commit follows the selection', () => {
+    // Give card-1 content, add a second card (auto-selected), give it content.
+    let s = run({ type: 'text.setCardHeadline', id: 'card-1', value: 'First' })
+    s = reduce(s, { type: 'text.addCard', id: 'card-2' })
+    expect(s.text.cards).toHaveLength(2)
+    expect(s.text.selectedId).toBe('card-2') // adding selects the new card
+    s = reduce(s, { type: 'text.setCardHeadline', id: 'card-2', value: 'Second' })
+
+    // Committing publishes the selected (second) card.
+    expect(reduce(s, { type: 'text.commit' }).text.live.headline).toBe('Second')
+
+    // Select back to the first, commit publishes it instead.
+    s = reduce(s, { type: 'text.selectCard', id: 'card-1' })
+    expect(reduce(s, { type: 'text.commit' }).text.live.headline).toBe('First')
+
+    // Removing the selected card falls back to the remaining one.
+    s = reduce(s, { type: 'text.removeCard', id: 'card-1' })
+    expect(s.text.cards).toHaveLength(1)
+    expect(s.text.selectedId).toBe('card-2')
+
+    // The last card can't be removed — always keep one.
+    const after = reduce(s, { type: 'text.removeCard', id: 'card-2' })
+    expect(after.text.cards).toHaveLength(1)
   })
 
   it('stores the slideshow URL', () => {

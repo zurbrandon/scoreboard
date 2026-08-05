@@ -26,8 +26,12 @@ export type Command =
   | { type: 'display.set'; scene: Scene }
   | { type: 'logo.select'; id: string } // preview a logo (draft)
   | { type: 'logo.commit' } // make the drafted logo live
-  | { type: 'text.setDraft'; value: string } // edit the text scene's draft
-  | { type: 'text.commit' } // make the drafted text live
+  | { type: 'text.addCard'; id: string } // append a new (empty) card and select it
+  | { type: 'text.removeCard'; id: string }
+  | { type: 'text.selectCard'; id: string }
+  | { type: 'text.setCardHeadline'; id: string; value: string }
+  | { type: 'text.setCardBody'; id: string; value: string }
+  | { type: 'text.commit' } // publish the selected card to the live text
   | { type: 'slideshow.setUrl'; url: string }
   // The main event.
   | { type: 'score.reveal' }
