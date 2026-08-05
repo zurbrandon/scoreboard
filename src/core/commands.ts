@@ -2,7 +2,7 @@
 // — becomes one of these commands. Business logic executes commands and never
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
-import type { Half, Scene, TeamId } from './state'
+import type { Half, Scene, TeamId, TextTemplate } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -29,9 +29,10 @@ export type Command =
   | { type: 'text.addCard'; id: string } // append a new (empty) card and select it
   | { type: 'text.removeCard'; id: string }
   | { type: 'text.selectCard'; id: string }
-  | { type: 'text.setCardHeadline'; id: string; value: string }
-  | { type: 'text.setCardBody'; id: string; value: string }
-  | { type: 'text.commit' } // publish the selected card to the live text
+  | { type: 'text.setTemplate'; id: string; template: TextTemplate }
+  | { type: 'text.setField'; id: string; field: 'headline' | 'body' | 'liveText'; value: string }
+  | { type: 'text.setQuad'; id: string; index: number; value: string } // index 0..3 (TL,TR,BL,BR)
+  | { type: 'text.commit' } // publish the selected card to the live snapshot
   | { type: 'slideshow.setUrl'; url: string }
   // The main event.
   | { type: 'score.reveal' }

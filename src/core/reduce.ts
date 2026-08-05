@@ -4,6 +4,7 @@
 
 import type { Command } from './commands'
 import type { AppState, TeamId, TeamState } from './state'
+import { emptyTextCard } from './state'
 import { determineWinner } from './winner'
 
 function setTeam(
@@ -87,7 +88,7 @@ export function reduce(state: AppState, command: Command): AppState {
         ...state,
         text: {
           ...state.text,
-          cards: [...state.text.cards, { id: command.id, headline: '', body: '' }],
+          cards: [...state.text.cards, emptyTextCard(command.id)],
           selectedId: command.id,
         },
       }
@@ -100,33 +101,54 @@ export function reduce(state: AppState, command: Command): AppState {
     }
     case 'text.selectCard':
       return { ...state, text: { ...state.text, selectedId: command.id } }
-    case 'text.setCardHeadline':
+    case 'text.setTemplate':
       return {
         ...state,
         text: {
           ...state.text,
           cards: state.text.cards.map((c) =>
-            c.id === command.id ? { ...c, headline: command.value } : c,
+            c.id === command.id ? { ...c, template: command.template } : c,
           ),
         },
       }
-    case 'text.setCardBody':
+    case 'text.setField':
       return {
         ...state,
         text: {
           ...state.text,
           cards: state.text.cards.map((c) =>
-            c.id === command.id ? { ...c, body: command.value } : c,
+            c.id === command.id ? { ...c, [command.field]: command.value } : c,
           ),
+        },
+      }
+    case 'text.setQuad':
+      return {
+        ...state,
+        text: {
+          ...state.text,
+          cards: state.text.cards.map((c) => {
+            if (c.id !== command.id) return c
+            const quads = [...c.quads] as [string, string, string, string]
+            quads[command.index] = command.value
+            return { ...c, quads }
+          }),
         },
       }
     case 'text.commit': {
-      const card = state.text.cards.find((c) => c.id === state.text.selectedId)
+      const c = state.text.cards.find((card) => card.id === state.text.selectedId)
+      if (!c) return state
       return {
         ...state,
         text: {
           ...state.text,
-          live: { headline: card?.headline ?? '', body: card?.body ?? '' },
+          live: {
+            cardId: c.id,
+            template: c.template,
+            headline: c.headline,
+            body: c.body,
+            quads: c.quads,
+            liveText: c.liveText,
+          },
         },
       }
     }

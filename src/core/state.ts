@@ -17,12 +17,40 @@ export type Scene =
 
 export type RevealPhase = 'idle' | 'revealing' | 'finale'
 
-// One clue/message in the Text scene queue.
+// Each Text card renders with one of these templates on the projector:
+//  - basic:     a headline + body line (the default)
+//  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
+//  - live:      one big box that mirrors the operator's typing in real time once on air
+export type TextTemplate = 'basic' | 'quadrants' | 'live'
+
+// One clue/message in the Text scene queue. Every card carries the fields for
+// all templates; only the ones its `template` uses are rendered.
 export interface TextCard {
   id: string
+  template: TextTemplate
   headline: string
   body: string
+  /** [top-left, top-right, bottom-left, bottom-right] — quadrants template. */
+  quads: [string, string, string, string]
+  /** Free text mirrored live — live template. */
+  liveText: string
 }
+
+// What the projector currently shows: a snapshot of the published card plus the
+// id it came from (so the operator knows which card is on air for live typing).
+export interface TextLive {
+  cardId: string
+  template: TextTemplate
+  headline: string
+  body: string
+  quads: [string, string, string, string]
+  liveText: string
+}
+
+export function emptyTextCard(id: string, template: TextTemplate = 'basic'): TextCard {
+  return { id, template, headline: '', body: '', quads: ['', '', '', ''], liveText: '' }
+}
+
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {
@@ -66,7 +94,7 @@ export interface AppState {
   text: {
     cards: TextCard[]
     selectedId: string
-    live: { headline: string; body: string }
+    live: TextLive
   }
   /** URL loaded in the Slideshow scene (e.g. a published Google Slides embed link). */
   slideshowUrl: string
@@ -92,9 +120,9 @@ export function createInitialState(): AppState {
     scene: 'scoreboard',
     logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
     text: {
-      cards: [{ id: 'card-1', headline: '', body: '' }],
+      cards: [emptyTextCard('card-1')],
       selectedId: 'card-1',
-      live: { headline: '', body: '' },
+      live: { cardId: '', template: 'basic', headline: '', body: '', quads: ['', '', '', ''], liveText: '' },
     },
     slideshowUrl: '',
     revealPhase: 'idle',

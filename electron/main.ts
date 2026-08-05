@@ -51,25 +51,47 @@ function loadState(): AppState {
         : 'first'
       // audienceLive supports the new shape and the older flat `audience`.
       const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
-      // Text: use the card shape if present; migrate an older single-string text
-      // into one card; otherwise fall back to a fresh empty card.
+      // Text: normalize each card to the full template shape (template, quads,
+      // liveText), migrate an older single-string text into one card, or fall
+      // back to a fresh empty card.
+      const TEMPLATES = ['basic', 'quadrants', 'live']
+      const template = (v: unknown) => (TEMPLATES.includes(String(v)) ? String(v) : 'basic')
+      const quads = (v: unknown) => {
+        const a = Array.isArray(v) ? v : []
+        return [String(a[0] ?? ''), String(a[1] ?? ''), String(a[2] ?? ''), String(a[3] ?? '')]
+      }
       const pt = parsed.text
+      const emptyLive = { cardId: '', template: 'basic', headline: '', body: '', quads: quads(null), liveText: '' }
       const text =
         pt && Array.isArray(pt.cards) && pt.cards.length
           ? {
-              cards: pt.cards.map((c: { id?: unknown; headline?: unknown; body?: unknown }) => ({
+              cards: pt.cards.map((c: Record<string, unknown>) => ({
                 id: String(c.id ?? `card-${Math.random().toString(36).slice(2, 8)}`),
+                template: template(c.template),
                 headline: String(c.headline ?? ''),
                 body: String(c.body ?? ''),
+                quads: quads(c.quads),
+                liveText: String(c.liveText ?? ''),
               })),
               selectedId: String(pt.selectedId ?? pt.cards[0].id),
-              live: { headline: String(pt.live?.headline ?? ''), body: String(pt.live?.body ?? '') },
+              live: pt.live
+                ? {
+                    cardId: String(pt.live.cardId ?? ''),
+                    template: template(pt.live.template),
+                    headline: String(pt.live.headline ?? ''),
+                    body: String(pt.live.body ?? ''),
+                    quads: quads(pt.live.quads),
+                    liveText: String(pt.live.liveText ?? ''),
+                  }
+                : emptyLive,
             }
           : pt && typeof pt.live === 'string'
             ? {
-                cards: [{ id: 'card-1', headline: String(pt.live || pt.draft || ''), body: '' }],
+                cards: [
+                  { id: 'card-1', template: 'basic', headline: String(pt.live || pt.draft || ''), body: '', quads: quads(null), liveText: '' },
+                ],
                 selectedId: 'card-1',
-                live: { headline: String(pt.live || ''), body: '' },
+                live: { ...emptyLive, headline: String(pt.live || '') },
               }
             : fresh.text
       return {

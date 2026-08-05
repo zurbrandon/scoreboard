@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { Scene } from '../core/state'
+import type { Scene, TextTemplate } from '../core/state'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
@@ -45,8 +45,17 @@ export function OperatorApp() {
   const draftLogoId = useAppState((s) => s.logo.draftId)
   const liveLogoId = useAppState((s) => s.logo.liveId)
   const textDirty = useAppState((s) => {
-    const card = s.text.cards.find((c) => c.id === s.text.selectedId)
-    return !card || card.headline !== s.text.live.headline || card.body !== s.text.live.body
+    const c = s.text.cards.find((card) => card.id === s.text.selectedId)
+    if (!c) return true
+    const L = s.text.live
+    return (
+      c.id !== L.cardId ||
+      c.template !== L.template ||
+      c.headline !== L.headline ||
+      c.body !== L.body ||
+      c.liveText !== L.liveText ||
+      c.quads.some((q, i) => q !== L.quads[i])
+    )
   })
 
   // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
@@ -242,53 +251,133 @@ function LogoConfig() {
   )
 }
 
+const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
+  { value: 'basic', label: 'Headline + body' },
+  { value: 'quadrants', label: 'Four quadrants' },
+  { value: 'live', label: 'Live typing' },
+]
+
 function TextConfig() {
   const dispatch = useDispatch()
   const cards = useAppState((s) => s.text.cards)
   const selectedId = useAppState((s) => s.text.selectedId)
+  // A live-template card mirrors keystrokes to the projector, but only once it's
+  // the card that's actually on air (Text scene showing, and this card revealed).
+  const programScene = useAppState((s) => s.scene)
+  const liveCardId = useAppState((s) => s.text.live.cardId)
 
   return (
     <div className="cards">
-      {cards.map((card) => (
-        <div
-          key={card.id}
-          className={`text-card ${card.id === selectedId ? 'text-card--active' : ''}`}
-          onClick={() => dispatch({ type: 'text.selectCard', id: card.id })}
-        >
-          <textarea
-            className="text-card__headline"
-            value={card.headline}
-            placeholder="Headline (e.g. Skiing)"
-            aria-label="Card headline"
-            rows={1}
-            onChange={(e) =>
-              dispatch({ type: 'text.setCardHeadline', id: card.id, value: e.target.value })
-            }
-          />
-          <textarea
-            className="text-card__body"
-            value={card.body}
-            placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
-            aria-label="Card body"
-            rows={1}
-            onChange={(e) =>
-              dispatch({ type: 'text.setCardBody', id: card.id, value: e.target.value })
-            }
-          />
-          {cards.length > 1 && (
-            <button
-              className="text-card__remove"
-              aria-label="Remove card"
-              onClick={(e) => {
-                e.stopPropagation()
-                dispatch({ type: 'text.removeCard', id: card.id })
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      ))}
+      {cards.map((card) => {
+        const isOnAir = programScene === 'text' && liveCardId === card.id
+        // For a live card that's on air, republish on every keystroke.
+        const setField = (field: 'headline' | 'body' | 'liveText', value: string) => {
+          dispatch({ type: 'text.setField', id: card.id, field, value })
+          if (card.template === 'live' && isOnAir) dispatch({ type: 'text.commit' })
+        }
+        return (
+          <div
+            key={card.id}
+            className={`text-card ${card.id === selectedId ? 'text-card--active' : ''}`}
+            onClick={() => dispatch({ type: 'text.selectCard', id: card.id })}
+          >
+            <div className="text-card__head">
+              <select
+                className="text-card__template"
+                value={card.template}
+                aria-label="Card template"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'text.setTemplate',
+                    id: card.id,
+                    template: e.target.value as TextTemplate,
+                  })
+                }
+              >
+                {TEMPLATE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              {card.template === 'live' && isOnAir && (
+                <span className="text-card__livebadge">● LIVE</span>
+              )}
+              {cards.length > 1 && (
+                <button
+                  className="text-card__remove"
+                  aria-label="Remove card"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    dispatch({ type: 'text.removeCard', id: card.id })
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {card.template === 'basic' && (
+              <>
+                <textarea
+                  className="text-card__headline"
+                  value={card.headline}
+                  placeholder="Headline (e.g. Skiing)"
+                  aria-label="Card headline"
+                  rows={1}
+                  onChange={(e) => setField('headline', e.target.value)}
+                />
+                <textarea
+                  className="text-card__body"
+                  value={card.body}
+                  placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
+                  aria-label="Card body"
+                  rows={1}
+                  onChange={(e) => setField('body', e.target.value)}
+                />
+              </>
+            )}
+
+            {card.template === 'quadrants' && (
+              <div className="quad-inputs">
+                {(['Top left', 'Top right', 'Bottom left', 'Bottom right'] as const).map(
+                  (label, i) => (
+                    <input
+                      key={i}
+                      className="text-card__quad"
+                      value={card.quads[i]}
+                      placeholder={label}
+                      aria-label={label}
+                      onChange={(e) =>
+                        dispatch({ type: 'text.setQuad', id: card.id, index: i, value: e.target.value })
+                      }
+                    />
+                  ),
+                )}
+              </div>
+            )}
+
+            {card.template === 'live' && (
+              <>
+                <textarea
+                  className="text-card__live"
+                  value={card.liveText}
+                  placeholder="Type here — goes straight to the screen once revealed"
+                  aria-label="Live text"
+                  rows={2}
+                  onChange={(e) => setField('liveText', e.target.value)}
+                />
+                <span className="text-card__hint">
+                  {isOnAir
+                    ? 'Live — every keystroke shows on the projector.'
+                    : 'Press Reveal to go on air, then it types live.'}
+                </span>
+              </>
+            )}
+          </div>
+        )
+      })}
       <button
         className="add-card"
         onClick={() =>

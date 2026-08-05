@@ -120,21 +120,44 @@ describe('scoring details', () => {
 
   it('text: editing a card stages; commit publishes the selected card', () => {
     // Fill in the default card, then commit — live shows headline + body.
-    let s = run({ type: 'text.setCardHeadline', id: 'card-1', value: 'Skiing' })
-    s = reduce(s, { type: 'text.setCardBody', id: 'card-1', value: 'but with pizza sauce' })
+    let s = run({ type: 'text.setField', id: 'card-1', field: 'headline', value: 'Skiing' })
+    s = reduce(s, { type: 'text.setField', id: 'card-1', field: 'body', value: 'but with pizza sauce' })
     expect(s.text.cards[0]).toMatchObject({ headline: 'Skiing', body: 'but with pizza sauce' })
-    expect(s.text.live).toEqual({ headline: '', body: '' }) // not shown until committed
+    expect(s.text.live.headline).toBe('') // not shown until committed
     const committed = reduce(s, { type: 'text.commit' })
-    expect(committed.text.live).toEqual({ headline: 'Skiing', body: 'but with pizza sauce' })
+    expect(committed.text.live).toMatchObject({
+      cardId: 'card-1',
+      template: 'basic',
+      headline: 'Skiing',
+      body: 'but with pizza sauce',
+    })
+  })
+
+  it('text: quadrants and live templates commit their own fields', () => {
+    // Quadrants: four words land in the grid and publish on commit.
+    let s = run({ type: 'text.setTemplate', id: 'card-1', template: 'quadrants' })
+    s = reduce(s, { type: 'text.setQuad', id: 'card-1', index: 0, value: 'TL' })
+    s = reduce(s, { type: 'text.setQuad', id: 'card-1', index: 3, value: 'BR' })
+    const q = reduce(s, { type: 'text.commit' }).text.live
+    expect(q.template).toBe('quadrants')
+    expect(q.quads).toEqual(['TL', '', '', 'BR'])
+
+    // Live: liveText publishes; commit snapshots it (the operator re-commits per keystroke).
+    let l = run({ type: 'text.setTemplate', id: 'card-1', template: 'live' })
+    l = reduce(l, { type: 'text.setField', id: 'card-1', field: 'liveText', value: 'guess this' })
+    expect(reduce(l, { type: 'text.commit' }).text.live).toMatchObject({
+      template: 'live',
+      liveText: 'guess this',
+    })
   })
 
   it('text: add / select / remove cards; commit follows the selection', () => {
     // Give card-1 content, add a second card (auto-selected), give it content.
-    let s = run({ type: 'text.setCardHeadline', id: 'card-1', value: 'First' })
+    let s = run({ type: 'text.setField', id: 'card-1', field: 'headline', value: 'First' })
     s = reduce(s, { type: 'text.addCard', id: 'card-2' })
     expect(s.text.cards).toHaveLength(2)
     expect(s.text.selectedId).toBe('card-2') // adding selects the new card
-    s = reduce(s, { type: 'text.setCardHeadline', id: 'card-2', value: 'Second' })
+    s = reduce(s, { type: 'text.setField', id: 'card-2', field: 'headline', value: 'Second' })
 
     // Committing publishes the selected (second) card.
     expect(reduce(s, { type: 'text.commit' }).text.live.headline).toBe('Second')
