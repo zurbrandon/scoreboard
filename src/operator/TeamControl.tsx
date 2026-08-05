@@ -2,24 +2,11 @@
 // Edits always target PENDING; live is shown for reference. The panel is placed
 // by side so the operator mirrors the audience.
 
+import { useEffect, useRef, useState } from 'react'
+import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react'
 import { useAppState, useDispatch } from '../store/react'
 import type { Side } from '../core/sides'
 import type { TeamId } from '../core/state'
-
-// Keep only the last emoji/grapheme the OS picker inserted, so the mood is a
-// single symbol even if the field ends up with more than one character.
-function lastGrapheme(raw: string): string {
-  if (!raw) return ''
-  try {
-    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-    const parts = [...seg.segment(raw)].map((s) => s.segment)
-    return parts[parts.length - 1] ?? ''
-  } catch {
-    // Older engines without Intl.Segmenter: fall back to code-point split.
-    const cps = [...raw]
-    return cps[cps.length - 1] ?? ''
-  }
-}
 
 export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   const dispatch = useDispatch()
@@ -78,33 +65,67 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   )
 }
 
-// A single-emoji field. Focusing it and hitting the OS emoji shortcut
-// (⌘⌃Space on macOS, Win + . on Windows) opens the system emoji picker, so the
-// operator has every emoji instead of a fixed handful.
+// Click the swatch to open a full emoji picker (search + all emoji). Rendered
+// with EmojiStyle.NATIVE so it draws the system font — no network, which keeps
+// it working offline in the booth.
 function MoodBox({ team }: { team: TeamId }) {
   const dispatch = useDispatch()
   const mood = useAppState((s) => s.teams[team].mood)
+  const [open, setOpen] = useState(false)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // Close on click-outside or Escape.
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
-    <div className="moodbox">
-      <input
-        className="moodbox__input"
-        value={mood}
-        placeholder="＋"
-        aria-label={`${team} mood emoji`}
-        title="Click, then open your emoji picker (⌘⌃Space on Mac, Win + . on Windows)"
-        onChange={(e) => dispatch({ type: 'team.setMood', team, mood: lastGrapheme(e.target.value) })}
-      />
-      {mood && (
+    <div className="moodbox" ref={boxRef}>
+      <button
+        className="moodbox__btn"
+        aria-label={`${team} mood`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {mood || <span className="moodbox__empty">＋</span>}
+      </button>
+      {mood && !open && (
         <button
           className="moodbox__clear"
           aria-label="Clear mood"
-          // Keep focus off the button so a click doesn't steal it from the field.
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => dispatch({ type: 'team.setMood', team, mood: '' })}
+          onClick={(e) => {
+            e.stopPropagation()
+            dispatch({ type: 'team.setMood', team, mood: '' })
+          }}
         >
           ✕
         </button>
+      )}
+      {open && (
+        <div className={`moodbox__pop moodbox__pop--${team}`}>
+          <EmojiPicker
+            onEmojiClick={(data) => {
+              dispatch({ type: 'team.setMood', team, mood: data.emoji })
+              setOpen(false)
+            }}
+            emojiStyle={EmojiStyle.NATIVE}
+            theme={Theme.DARK}
+            lazyLoadEmojis
+            skinTonesDisabled
+            previewConfig={{ showPreview: false }}
+            width={300}
+            height={380}
+          />
+        </div>
       )}
     </div>
   )
