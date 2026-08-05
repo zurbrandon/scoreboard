@@ -42,9 +42,16 @@ function loadState(): AppState {
     const parsed = JSON.parse(readFileSync(stateFile(), 'utf-8'))
     if (parsed?.teams?.blue && parsed?.teams?.red) {
       // Restore persisted values but reset anything transient / not reloadable.
+      // Nested objects fall back to fresh defaults so state written by an older
+      // build (missing logo/text) can't leave the renderer with undefined fields,
+      // and an unknown scene id resets to the scoreboard.
+      const KNOWN_SCENES = ['scoreboard', 'logo', 'text', 'slideshow', 'black']
       return {
         ...fresh,
         ...parsed,
+        scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
+        logo: { ...fresh.logo, ...parsed.logo },
+        text: { ...fresh.text, ...parsed.text },
         revealPhase: 'idle',
         music: {
           ...fresh.music,
