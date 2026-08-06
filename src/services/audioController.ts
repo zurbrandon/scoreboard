@@ -18,6 +18,8 @@ export interface LoadedTrack extends BumperTrack {
 export interface AudioController {
   /** Replace the bumper library. Sources are normalized to {id, name, url}. */
   setTracks(tracks: LoadedTrack[]): void
+  /** Set (or clear) the custom Final-score drum roll. null → fall back to a bumper. */
+  setDrumroll(track: LoadedTrack | null): void
   /** Sound-check: play a random bumper now, without a reveal. */
   test(): void
   /** Stop any current playback. */
@@ -32,8 +34,10 @@ const FADE_MS = 3000 // slow fade to silence over this long
 
 export function createAudioController(store: Store): AudioController {
   let tracks: LoadedTrack[] = []
+  let drumroll: LoadedTrack | null = null
   let audio: HTMLAudioElement | null = null
   let lastNonce = store.getState().revealNonce
+  let lastFinaleNonce = store.getState().finaleNonce
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -118,8 +122,35 @@ export function createAudioController(store: Store): AudioController {
     }
   }
 
+  // The Final-score drum roll — the custom upload, or any bumper as a stand-in.
+  function playDrumroll(): void {
+    const { music } = store.getState()
+    if (!music.enabled) return
+    const track = drumroll ?? pickBumper(tracks, music.lastTrackId, Math.random)
+    if (!track) return
+    try {
+      clearFade()
+      releaseAudio()
+      fadeGain = 1
+      audio = new Audio(track.url)
+      applyVolume()
+      void audio.play().catch((err) => {
+        console.warn('[audio] drum roll failed; continuing show:', err)
+      })
+      scheduleFade()
+    } catch (err) {
+      console.warn('[audio] could not start drum roll; continuing show:', err)
+    }
+  }
+
   const unsubscribe = store.subscribe(() => {
     const s = store.getState()
+    // Final score started → drum roll. The celebration bumper comes later, when
+    // revealNonce bumps at the 'celebrate' step (handled below).
+    if (s.finaleNonce !== lastFinaleNonce) {
+      lastFinaleNonce = s.finaleNonce
+      playDrumroll()
+    }
     if (s.revealNonce !== lastNonce) {
       lastNonce = s.revealNonce
       playBumper(true)
@@ -139,6 +170,10 @@ export function createAudioController(store: Store): AudioController {
         type: 'music.setLibrary',
         tracks: tracks.map(({ id, name }) => ({ id, name })),
       })
+    },
+    setDrumroll(track) {
+      if (drumroll) URL.revokeObjectURL(drumroll.url) // no-op for sbmedia:// URLs
+      drumroll = track
     },
     test() {
       playBumper(false)

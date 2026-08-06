@@ -195,16 +195,34 @@ export function reduce(state: AppState, command: Command): AppState {
     }
 
     case 'score.reveal':
-      // Publish the whole board, then run the reveal ceremony. At the 'end'
-      // phase Reveal is the finale (bigger winner celebration).
-      return {
-        ...publishBoard(state),
-        revealPhase: state.half === 'end' ? 'finale' : 'revealing',
-        revealNonce: state.revealNonce + 1,
-      }
+      // Publish the whole board, then run the reveal ceremony. The Final-score
+      // phase ('end') starts a timed sequence: bump finaleNonce (drum roll) and
+      // enter 'tabulating' — the celebration bumper + confetti wait for the
+      // 'celebrate' step, so revealNonce is NOT bumped here.
+      return state.half === 'end'
+        ? {
+            ...publishBoard(state),
+            revealPhase: 'finale',
+            finaleStage: 'tabulating',
+            countdown: 0,
+            finaleNonce: state.finaleNonce + 1,
+          }
+        : {
+            ...publishBoard(state),
+            revealPhase: 'revealing',
+            revealNonce: state.revealNonce + 1,
+          }
+
+    case 'finale.countdown':
+      return { ...state, finaleStage: 'countdown', countdown: command.value }
+
+    case 'finale.celebrate':
+      // Winner takeover. Bumping revealNonce now fires the confetti, emoji rain,
+      // and the high-energy bumper — the exact celebration a normal reveal uses.
+      return { ...state, finaleStage: 'celebrate', revealNonce: state.revealNonce + 1 }
 
     case 'reveal.finish':
-      return { ...state, revealPhase: 'idle' }
+      return { ...state, revealPhase: 'idle', finaleStage: 'idle', countdown: 0 }
 
     case 'score.commitSilent':
       // Publish the board with no ceremony — no revealNonce/revealPhase change,

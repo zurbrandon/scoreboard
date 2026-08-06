@@ -18,6 +18,11 @@ export type Scene =
 
 export type RevealPhase = 'idle' | 'revealing' | 'finale'
 
+// The Final-score reveal is a timed sequence rather than a single moment:
+//   tabulating → countdown (3·2·1) → celebrate (winner takeover).
+// Only meaningful while revealPhase === 'finale'.
+export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
+
 // Each Text card renders with one of these templates on the projector:
 //  - basic:     a headline + body line (the default)
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
@@ -127,11 +132,18 @@ export interface AppState {
     liveUrl: string
   }
   revealPhase: RevealPhase
+  /** Which step of the Final-score sequence is on screen (see FinaleStage). */
+  finaleStage: FinaleStage
+  /** Current countdown number (3·2·1) during the countdown stage; 0 otherwise. */
+  countdown: number
   /** Result of the most recent reveal. null before the first reveal. */
   lastWinner: Winner | null
   /** Bumped on every reveal so views can re-trigger effects (confetti) even
    *  when the winner is unchanged. Views compare it against the last value seen. */
   revealNonce: number
+  /** Bumped when a Final-score sequence starts — fires the drum roll, distinct
+   *  from revealNonce (which fires the celebration bumper + confetti). */
+  finaleNonce: number
   music: MusicState
 }
 
@@ -160,8 +172,11 @@ export function createInitialState(): AppState {
       liveUrl: '',
     },
     revealPhase: 'idle',
+    finaleStage: 'idle',
+    countdown: 0,
     lastWinner: null,
     revealNonce: 0,
+    finaleNonce: 0,
     music: {
       volume: 0.8,
       enabled: true,

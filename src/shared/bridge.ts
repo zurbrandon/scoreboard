@@ -24,6 +24,11 @@ export interface MusicUpdate {
   tracks: BumperTrackInfo[]
 }
 
+export interface DrumrollUpdate {
+  file: string | null // absolute path of the chosen file, for display
+  track: BumperTrackInfo | null // playable track, or null to fall back to a bumper
+}
+
 export interface ShowboardBridge {
   role: 'operator' | 'projector'
   /** Synchronous so the renderer store can start with real state. */
@@ -41,6 +46,11 @@ export interface ShowboardBridge {
   chooseMusicFolder(): void
   requestTracks(): void
   onTracks(callback: (update: MusicUpdate) => void): () => void
+
+  // Final-score drum roll (a single audio file).
+  chooseDrumroll(): void
+  requestDrumroll(): void
+  onDrumroll(callback: (update: DrumrollUpdate) => void): () => void
 }
 
 declare global {

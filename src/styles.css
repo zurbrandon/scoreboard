@@ -894,3 +894,68 @@ button { font-family: inherit; cursor: pointer; }
   color: #eafcff;
   text-shadow: 0 0 2vw rgba(255, 255, 255, 0.9), 0 0 6vw var(--win), 0 0 12vw var(--win);
 }
+
+/* --- Final-score sequence: tabulating build + 3·2·1 countdown --- */
+.finale-tab,
+.finale-count {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4vh;
+  background: radial-gradient(75% 75% at 50% 50%, #141a2c, #05070d 75%);
+}
+.finale-tab { animation: finale-in 0.4s ease-out; }
+.finale-tab__label {
+  font-size: 3vw;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #b7c0d8;
+  animation: tab-pulse 1.1s ease-in-out infinite;
+}
+@keyframes tab-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+.finale-tab__nums { display: flex; align-items: center; gap: 5vw; }
+.finale-tab__num {
+  font-family: 'Geist Pixel', 'Courier New', monospace;
+  font-synthesis: none;
+  font-size: 15vw;
+  line-height: 0.9;
+  min-width: 2ch;
+  text-align: center;
+}
+.finale-tab__num--blue { color: #eafcff; text-shadow: 0 0 2vw var(--blue), 0 0 5vw var(--blue); }
+.finale-tab__num--red { color: #ffecec; text-shadow: 0 0 2vw var(--red), 0 0 5vw var(--red); }
+.finale-tab__vs { font-size: 3vw; font-weight: 900; color: #9aa6c4; }
+.finale-tab__dots { display: flex; gap: 1.4vw; }
+.finale-tab__dots i {
+  width: 1.4vw;
+  height: 1.4vw;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: tab-dot 1s ease-in-out infinite;
+}
+.finale-tab__dots i:nth-child(2) { animation-delay: 0.16s; }
+.finale-tab__dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes tab-dot {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  50% { transform: translateY(-1.4vw); opacity: 1; }
+}
+.finale-count__num {
+  font-family: 'Geist Pixel', 'Courier New', monospace;
+  font-synthesis: none;
+  font-size: 42vw;
+  line-height: 0.8;
+  color: #eafcff;
+  text-shadow: 0 0 3vw #fff, 0 0 9vw var(--accent), 0 0 18vw var(--accent);
+  animation: count-pop 1s ease-out;
+}
+@keyframes count-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  22% { transform: scale(1.15); opacity: 1; }
+  38% { transform: scale(1); }
+  100% { transform: scale(1); opacity: 1; }
+}

@@ -252,6 +252,31 @@ describe('half swaps sides but not scores', () => {
     expect(normal.revealPhase).toBe('revealing')
   })
 
+  it('final-score sequence: tabulate → countdown → celebrate → finish', () => {
+    // Starting the finale fires the drum roll (finaleNonce) and enters
+    // tabulating — but NOT the celebration bumper/confetti (revealNonce) yet.
+    const started = run({ type: 'half.set', half: 'end' }, { type: 'score.reveal' })
+    expect(started.finaleStage).toBe('tabulating')
+    expect(started.finaleNonce).toBe(1)
+    expect(started.revealNonce).toBe(0) // celebration waits for the 'celebrate' step
+
+    // Countdown ticks set the visible number.
+    const c2 = reduce(started, { type: 'finale.countdown', value: 2 })
+    expect(c2.finaleStage).toBe('countdown')
+    expect(c2.countdown).toBe(2)
+
+    // Celebrate bumps revealNonce → confetti + high-energy bumper fire now.
+    const celebrate = reduce(c2, { type: 'finale.celebrate' })
+    expect(celebrate.finaleStage).toBe('celebrate')
+    expect(celebrate.revealNonce).toBe(1)
+
+    // Finish resets the whole sequence.
+    const done = reduce(celebrate, { type: 'reveal.finish' })
+    expect(done.revealPhase).toBe('idle')
+    expect(done.finaleStage).toBe('idle')
+    expect(done.countdown).toBe(0)
+  })
+
   it('toggling the half keeps each team score intact', () => {
     const s = run(
       { type: 'blue.increment' },

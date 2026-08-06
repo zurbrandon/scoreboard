@@ -3,7 +3,7 @@
 // their scores stay with them. Reveal animations (count-up, winner grow,
 // confetti) are driven off revealPhase / revealNonce; the store holds truth.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppState } from '../../store/react'
 import { determineWinner } from '../../core/winner'
 import { formatScore } from '../../core/score'
@@ -30,6 +30,8 @@ export function Scoreboard() {
   const winner = useAppState((s) => s.lastWinner)
   const revealNonce = useAppState((s) => s.revealNonce)
   const revealPhase = useAppState((s) => s.revealPhase)
+  const finaleStage = useAppState((s) => s.finaleStage)
+  const countdown = useAppState((s) => s.countdown)
 
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
@@ -94,7 +96,9 @@ export function Scoreboard() {
         </span>
       </footer>
 
-      {revealPhase === 'finale' && <FinaleOverlay />}
+      {revealPhase === 'finale' && finaleStage === 'tabulating' && <FinaleTabulating />}
+      {revealPhase === 'finale' && finaleStage === 'countdown' && <FinaleCountdown value={countdown} />}
+      {revealPhase === 'finale' && finaleStage === 'celebrate' && <FinaleOverlay />}
       <Confetti nonce={revealNonce} colors={colors} originX={originX} />
       <EmojiRain nonce={revealNonce} emoji={winnerEmoji} />
     </div>
@@ -130,6 +134,46 @@ function FinaleOverlay() {
           <div className="finale__score">{formatScore(winScore)}</div>
         </>
       )}
+    </div>
+  )
+}
+
+// Step 1 of the Final-score sequence: the drum-roll build. Scrambling numbers
+// sell the "computing right now" feel while the tension mounts.
+function FinaleTabulating() {
+  const [a, setA] = useState(0)
+  const [b, setB] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setA(Math.floor(Math.random() * 100))
+      setB(Math.floor(Math.random() * 100))
+    }, 80)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <div className="finale-tab">
+      <div className="finale-tab__label">Tabulating final score</div>
+      <div className="finale-tab__nums" aria-hidden="true">
+        <span className="finale-tab__num finale-tab__num--blue">{a}</span>
+        <span className="finale-tab__vs">VS</span>
+        <span className="finale-tab__num finale-tab__num--red">{b}</span>
+      </div>
+      <div className="finale-tab__dots" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
+    </div>
+  )
+}
+
+// Step 2: the 3 · 2 · 1 countdown. Keying on the value restarts the pop each tick.
+function FinaleCountdown({ value }: { value: number }) {
+  return (
+    <div className="finale-count">
+      <div className="finale-count__num" key={value}>
+        {value}
+      </div>
     </div>
   )
 }

@@ -4,14 +4,14 @@
 // persists to disk. Windows are thin views; the projector never mutates.
 
 import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net } from 'electron'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 import { reduce } from '../src/core/reduce'
 import { createInitialState, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
-import type { BumperTrackInfo, DisplayInfo, MusicUpdate } from '../src/shared/bridge'
+import type { BumperTrackInfo, DisplayInfo, DrumrollUpdate, MusicUpdate } from '../src/shared/bridge'
 
 const isDev = !app.isPackaged
 const DEV_URL = 'http://localhost:5173'
@@ -30,6 +30,7 @@ protocol.registerSchemesAsPrivileged([
 interface Settings {
   projectorDisplayId: number | null
   musicFolder: string | null
+  drumrollFile: string | null
   operatorBounds: { x: number; y: number; width: number; height: number } | null
 }
 
@@ -136,6 +137,8 @@ function loadState(): AppState {
         ribbons: ribbonsLive,
         ribbonsLive,
         revealPhase: 'idle',
+        finaleStage: 'idle',
+        countdown: 0,
         music: {
           ...fresh.music,
           ...parsed.music,
@@ -159,15 +162,21 @@ function loadSettings(): Settings {
     return {
       projectorDisplayId: parsed.projectorDisplayId ?? null,
       musicFolder: parsed.musicFolder ?? null,
+      drumrollFile: parsed.drumrollFile ?? null,
       operatorBounds: parsed.operatorBounds ?? null,
     }
   } catch {
-    return { projectorDisplayId: null, musicFolder: null, operatorBounds: null }
+    return { projectorDisplayId: null, musicFolder: null, drumrollFile: null, operatorBounds: null }
   }
 }
 
 let state: AppState = createInitialState()
-let settings: Settings = { projectorDisplayId: null, musicFolder: null, operatorBounds: null }
+let settings: Settings = {
+  projectorDisplayId: null,
+  musicFolder: null,
+  drumrollFile: null,
+  operatorBounds: null,
+}
 
 let saveStateTimer: ReturnType<typeof setTimeout> | undefined
 function scheduleSaveState() {
@@ -318,6 +327,21 @@ function pushTracks() {
   operatorWin?.webContents.send('showboard:tracks', update)
 }
 
+function pushDrumroll() {
+  const file = settings.drumrollFile
+  const update: DrumrollUpdate = {
+    file,
+    track: file
+      ? {
+          id: file,
+          name: basename(file).replace(/\.[^.]+$/, ''),
+          url: `sbmedia://audio/?p=${encodeURIComponent(file)}`,
+        }
+      : null,
+  }
+  operatorWin?.webContents.send('showboard:drumroll', update)
+}
+
 // --- IPC ---------------------------------------------------------------------
 function registerIpc() {
   ipcMain.on('showboard:getInitialState', (event) => {
@@ -372,6 +396,20 @@ function registerIpc() {
   })
 
   ipcMain.on('showboard:requestTracks', () => pushTracks())
+
+  ipcMain.on('showboard:chooseDrumroll', async () => {
+    if (!operatorWin) return
+    const result = await dialog.showOpenDialog(operatorWin, {
+      title: 'Choose Final-score drum roll',
+      properties: ['openFile'],
+      filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'] }],
+    })
+    if (result.canceled || result.filePaths.length === 0) return
+    settings.drumrollFile = result.filePaths[0]
+    saveSettings()
+    pushDrumroll()
+  })
+  ipcMain.on('showboard:requestDrumroll', () => pushDrumroll())
 }
 
 // --- lifecycle ---------------------------------------------------------------

@@ -46,6 +46,9 @@ export type Command =
   // The main event.
   | { type: 'score.reveal' }
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends
+  // Final-score sequence steps, dispatched by the reveal service on a timer.
+  | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown
+  | { type: 'finale.celebrate' } // countdown done → winner takeover (fires confetti + bumper)
   | { type: 'score.commitSilent' } // commit pending → live with NO animation/audio (quick fixes)
   | { type: 'score.revertPending' } // safety: discard pending edits back to live
   // Music.

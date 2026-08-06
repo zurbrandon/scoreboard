@@ -7,6 +7,7 @@ import type { AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type {
   DisplayInfo,
+  DrumrollUpdate,
   MusicUpdate,
   ShowboardBridge,
 } from '../src/shared/bridge'
@@ -35,6 +36,14 @@ const bridge: ShowboardBridge = {
     const listener = (_e: unknown, update: MusicUpdate) => callback(update)
     ipcRenderer.on('showboard:tracks', listener)
     return () => ipcRenderer.removeListener('showboard:tracks', listener)
+  },
+
+  chooseDrumroll: () => ipcRenderer.send('showboard:chooseDrumroll'),
+  requestDrumroll: () => ipcRenderer.send('showboard:requestDrumroll'),
+  onDrumroll: (callback) => {
+    const listener = (_e: unknown, update: DrumrollUpdate) => callback(update)
+    ipcRenderer.on('showboard:drumroll', listener)
+    return () => ipcRenderer.removeListener('showboard:drumroll', listener)
   },
 }
 

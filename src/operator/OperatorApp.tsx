@@ -215,7 +215,7 @@ function ScoreboardConfig() {
           className={`phase-seg phase-seg--end ${half === 'end' ? 'phase-seg--active' : ''}`}
           onClick={() => dispatch({ type: 'half.set', half: 'end' })}
         >
-          Show end
+          Final score
         </button>
       </div>
       <div className="teams-row">

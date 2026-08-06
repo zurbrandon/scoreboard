@@ -32,6 +32,8 @@ if (role === 'operator') attachRevealService(store)
 if (audio && window.showboard) {
   window.showboard.onTracks((update) => audio.setTracks(update.tracks))
   window.showboard.requestTracks()
+  window.showboard.onDrumroll((update) => audio.setDrumroll(update.track))
+  window.showboard.requestDrumroll()
 }
 
 createRoot(document.getElementById('root')!).render(
