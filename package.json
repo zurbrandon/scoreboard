@@ -34,6 +34,7 @@
     "mac": {
       "target": "dir",
       "identity": null,
+      "icon": "build/icon.icns",
       "category": "public.app-category.entertainment"
     }
   },
