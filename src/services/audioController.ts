@@ -52,6 +52,17 @@ export function createAudioController(store: Store): AudioController {
     fadeInterval = undefined
   }
 
+  // Fully tear down the current <audio>: pausing alone leaves the element holding
+  // its decoded media resource. Detaching src + load() makes the browser release
+  // it, so a long show's worth of reveals can't pile up buffers in memory.
+  function releaseAudio(): void {
+    if (!audio) return
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
+    audio = null
+  }
+
   function scheduleFade(): void {
     clearFade()
     fadeGain = 1
@@ -65,7 +76,7 @@ export function createAudioController(store: Store): AudioController {
         applyVolume()
         if (t >= 1) {
           clearFade()
-          if (audio) audio.pause()
+          releaseAudio() // bumper has faded out — free it now
         }
       }, 80)
     }, FADE_AFTER_MS)
@@ -89,7 +100,7 @@ export function createAudioController(store: Store): AudioController {
 
     try {
       clearFade()
-      if (audio) audio.pause()
+      releaseAudio() // drop the previous bumper before starting a new one
       fadeGain = 1
       audio = new Audio(track.url)
       applyVolume()
@@ -134,12 +145,12 @@ export function createAudioController(store: Store): AudioController {
     },
     stop() {
       clearFade()
-      if (audio) audio.pause()
+      releaseAudio()
     },
     dispose() {
       clearFade()
       unsubscribe()
-      if (audio) audio.pause()
+      releaseAudio()
       for (const t of tracks) URL.revokeObjectURL(t.url)
       tracks = []
     },

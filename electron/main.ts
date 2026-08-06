@@ -189,6 +189,14 @@ function saveSettings() {
   }
 }
 
+// Debounced variant for high-frequency sources (window drag/resize fires many
+// times a second — we only need the final bounds, not a disk write per tick).
+let saveSettingsTimer: ReturnType<typeof setTimeout> | undefined
+function scheduleSaveSettings() {
+  clearTimeout(saveSettingsTimer)
+  saveSettingsTimer = setTimeout(saveSettings, 400)
+}
+
 // --- windows -----------------------------------------------------------------
 let operatorWin: BrowserWindow | null = null
 let projectorWin: BrowserWindow | null = null
@@ -229,7 +237,7 @@ function createOperatorWindow() {
   const persistBounds = () => {
     if (!operatorWin) return
     settings.operatorBounds = operatorWin.getBounds()
-    saveSettings()
+    scheduleSaveSettings()
   }
   operatorWin.on('resize', persistBounds)
   operatorWin.on('move', persistBounds)
