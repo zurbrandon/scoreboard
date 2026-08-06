@@ -13,9 +13,10 @@ import type { Store } from '../store/store'
 // new reveal mid-celebration restarts this window.
 export const REVEAL_DURATION_MS = 10000
 
-// Final-score sequence timings.
-export const FINALE_TABULATE_MS = 4000 // "tabulating final score" + drum roll build
-export const FINALE_COUNTDOWN_STEP_MS = 1000 // 3 … 2 … 1
+// Final-score sequence timings. Paced for suspense: a long tabulating build,
+// then unhurried beats between the countdown numbers.
+export const FINALE_TABULATE_MS = 7000 // "tabulating final score" + drum roll build
+export const FINALE_COUNTDOWN_STEP_MS = 1700 // beat between 3 … 2 … 1 (and 1 → celebrate)
 export const FINALE_CELEBRATE_MS = 14000 // winner takeover holds this long, then resets
 
 export function attachRevealService(
