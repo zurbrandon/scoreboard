@@ -62,6 +62,10 @@ export function OperatorApp() {
     const slide = s.slideshow.slides.find((sl) => sl.id === s.slideshow.selectedId)
     return !slide || slide.url !== s.slideshow.liveUrl
   })
+  // A live-type text card mirrors keystrokes, so its reveal shouldn't animate.
+  const selectedTextIsLive = useAppState(
+    (s) => !!s.text.cards.find((c) => c.id === s.text.selectedId)?.liveType,
+  )
 
   // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
   const [activeTab, setActiveTab] = useState<Scene>(
@@ -70,18 +74,19 @@ export function OperatorApp() {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   // The deck pushes the ACTIVE tab to the projector. Nothing else changes what's
-  // on air. Scoreboard reveal animates / silent commits quietly; logo commits the
-  // picked logo; other scenes just cut in (no animation yet).
+  // on air. Reveal plays an entrance animation (display.reveal); silent cuts in
+  // quietly (display.set). Live-type text and the slideshow never animate.
   function pushActive(withReveal: boolean) {
     if (activeTab === 'scoreboard') {
       dispatch({ type: 'display.set', scene: 'scoreboard' })
       dispatch({ type: withReveal ? 'score.reveal' : 'score.commitSilent' })
     } else if (activeTab === 'logo') {
       dispatch({ type: 'logo.commit' })
-      dispatch({ type: 'display.set', scene: 'logo' })
+      dispatch({ type: withReveal ? 'display.reveal' : 'display.set', scene: 'logo' })
     } else if (activeTab === 'text') {
       dispatch({ type: 'text.commit' })
-      dispatch({ type: 'display.set', scene: 'text' })
+      const animate = withReveal && !selectedTextIsLive
+      dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'text' })
     } else if (activeTab === 'slideshow') {
       dispatch({ type: 'slideshow.commit' })
       dispatch({ type: 'display.set', scene: 'slideshow' })

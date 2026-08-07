@@ -86,7 +86,14 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, half: command.half }
 
     case 'display.set':
-      return { ...state, scene: command.scene }
+      return { ...state, scene: command.scene, displayWasReveal: false }
+    case 'display.reveal':
+      return {
+        ...state,
+        scene: command.scene,
+        displayWasReveal: true,
+        revealAnimNonce: state.revealAnimNonce + 1,
+      }
 
     case 'logo.select':
       return { ...state, logo: { ...state.logo, draftId: command.id } }

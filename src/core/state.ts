@@ -143,6 +143,11 @@ export interface AppState {
     liveUrl: string
   }
   revealPhase: RevealPhase
+  /** Bumped when a Logo/Text scene is REVEALED (not on silent) so those scenes
+   *  can replay an entrance animation. `displayWasReveal` says whether the
+   *  current display change was a reveal (animate) or silent (don't). */
+  revealAnimNonce: number
+  displayWasReveal: boolean
   /** Which step of the Final-score sequence is on screen (see FinaleStage). */
   finaleStage: FinaleStage
   /** Current countdown number (3·2·1) during the countdown stage; 0 otherwise. */
@@ -184,6 +189,8 @@ export function createInitialState(): AppState {
       liveUrl: '',
     },
     revealPhase: 'idle',
+    revealAnimNonce: 0,
+    displayWasReveal: false,
     finaleStage: 'idle',
     countdown: 0,
     lastWinner: null,

@@ -1,5 +1,6 @@
 // Full-screen logo scene. Shows the live logo image with its website small
-// underneath. Falls back to the logo's name if the image is missing.
+// underneath. Falls back to the logo's name if the image is missing. On a
+// reveal (animate), the logo pops in and the website staggers in per character.
 
 import { useState } from 'react'
 import { useAppState } from '../../store/react'
@@ -10,14 +11,14 @@ export function logoSrc(src: string): string {
   return src.startsWith('data:') ? src : `${import.meta.env.BASE_URL}${src}`
 }
 
-export function LogoScene() {
+export function LogoScene({ animate = false }: { animate?: boolean }) {
   const logo = useAppState((s) => s.logos.find((l) => l.id === s.logo.liveId))
   const [failed, setFailed] = useState(false)
 
   if (!logo) return <div className="scene-logo" />
 
   return (
-    <div className="scene-logo">
+    <div className={`scene-logo ${animate ? 'scene-logo--reveal' : ''}`}>
       {logo.src && !failed ? (
         <img
           className="scene-logo__img"
@@ -28,7 +29,16 @@ export function LogoScene() {
       ) : (
         <div className="scene-logo__mark">{logo.name}</div>
       )}
-      {logo.website && <div className="scene-logo__site">{logo.website}</div>}
+      {logo.website && (
+        <div className="scene-logo__site">
+          {/* one span per character so a reveal can stagger them in */}
+          {Array.from(logo.website).map((ch, i) => (
+            <span key={i} style={{ ['--i' as string]: i }}>
+              {ch}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

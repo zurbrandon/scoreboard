@@ -5,15 +5,16 @@
 
 import { useAppState } from '../../store/react'
 
-export function TextScene() {
+export function TextScene({ animate = false }: { animate?: boolean }) {
   const live = useAppState((s) => s.text.live)
+  const revealCls = animate ? 'scene-text--reveal' : ''
 
   if (live.template === 'quadrants') {
     return (
-      <div className="scene-text scene-text--quads">
+      <div className={`scene-text scene-text--quads ${revealCls}`}>
         <div className="quad-grid">
           {live.quads.map((word, i) => (
-            <div className="quad-cell" key={i}>
+            <div className="quad-cell" key={i} style={{ ['--i' as string]: i }}>
               {word}
             </div>
           ))}
@@ -24,7 +25,7 @@ export function TextScene() {
 
   // basic
   return (
-    <div className="scene-text">
+    <div className={`scene-text ${revealCls}`}>
       {live.headline && <div className="scene-text__headline">{live.headline}</div>}
       {live.body && <div className="scene-text__body">{live.body}</div>}
     </div>

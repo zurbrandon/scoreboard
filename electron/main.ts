@@ -159,6 +159,8 @@ function loadState(): AppState {
         ribbons: ribbonsLive,
         ribbonsLive,
         revealPhase: 'idle',
+        revealAnimNonce: 0,
+        displayWasReveal: false,
         finaleStage: 'idle',
         countdown: 0,
         music: {

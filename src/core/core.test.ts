@@ -134,6 +134,17 @@ describe('scoring details', () => {
     expect(s.audience.visible).toBe(false)
   })
 
+  it('display.reveal flags an animated entrance and bumps the nonce; display.set does not', () => {
+    const revealed = run({ type: 'display.reveal', scene: 'logo' })
+    expect(revealed.scene).toBe('logo')
+    expect(revealed.displayWasReveal).toBe(true)
+    expect(revealed.revealAnimNonce).toBe(1)
+    // A subsequent silent switch clears the flag and leaves the nonce alone.
+    const silent = reduce(revealed, { type: 'display.set', scene: 'text' })
+    expect(silent.displayWasReveal).toBe(false)
+    expect(silent.revealAnimNonce).toBe(1)
+  })
+
   it('logo select stages a draft; commit makes it live', () => {
     const s = run({ type: 'logo.select', id: 'theater' })
     expect(s.logo.draftId).toBe('theater')

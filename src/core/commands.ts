@@ -30,7 +30,8 @@ export type Command =
   // Match / display.
   | { type: 'half.toggle' }
   | { type: 'half.set'; half: Half }
-  | { type: 'display.set'; scene: Scene }
+  | { type: 'display.set'; scene: Scene } // switch scene with no entrance animation (silent/black)
+  | { type: 'display.reveal'; scene: Scene } // switch scene AND play its entrance animation
   | { type: 'logo.select'; id: string } // preview a logo (draft)
   | { type: 'logo.commit' } // make the drafted logo live
   | { type: 'logo.setWebsite'; id: string; website: string }
