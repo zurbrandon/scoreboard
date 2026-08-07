@@ -4,7 +4,7 @@
 //   • screen effects via a CSS layer: camera flash / team color wash
 // Self-contained, no dependencies.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 interface Particle {
   x: number
@@ -32,9 +32,16 @@ const EFFECT_EMOJI: Record<string, string> = { hearts: '❤️', stars: '⭐' }
 const PARTICLE_KINDS = new Set(['confetti', 'streamers', 'fireworks', 'hearts', 'stars'])
 const SCREEN_KINDS = new Set(['wash-blue', 'wash-red'])
 // Verdict "slams": a big word that slams down over the scene (guessing games).
-const SLAMS: Record<string, { text: string; cls: string }> = {
-  success: { text: 'SUCCESS!', cls: 'fx-slam--success' },
-  nope: { text: 'NOPE!', cls: 'fx-slam--nope' },
+// Each fire picks a random phrase from the pool.
+const SLAMS: Record<string, { words: string[]; cls: string }> = {
+  success: {
+    cls: 'fx-slam--success',
+    words: ['SUCCESS!', 'NAILED IT!', 'YES!', 'GOT IT!', 'BOOM!', 'CORRECT!', 'BINGO!'],
+  },
+  nope: {
+    cls: 'fx-slam--nope',
+    words: ['NOPE!', 'NUH-UH', 'WRONG!', 'NOT IT', 'SO CLOSE', 'TRY AGAIN', 'DENIED'],
+  },
 }
 
 const GRAVITY = 0.0012 // px per ms^2
@@ -131,6 +138,12 @@ export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) 
   const rafRef = useRef(0)
   const seenNonce = useRef(nonce) // don't fire on the initial mount
 
+  // Pick a random verdict phrase per fire (stable across unrelated re-renders).
+  const slamWord = useMemo(() => {
+    const s = SLAMS[kind]
+    return s ? s.words[(Math.random() * s.words.length) | 0] : ''
+  }, [kind, nonce])
+
   useEffect(() => {
     if (nonce === seenNonce.current) return
     seenNonce.current = nonce
@@ -159,7 +172,7 @@ export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) 
       {SCREEN_KINDS.has(kind) && <div key={nonce} className={`fx-screen fx-screen--${kind}`} aria-hidden="true" />}
       {SLAMS[kind] && (
         <div key={nonce} className="fx-slam" aria-hidden="true">
-          <span className={`fx-slam__word ${SLAMS[kind].cls}`}>{SLAMS[kind].text}</span>
+          <span className={`fx-slam__word ${SLAMS[kind].cls}`}>{slamWord}</span>
         </div>
       )}
     </>
