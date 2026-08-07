@@ -42,6 +42,26 @@ function pick<T>(arr: T[]): T {
   return arr[(Math.random() * arr.length) | 0]
 }
 
+// A soft round glow, pre-rendered once per color to an offscreen canvas. Drawing
+// this with drawImage is far cheaper than canvas shadowBlur per particle (which
+// tanks the frame rate and makes the animation crawl).
+const glowCache = new Map<string, HTMLCanvasElement>()
+function glowSprite(color: string): HTMLCanvasElement {
+  const cached = glowCache.get(color)
+  if (cached) return cached
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const g = c.getContext('2d')!
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32)
+  grd.addColorStop(0, color)
+  grd.addColorStop(0.35, color)
+  grd.addColorStop(1, 'transparent')
+  g.fillStyle = grd
+  g.fillRect(0, 0, 64, 64)
+  glowCache.set(color, c)
+  return c
+}
+
 // Build the starting particles for the cannon / streamer effects.
 function spawnParticles(kind: string, w: number, h: number): Particle[] {
   const out: Particle[] = []
@@ -233,11 +253,13 @@ function makeFireworksTick(
   const start = performance.now()
   let last = start
 
+  const whiteGlow = glowSprite('#ffffff')
+
   const burst = (x: number, y: number, color: string) => {
     // A bright pop at the burst point...
-    flashes.push({ x, y, r: 8, color, life: 1 })
+    flashes.push({ x, y, r: 10, color, life: 1 })
     // ...then a big, dense ring of glowing sparks.
-    const n = 76
+    const n = 70
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + rand(-0.06, 0.06)
       const sp = rand(0.32, 0.92)
@@ -247,7 +269,7 @@ function makeFireworksTick(
         vx: Math.cos(a) * sp,
         vy: Math.sin(a) * sp,
         color,
-        size: rand(2.6, 4),
+        size: rand(3, 5),
         life: 1,
         decay: 1 / rand(1300, 2200),
       })
@@ -267,49 +289,34 @@ function makeFireworksTick(
       shells.push({ x: L.x * w, y: h, vy: -Math.sqrt(2 * g * rise), g, color: pick(FIREWORK_COLORS), done: false })
     }
 
-    // Rising shells — a glowing comet.
+    ctx.globalCompositeOperation = 'lighter' // additive bloom where glows overlap
+
+    // Rising shells — a glowing comet (cheap glow sprite, no shadowBlur).
     for (const s of shells) {
       if (s.done) continue
       s.vy += s.g * dt
       s.y += s.vy * dt
-      ctx.save()
       ctx.globalAlpha = 0.95
-      ctx.shadowColor = s.color
-      ctx.shadowBlur = 12
-      ctx.fillStyle = '#fff'
-      ctx.beginPath()
-      ctx.arc(s.x, s.y, 3.5, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.restore()
+      ctx.drawImage(whiteGlow, s.x - 10, s.y - 10, 20, 20)
       if (s.vy >= 0) {
         burst(s.x, s.y, s.color)
         s.done = true
       }
     }
 
-    // Burst flashes — quick expanding glow.
+    // Burst flashes — a quick expanding glow.
     let flashAlive = false
     for (const f of flashes) {
       f.life -= dt / 260
       if (f.life <= 0) continue
       flashAlive = true
       f.r += 0.5 * dt
-      const grd = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r)
-      grd.addColorStop(0, f.color)
-      grd.addColorStop(1, 'transparent')
-      ctx.save()
-      ctx.globalAlpha = Math.max(0, f.life) * 0.6
-      ctx.fillStyle = grd
-      ctx.beginPath()
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.restore()
+      ctx.globalAlpha = Math.max(0, f.life) * 0.7
+      ctx.drawImage(glowSprite(f.color), f.x - f.r, f.y - f.r, f.r * 2, f.r * 2)
     }
 
     // Glowing sparks falling under gravity.
     let sparksAlive = false
-    ctx.save()
-    ctx.globalCompositeOperation = 'lighter' // additive glow where sparks overlap
     for (const p of sparks) {
       p.life -= p.decay * dt
       if (p.life <= 0) continue
@@ -317,15 +324,13 @@ function makeFireworksTick(
       p.vy += 0.0006 * dt
       p.x += p.vx * dt
       p.y += p.vy * dt
+      const rad = p.size * 3
       ctx.globalAlpha = Math.max(0, p.life)
-      ctx.shadowColor = p.color
-      ctx.shadowBlur = 10
-      ctx.fillStyle = p.color
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-      ctx.fill()
+      ctx.drawImage(glowSprite(p.color), p.x - rad, p.y - rad, rad * 2, rad * 2)
     }
-    ctx.restore()
+
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
 
     const pending = launched < launches.length || shells.some((s) => !s.done)
     if (pending || sparksAlive || flashAlive) rafRef.current = requestAnimationFrame(tick)
