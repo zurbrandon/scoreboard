@@ -40,6 +40,10 @@ const FX_SCREEN: { kind: string; icon: string; title: string }[] = [
   { kind: 'wash-blue', icon: '🔵', title: 'Blue wash' },
   { kind: 'wash-red', icon: '🔴', title: 'Red wash' },
 ]
+const FX_VERDICTS: { kind: string; icon: string; title: string }[] = [
+  { kind: 'success', icon: '✅', title: 'Success!' },
+  { kind: 'nope', icon: '❌', title: 'Nope!' },
+]
 
 export function OperatorApp() {
   const dispatch = useDispatch()
@@ -187,6 +191,18 @@ export function OperatorApp() {
           ))}
           <span className="fx-divider" aria-hidden="true" />
           {FX_SCREEN.map((fx) => (
+            <button
+              key={fx.kind}
+              className="fx-btn"
+              title={fx.title}
+              aria-label={fx.title}
+              onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+            >
+              {fx.icon}
+            </button>
+          ))}
+          <span className="fx-divider" aria-hidden="true" />
+          {FX_VERDICTS.map((fx) => (
             <button
               key={fx.kind}
               className="fx-btn"

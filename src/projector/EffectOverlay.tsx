@@ -31,6 +31,11 @@ const EFFECT_EMOJI: Record<string, string> = { hearts: '❤️', stars: '⭐' }
 // Particle effects run on the canvas; screen effects run on the CSS layer.
 const PARTICLE_KINDS = new Set(['confetti', 'streamers', 'fireworks', 'hearts', 'stars'])
 const SCREEN_KINDS = new Set(['wash-blue', 'wash-red'])
+// Verdict "slams": a big word that slams down over the scene (guessing games).
+const SLAMS: Record<string, { text: string; cls: string }> = {
+  success: { text: 'SUCCESS!', cls: 'fx-slam--success' },
+  nope: { text: 'NOPE!', cls: 'fx-slam--nope' },
+}
 
 const GRAVITY = 0.0012 // px per ms^2
 const DRAG = 0.9996
@@ -150,8 +155,13 @@ export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) 
   return (
     <>
       <canvas ref={canvasRef} className="fx-overlay" aria-hidden="true" />
-      {/* Screen effects: a CSS layer that replays via key on each fire. */}
+      {/* Screen effects + verdict slams: CSS layers that replay via key. */}
       {SCREEN_KINDS.has(kind) && <div key={nonce} className={`fx-screen fx-screen--${kind}`} aria-hidden="true" />}
+      {SLAMS[kind] && (
+        <div key={nonce} className="fx-slam" aria-hidden="true">
+          <span className={`fx-slam__word ${SLAMS[kind].cls}`}>{SLAMS[kind].text}</span>
+        </div>
+      )}
     </>
   )
 }
