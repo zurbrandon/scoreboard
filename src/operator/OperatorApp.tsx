@@ -177,6 +177,24 @@ export function OperatorApp() {
       </div>
 
       <footer className="deck">
+        <div className="deck__onair">
+          <span className="deck__onair-dot" />
+          on air · {ON_AIR_LABEL[programScene]}
+        </div>
+        <div className="deck__row">
+          <button
+            className={`deck-black ${programScene === 'black' ? 'deck-black--active' : ''}`}
+            onClick={black}
+          >
+            Black screen
+          </button>
+          <button className={`reveal ${armed ? 'reveal--armed' : ''}`} onClick={reveal}>
+            REVEAL
+          </button>
+          <button className="silent-btn" onClick={silent}>
+            update silently
+          </button>
+        </div>
         <div className="fx-row">
           {FX_BURSTS.map((fx) => (
             <button
@@ -213,24 +231,6 @@ export function OperatorApp() {
               {fx.icon}
             </button>
           ))}
-        </div>
-        <div className="deck__row">
-          <button
-            className={`deck-black ${programScene === 'black' ? 'deck-black--active' : ''}`}
-            onClick={black}
-          >
-            Black screen
-          </button>
-          <button className={`reveal ${armed ? 'reveal--armed' : ''}`} onClick={reveal}>
-            REVEAL
-          </button>
-          <button className="silent-btn" onClick={silent}>
-            update silently
-          </button>
-        </div>
-        <div className="deck__onair">
-          <span className="deck__onair-dot" />
-          on air · {ON_AIR_LABEL[programScene]}
         </div>
       </footer>
 
