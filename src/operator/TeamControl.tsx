@@ -9,6 +9,33 @@ import type { Side } from '../core/sides'
 import type { TeamId } from '../core/state'
 import { formatScore } from '../core/score'
 
+// The +/- buttons normally step by 1; holding a modifier steps by 10. Mac uses
+// Command; elsewhere (Windows/Linux) uses Shift.
+const BIG_STEP = 10
+function bigStepHeld(e: { metaKey: boolean; shiftKey: boolean }): boolean {
+  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform)
+  return isMac ? e.metaKey : e.shiftKey
+}
+
+// Live-tracks whether the big-step modifier is currently down, so the button
+// labels can show +10 / -10 the moment the key is held.
+function useBigStep(): boolean {
+  const [big, setBig] = useState(false)
+  useEffect(() => {
+    const sync = (e: KeyboardEvent) => setBig(bigStepHeld(e))
+    const reset = () => setBig(false)
+    window.addEventListener('keydown', sync)
+    window.addEventListener('keyup', sync)
+    window.addEventListener('blur', reset)
+    return () => {
+      window.removeEventListener('keydown', sync)
+      window.removeEventListener('keyup', sync)
+      window.removeEventListener('blur', reset)
+    }
+  }, [])
+  return big
+}
+
 export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   const dispatch = useDispatch()
   const name = useAppState((s) => s.teams[team].name)
@@ -18,6 +45,12 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   const inc = team === 'blue' ? 'blue.increment' : 'red.increment'
   const dec = team === 'blue' ? 'blue.decrement' : 'red.decrement'
   const dirty = pendingScore !== liveScore
+  const big = useBigStep()
+  const step = big ? BIG_STEP : 1
+  // Read the modifier off the click itself so the amount is exact even if the
+  // key state and the label ever disagree by a hair.
+  const bump = (e: { metaKey: boolean; shiftKey: boolean }, sign: 1 | -1) =>
+    dispatch({ type: 'team.bumpScore', team, delta: sign * (bigStepHeld(e) ? BIG_STEP : 1) })
 
   // Keep the exact text the operator is typing (e.g. "3." mid-entry) so a
   // trailing decimal point survives round-tripping through the number. null =
@@ -75,12 +108,20 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
           </span>
         </div>
 
-        <div className="team-control__buttons">
-          <button className="team-btn team-btn--inc" onClick={() => dispatch({ type: inc })}>
-            +
+        <div className={`team-control__buttons ${big ? 'team-control__buttons--big' : ''}`}>
+          <button
+            className="team-btn team-btn--inc"
+            aria-label={`Add ${step} to ${team}`}
+            onClick={(e) => bump(e, 1)}
+          >
+            +{step}
           </button>
-          <button className="team-btn team-btn--dec" onClick={() => dispatch({ type: dec })}>
-            −
+          <button
+            className="team-btn team-btn--dec"
+            aria-label={`Subtract ${step} from ${team}`}
+            onClick={(e) => bump(e, -1)}
+          >
+            −{step}
           </button>
         </div>
       </div>

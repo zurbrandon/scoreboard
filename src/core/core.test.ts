@@ -34,6 +34,14 @@ describe('pending vs live (the sacred rule)', () => {
     expect(revealed.lastWinner).toBe('blue')
   })
 
+  it('bumpScore steps pending by any amount (±1, ±10) and stays on pending', () => {
+    let s = run({ type: 'team.bumpScore', team: 'blue', delta: 10 })
+    s = reduce(s, { type: 'team.bumpScore', team: 'blue', delta: 10 })
+    s = reduce(s, { type: 'team.bumpScore', team: 'blue', delta: -1 })
+    expect(s.teams.blue.pendingScore).toBe(19)
+    expect(s.teams.blue.liveScore).toBe(0) // still just pending
+  })
+
   it('reveal copies pending to live for both teams atomically', () => {
     const s = run(
       { type: 'blue.increment' },

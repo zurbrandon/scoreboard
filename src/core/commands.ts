@@ -11,6 +11,8 @@ export type Command =
   | { type: 'blue.decrement' }
   | { type: 'red.increment' }
   | { type: 'red.decrement' }
+  // GUI: bump a team's PENDING score by an arbitrary amount (±1, ±10, …).
+  | { type: 'team.bumpScore'; team: TeamId; delta: number }
   // GUI: type an exact pending score (may be negative).
   | { type: 'team.setScore'; team: TeamId; value: number }
   | { type: 'team.setName'; team: TeamId; name: string }

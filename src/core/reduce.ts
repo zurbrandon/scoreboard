@@ -53,6 +53,8 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'red.decrement':
       return bumpPending(state, 'red', -1)
 
+    case 'team.bumpScore':
+      return bumpPending(state, command.team, command.delta)
     case 'team.setScore':
       return setTeam(state, command.team, { pendingScore: command.value })
     case 'team.setName':
