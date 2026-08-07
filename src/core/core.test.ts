@@ -357,6 +357,13 @@ describe('bumper selection', () => {
     expect(ids.size).toBeGreaterThan(1) // b and c both reachable
   })
 
+  it('effect.fire sets the kind and bumps the nonce each press', () => {
+    let s = run({ type: 'effect.fire', kind: 'confetti' })
+    expect(s.effect).toEqual({ kind: 'confetti', nonce: 1 })
+    s = reduce(s, { type: 'effect.fire', kind: 'hearts' })
+    expect(s.effect).toEqual({ kind: 'hearts', nonce: 2 })
+  })
+
   it('records the played track so the next pick avoids it', () => {
     const s = run({ type: 'music.trackPlayed', id: 'b', name: 'B' })
     expect(s.music.lastTrackId).toBe('b')

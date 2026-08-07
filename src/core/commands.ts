@@ -58,6 +58,8 @@ export type Command =
   | { type: 'finale.celebrate' } // countdown done → winner takeover (fires confetti + bumper)
   | { type: 'score.commitSilent' } // commit pending → live with NO animation/audio (quick fixes)
   | { type: 'score.revertPending' } // safety: discard pending edits back to live
+  // Fire an overlay effect (e.g. a confetti cannon) on top of the current scene.
+  | { type: 'effect.fire'; kind: string }
   // Music.
   | { type: 'music.setVolume'; volume: number }
   | { type: 'music.setEnabled'; enabled: boolean }

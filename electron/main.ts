@@ -161,6 +161,7 @@ function loadState(): AppState {
         revealPhase: 'idle',
         revealAnimNonce: 0,
         displayWasReveal: false,
+        effect: { kind: '', nonce: 0 },
         finaleStage: 'idle',
         countdown: 0,
         music: {

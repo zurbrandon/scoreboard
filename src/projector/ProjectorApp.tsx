@@ -6,6 +6,7 @@ import { Scoreboard } from './scenes/Scoreboard'
 import { LogoScene } from './scenes/LogoScene'
 import { TextScene } from './scenes/TextScene'
 import { Slideshow } from './scenes/Slideshow'
+import { EffectOverlay } from './EffectOverlay'
 
 export function ProjectorApp() {
   const scene = useAppState((s) => s.scene)
@@ -13,6 +14,7 @@ export function ProjectorApp() {
   // entrance; `animate` gates whether the entrance runs at all (off for silent).
   const animNonce = useAppState((s) => s.revealAnimNonce)
   const animate = useAppState((s) => s.displayWasReveal)
+  const effect = useAppState((s) => s.effect)
 
   return (
     <div className="projector">
@@ -21,6 +23,8 @@ export function ProjectorApp() {
       {scene === 'text' && <TextScene key={animNonce} animate={animate} />}
       {scene === 'slideshow' && <Slideshow />}
       {scene === 'black' && <div className="scene-black" />}
+      {/* Overlay effects play on top of every scene. */}
+      <EffectOverlay kind={effect.kind} nonce={effect.nonce} />
     </div>
   )
 }

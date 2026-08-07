@@ -266,6 +266,9 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'reveal.finish':
       return { ...state, revealPhase: 'idle', finaleStage: 'idle', countdown: 0 }
 
+    case 'effect.fire':
+      return { ...state, effect: { kind: command.kind, nonce: state.effect.nonce + 1 } }
+
     case 'score.commitSilent':
       // Publish the board with no ceremony — no revealNonce/revealPhase change,
       // so the reveal service and audio controller stay silent.

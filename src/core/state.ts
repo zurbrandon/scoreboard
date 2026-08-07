@@ -160,6 +160,10 @@ export interface AppState {
   /** Bumped when a Final-score sequence starts — fires the drum roll, distinct
    *  from revealNonce (which fires the celebration bumper + confetti). */
   finaleNonce: number
+  /** Fire-and-forget overlay effects (confetti cannon, etc.) that play on top of
+   *  whatever scene is showing. `kind` selects the effect; `nonce` bumps on each
+   *  press so the projector replays it. */
+  effect: { kind: string; nonce: number }
   music: MusicState
 }
 
@@ -196,6 +200,7 @@ export function createInitialState(): AppState {
     lastWinner: null,
     revealNonce: 0,
     finaleNonce: 0,
+    effect: { kind: '', nonce: 0 },
     music: {
       volume: 0.8,
       enabled: true,

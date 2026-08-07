@@ -595,6 +595,22 @@ button { font-family: inherit; cursor: pointer; }
 .deck { flex: none; z-index: 2; border-top: 1px solid #222838; box-shadow: 0 -7px 12px -7px rgba(0, 0, 0, 0.65); padding: 12px 14px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .deck__onair { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+/* Overlay-effect buttons — a little strip above the reveal deck for fun. */
+.fx-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
+.fx-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #2c3346;
+  background: var(--panel);
+  font-size: 17px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fx-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+.fx-btn:active { transform: translateY(0) scale(0.94); }
 .deck__row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; }
 .deck-black { justify-self: center; min-width: 88px; height: 52px; padding: 0 14px; border-radius: 12px; background: var(--panel); border: 1px solid #2c3346; color: var(--text); font-size: 13px; font-weight: 600; }
 .deck-black:hover { border-color: #fff; }
@@ -967,6 +983,15 @@ button { font-family: inherit; cursor: pointer; }
   height: 100%;
   pointer-events: none;
   z-index: 4; /* rains over the panels and VS */
+}
+/* Overlay effects (confetti cannon, etc.) sit above every scene. */
+.fx-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 60;
 }
 
 .team-panel__name {

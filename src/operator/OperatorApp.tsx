@@ -26,6 +26,13 @@ const ON_AIR_LABEL: Record<Scene, string> = {
   black: 'Black',
 }
 
+// Overlay effects — fire on top of whatever scene is showing. Add more here.
+const EFFECTS: { kind: string; icon: string; title: string }[] = [
+  { kind: 'confetti', icon: '🎉', title: 'Confetti cannon' },
+  { kind: 'hearts', icon: '❤️', title: 'Hearts' },
+  { kind: 'stars', icon: '⭐', title: 'Stars' },
+]
+
 export function OperatorApp() {
   const dispatch = useDispatch()
   const programScene = useAppState((s) => s.scene)
@@ -158,6 +165,19 @@ export function OperatorApp() {
       </div>
 
       <footer className="deck">
+        <div className="fx-row">
+          {EFFECTS.map((fx) => (
+            <button
+              key={fx.kind}
+              className="fx-btn"
+              title={fx.title}
+              aria-label={fx.title}
+              onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+            >
+              {fx.icon}
+            </button>
+          ))}
+        </div>
         <div className="deck__row">
           <button
             className={`deck-black ${programScene === 'black' ? 'deck-black--active' : ''}`}
