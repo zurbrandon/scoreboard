@@ -514,25 +514,6 @@ function TextConfig() {
             onClick={() => dispatch({ type: 'text.selectCard', id: card.id })}
           >
             <div className="text-card__head">
-              <select
-                className="text-card__template"
-                value={card.template}
-                aria-label="Card layout"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) =>
-                  dispatch({
-                    type: 'text.setTemplate',
-                    id: card.id,
-                    template: e.target.value as TextTemplate,
-                  })
-                }
-              >
-                {TEMPLATE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
               <label
                 className="text-card__livetoggle switch"
                 title="Live type: mirror keystrokes to the screen while this card is on air"
@@ -565,6 +546,26 @@ function TextConfig() {
                 </button>
               )}
             </div>
+
+            <select
+              className="text-card__template"
+              value={card.template}
+              aria-label="Card layout"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) =>
+                dispatch({
+                  type: 'text.setTemplate',
+                  id: card.id,
+                  template: e.target.value as TextTemplate,
+                })
+              }
+            >
+              {TEMPLATE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
 
             {card.template === 'basic' && (
               <>

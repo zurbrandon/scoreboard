@@ -351,15 +351,15 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 14px;
   /* Generous padding so there's plenty of card surface to click for
      selecting, not just the inputs themselves. */
-  padding: 20px 18px;
+  padding: 26px 22px;
   cursor: pointer;
 }
 .text-card--active { border-color: var(--accent); }
 
-/* Head row: template picker on the left, live badge + remove on the right. */
-.text-card__head { display: flex; align-items: center; gap: 8px; }
+/* Head row (own line above the layout picker): Live toggle left, remove right. */
+.text-card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .text-card__template {
-  flex: 1;
+  width: 100%;
   background: var(--panel-2);
   border: 1px solid #2c3346;
   border-radius: 8px;
