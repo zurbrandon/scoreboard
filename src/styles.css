@@ -455,15 +455,21 @@ button { font-family: inherit; cursor: pointer; }
 }
 .scene-tab {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   background: transparent;
   border: none;
   border-radius: 7px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 8px 6px;
+  padding: 7px 6px;
   white-space: nowrap;
 }
+.scene-tab__icon { font-size: 20px; }
+.scene-tab__label { line-height: 1; }
 .scene-tab:hover { color: var(--text); }
 .scene-tab--active { background: var(--panel-2); color: var(--accent); }
 

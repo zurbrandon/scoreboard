@@ -4,6 +4,8 @@
 // (Reveal / update silently / Black) is what actually changes the projector.
 
 import { useRef, useState } from 'react'
+import { MdScoreboard, MdImage, MdTextFields, MdSlideshow } from 'react-icons/md'
+import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import type { Scene, TextTemplate } from '../core/state'
@@ -11,11 +13,11 @@ import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
 
-const SCENE_TABS: { scene: Scene; label: string }[] = [
-  { scene: 'scoreboard', label: 'Score' },
-  { scene: 'logo', label: 'Logo' },
-  { scene: 'text', label: 'Text' },
-  { scene: 'slideshow', label: 'Pre-show' },
+const SCENE_TABS: { scene: Scene; label: string; Icon: IconType }[] = [
+  { scene: 'scoreboard', label: 'Score', Icon: MdScoreboard },
+  { scene: 'logo', label: 'Logo', Icon: MdImage },
+  { scene: 'text', label: 'Text', Icon: MdTextFields },
+  { scene: 'slideshow', label: 'Pre-show', Icon: MdSlideshow },
 ]
 
 const ON_AIR_LABEL: Record<Scene, string> = {
@@ -157,13 +159,14 @@ export function OperatorApp() {
       </header>
 
       <nav className="scene-tabs">
-        {SCENE_TABS.map(({ scene, label }) => (
+        {SCENE_TABS.map(({ scene, label, Icon }) => (
           <button
             key={scene}
             className={`scene-tab ${activeTab === scene ? 'scene-tab--active' : ''}`}
             onClick={() => setActiveTab(scene)}
           >
-            {label}
+            <Icon className="scene-tab__icon" aria-hidden="true" />
+            <span className="scene-tab__label">{label}</span>
           </button>
         ))}
       </nav>
