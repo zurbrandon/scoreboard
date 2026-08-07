@@ -142,6 +142,25 @@ describe('scoring details', () => {
     expect(s2.logo.liveId).toBe('theater')
   })
 
+  it('logo library: add (auto-selects), edit website, remove (keeps selection valid)', () => {
+    // Add an uploaded logo — it becomes the draft selection.
+    let s = run({ type: 'logo.add', id: 'up1', name: 'Sponsor', src: 'data:image/png;base64,AA' })
+    expect(s.logos.some((l) => l.id === 'up1')).toBe(true)
+    expect(s.logo.draftId).toBe('up1')
+
+    // Website is editable per logo.
+    s = reduce(s, { type: 'logo.setWebsite', id: 'up1', website: 'sponsor.com' })
+    expect(s.logos.find((l) => l.id === 'up1')?.website).toBe('sponsor.com')
+
+    // Make it live, then remove it — selection falls back to a remaining logo.
+    s = reduce(s, { type: 'logo.commit' })
+    expect(s.logo.liveId).toBe('up1')
+    s = reduce(s, { type: 'logo.remove', id: 'up1' })
+    expect(s.logos.some((l) => l.id === 'up1')).toBe(false)
+    expect(s.logo.liveId).not.toBe('up1')
+    expect(s.logos.some((l) => l.id === s.logo.liveId)).toBe(true) // still valid
+  })
+
   it('text: editing a card stages; commit publishes the selected card', () => {
     // Fill in the default card, then commit — live shows headline + body.
     let s = run({ type: 'text.setField', id: 'card-1', field: 'headline', value: 'Skiing' })

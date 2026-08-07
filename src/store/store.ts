@@ -82,6 +82,7 @@ function loadPersisted(): AppState {
         audienceLive: { ...fresh.audienceLive, ...parsed.audienceLive },
         ribbons: { ...fresh.ribbons, ...parsed.ribbons },
         ribbonsLive: { ...fresh.ribbonsLive, ...parsed.ribbonsLive },
+        logos: Array.isArray(parsed.logos) && parsed.logos.length ? parsed.logos : fresh.logos,
         logo: { ...fresh.logo, ...parsed.logo },
         music: { ...fresh.music, ...parsed.music },
         text: { ...fresh.text, ...parsed.text },

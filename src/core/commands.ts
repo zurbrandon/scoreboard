@@ -33,6 +33,9 @@ export type Command =
   | { type: 'display.set'; scene: Scene }
   | { type: 'logo.select'; id: string } // preview a logo (draft)
   | { type: 'logo.commit' } // make the drafted logo live
+  | { type: 'logo.setWebsite'; id: string; website: string }
+  | { type: 'logo.add'; id: string; name: string; src: string } // add an uploaded logo and select it
+  | { type: 'logo.remove'; id: string }
   | { type: 'text.addCard'; id: string } // append a new (empty) card and select it
   | { type: 'text.removeCard'; id: string }
   | { type: 'text.selectCard'; id: string }

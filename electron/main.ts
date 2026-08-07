@@ -122,11 +122,28 @@ function loadState(): AppState {
                 liveUrl: parsed.slideshowUrl,
               }
             : fresh.slideshow
+      // Logos: use the saved (editable) library if present, else the built-ins.
+      // Keep the draft/live selection valid if it points at a since-removed logo.
+      const logos =
+        Array.isArray(parsed.logos) && parsed.logos.length
+          ? parsed.logos.map((l: Record<string, unknown>) => ({
+              id: String(l.id ?? `logo-${Math.random().toString(36).slice(2, 8)}`),
+              name: String(l.name ?? 'Logo'),
+              website: String(l.website ?? ''),
+              src: String(l.src ?? ''),
+            }))
+          : fresh.logos
+      const ids = new Set(logos.map((l: { id: string }) => l.id))
+      const clampLogo = (id: unknown) => (ids.has(String(id)) ? String(id) : logos[0]?.id ?? '')
       return {
         ...fresh,
         ...parsed,
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
-        logo: { ...fresh.logo, ...parsed.logo },
+        logos,
+        logo: {
+          draftId: clampLogo(parsed.logo?.draftId),
+          liveId: clampLogo(parsed.logo?.liveId),
+        },
         text,
         slideshow,
         // Reset every draft to its live value on launch — no stale pending

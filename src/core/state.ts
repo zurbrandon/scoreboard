@@ -9,6 +9,16 @@ export type TeamId = 'blue' | 'red'
 // Match phase. 'end' is the finale — Reveal triggers the winner celebration.
 export type Half = 'first' | 'second' | 'end'
 
+// A logo in the (editable) Logo scene library. `src` is either a bundled path
+// like 'logos/comedysportz.png' (built-ins) or a data: URL (uploaded images,
+// so they persist without any file management). `website` shows small beneath.
+export interface LogoItem {
+  id: string
+  name: string
+  website: string
+  src: string
+}
+
 export type Scene =
   | 'scoreboard'
   | 'logo'
@@ -111,6 +121,8 @@ export interface AppState {
   half: Half
   halfLive: Half
   scene: Scene
+  /** The editable logo library (built-ins + uploads). */
+  logos: LogoItem[]
   /** Logo scene selection. draftId is what the operator has picked (preview);
    *  liveId is what the projector shows. Reveal commits draft → live. */
   logo: { draftId: string; liveId: string }
@@ -159,6 +171,7 @@ export function createInitialState(): AppState {
     half: 'first',
     halfLive: 'first',
     scene: 'scoreboard',
+    logos: LOGO_LIBRARY.map((l) => ({ id: l.id, name: l.name, website: '', src: `logos/${l.file}` })),
     logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
     text: {
       cards: [emptyTextCard('card-1')],

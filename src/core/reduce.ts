@@ -92,6 +92,30 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, logo: { ...state.logo, draftId: command.id } }
     case 'logo.commit':
       return { ...state, logo: { ...state.logo, liveId: state.logo.draftId } }
+    case 'logo.setWebsite':
+      return {
+        ...state,
+        logos: state.logos.map((l) => (l.id === command.id ? { ...l, website: command.website } : l)),
+      }
+    case 'logo.add':
+      return {
+        ...state,
+        logos: [...state.logos, { id: command.id, name: command.name, website: '', src: command.src }],
+        logo: { ...state.logo, draftId: command.id }, // preview the new one immediately
+      }
+    case 'logo.remove': {
+      const logos = state.logos.filter((l) => l.id !== command.id)
+      const fallback = logos[0]?.id ?? ''
+      // Keep the selection valid if it pointed at the removed logo.
+      return {
+        ...state,
+        logos,
+        logo: {
+          draftId: state.logo.draftId === command.id ? fallback : state.logo.draftId,
+          liveId: state.logo.liveId === command.id ? fallback : state.logo.liveId,
+        },
+      }
+    }
 
     case 'text.addCard':
       return {

@@ -3,10 +3,9 @@
 // to the bottom. Preview/Program: picking a tab only previews a scene; the deck
 // (Reveal / update silently / Black) is what actually changes the projector.
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
-import { LOGO_LIBRARY } from '../core/logos'
 import type { Scene, TextTemplate } from '../core/state'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
@@ -300,21 +299,118 @@ function ScoreboardConfig() {
   )
 }
 
+// Resolve a logo's stored src (bundled path or data: URL) for an <img>.
+function logoImgSrc(src: string): string {
+  return src.startsWith('data:') ? src : `${import.meta.env.BASE_URL}${src}`
+}
+
+// Read an uploaded image, downscale it (max dimension) and return a PNG data URL
+// so it persists in state without any file management. Transparency preserved.
+async function fileToLogoSrc(file: File, maxDim = 800): Promise<string> {
+  const dataUrl: string = await new Promise((res, rej) => {
+    const fr = new FileReader()
+    fr.onload = () => res(fr.result as string)
+    fr.onerror = () => rej(fr.error)
+    fr.readAsDataURL(file)
+  })
+  const img = new Image()
+  img.src = dataUrl
+  await img.decode()
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+  if (scale >= 1) return dataUrl // already small enough
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(img.width * scale)
+  canvas.height = Math.round(img.height * scale)
+  canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/png')
+}
+
 function LogoConfig() {
   const dispatch = useDispatch()
+  const logos = useAppState((s) => s.logos)
   const draftId = useAppState((s) => s.logo.draftId)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  async function onFiles(files: FileList | null) {
+    for (const file of Array.from(files ?? [])) {
+      try {
+        const src = await fileToLogoSrc(file)
+        const id = `logo-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+        dispatch({ type: 'logo.add', id, name: file.name.replace(/\.[^.]+$/, ''), src })
+      } catch (err) {
+        console.warn('[logo] could not read image; skipping:', err)
+      }
+    }
+  }
+
   return (
-    <div className="logo-picker">
-      {LOGO_LIBRARY.map((logo) => (
-        <button
+    <div className="logo-list">
+      {logos.map((logo) => (
+        <div
           key={logo.id}
-          className={`logo-tile ${draftId === logo.id ? 'logo-tile--active' : ''}`}
+          className={`logo-card ${draftId === logo.id ? 'logo-card--active' : ''}`}
           onClick={() => dispatch({ type: 'logo.select', id: logo.id })}
         >
-          <img src={`${import.meta.env.BASE_URL}logos/${logo.file}`} alt="" />
-          <span>{logo.name}</span>
-        </button>
+          <div className="logo-card__preview">
+            <img src={logoImgSrc(logo.src)} alt={logo.name} />
+          </div>
+          <input
+            className="logo-card__site"
+            type="text"
+            value={logo.website}
+            placeholder="website (shown under the logo)"
+            aria-label={`${logo.name} website`}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => dispatch({ type: 'logo.setWebsite', id: logo.id, website: e.target.value })}
+          />
+          <button
+            className="logo-card__remove"
+            aria-label={`Remove ${logo.name}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              setConfirmingId(logo.id)
+            }}
+          >
+            ✕
+          </button>
+          {confirmingId === logo.id && (
+            <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+              <span className="logo-card__confirm-q">Remove this logo?</span>
+              <div className="logo-card__confirm-row">
+                <button
+                  className="logo-card__confirm-yes"
+                  onClick={() => {
+                    dispatch({ type: 'logo.remove', id: logo.id })
+                    setConfirmingId(null)
+                  }}
+                >
+                  Remove
+                </button>
+                <button className="logo-card__confirm-no" onClick={() => setConfirmingId(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       ))}
+
+      <button className="logo-add" onClick={() => fileInput.current?.click()}>
+        <span className="logo-add__plus">+</span>
+        Add logo
+      </button>
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          void onFiles(e.target.files)
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }
