@@ -37,7 +37,6 @@ const FX_BURSTS: { kind: string; icon: string; title: string }[] = [
   { kind: 'stars', icon: '⭐', title: 'Stars' },
 ]
 const FX_SCREEN: { kind: string; icon: string; title: string }[] = [
-  { kind: 'flash', icon: '⚡', title: 'Camera flash' },
   { kind: 'wash-blue', icon: '🔵', title: 'Blue wash' },
   { kind: 'wash-red', icon: '🔴', title: 'Red wash' },
 ]

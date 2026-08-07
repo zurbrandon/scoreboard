@@ -1002,24 +1002,19 @@ button { font-family: inherit; cursor: pointer; }
   z-index: 62;
   opacity: 0;
 }
-.fx-screen--flash { background: #fff; animation: fx-flash 220ms ease-out; }
-@keyframes fx-flash {
-  0% { opacity: 0; }
-  12% { opacity: 0.92; }
-  100% { opacity: 0; }
-}
+/* Team color wash: a big vignette that rushes in from every edge, then fades. */
 .fx-screen--wash-blue {
-  background: radial-gradient(120% 85% at 50% 120%, var(--blue), transparent 70%);
-  animation: fx-wash 850ms ease-out;
+  background: radial-gradient(circle at 50% 50%, transparent 20%, var(--blue) 92%);
+  animation: fx-wash 950ms ease-out;
 }
 .fx-screen--wash-red {
-  background: radial-gradient(120% 85% at 50% 120%, var(--red), transparent 70%);
-  animation: fx-wash 850ms ease-out;
+  background: radial-gradient(circle at 50% 50%, transparent 20%, var(--red) 92%);
+  animation: fx-wash 950ms ease-out;
 }
 @keyframes fx-wash {
-  0% { opacity: 0; transform: translateY(14%); }
-  30% { opacity: 0.85; }
-  100% { opacity: 0; transform: translateY(0); }
+  0% { opacity: 0; transform: scale(1.2); }
+  35% { opacity: 0.92; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
 }
 
 .team-panel__name {

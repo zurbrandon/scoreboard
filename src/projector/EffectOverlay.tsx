@@ -30,7 +30,7 @@ const EFFECT_EMOJI: Record<string, string> = { hearts: '❤️', stars: '⭐' }
 
 // Particle effects run on the canvas; screen effects run on the CSS layer.
 const PARTICLE_KINDS = new Set(['confetti', 'streamers', 'fireworks', 'hearts', 'stars'])
-const SCREEN_KINDS = new Set(['flash', 'wash-blue', 'wash-red'])
+const SCREEN_KINDS = new Set(['wash-blue', 'wash-red'])
 
 const GRAVITY = 0.0012 // px per ms^2
 const DRAG = 0.9996
@@ -207,26 +207,50 @@ function makeFireworksTick(
     vx: number
     vy: number
     color: string
+    size: number
     life: number
     decay: number
   }
+  interface Flash {
+    x: number
+    y: number
+    r: number
+    color: string
+    life: number
+  }
+  // More shells, staggered, at varied positions and heights.
   const launches = [
-    { x: 0.28, t: 0, apex: 0.3 },
-    { x: 0.62, t: 380, apex: 0.2 },
-    { x: 0.48, t: 760, apex: 0.34 },
+    { x: 0.24, t: 0, apex: 0.32 },
+    { x: 0.7, t: 260, apex: 0.22 },
+    { x: 0.45, t: 560, apex: 0.4 },
+    { x: 0.82, t: 820, apex: 0.3 },
+    { x: 0.15, t: 1080, apex: 0.26 },
   ]
   const shells: Shell[] = []
   const sparks: Spark[] = []
+  const flashes: Flash[] = []
   let launched = 0
   const start = performance.now()
   let last = start
 
   const burst = (x: number, y: number, color: string) => {
-    const n = 48
+    // A bright pop at the burst point...
+    flashes.push({ x, y, r: 8, color, life: 1 })
+    // ...then a big, dense ring of glowing sparks.
+    const n = 76
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + rand(-0.08, 0.08)
-      const sp = rand(0.22, 0.6)
-      sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color, life: 1, decay: 1 / rand(1000, 1700) })
+      const a = (i / n) * Math.PI * 2 + rand(-0.06, 0.06)
+      const sp = rand(0.32, 0.92)
+      sparks.push({
+        x,
+        y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        color,
+        size: rand(2.6, 4),
+        life: 1,
+        decay: 1 / rand(1300, 2200),
+      })
     }
   }
 
@@ -243,15 +267,18 @@ function makeFireworksTick(
       shells.push({ x: L.x * w, y: h, vy: -Math.sqrt(2 * g * rise), g, color: pick(FIREWORK_COLORS), done: false })
     }
 
+    // Rising shells — a glowing comet.
     for (const s of shells) {
       if (s.done) continue
       s.vy += s.g * dt
       s.y += s.vy * dt
       ctx.save()
-      ctx.globalAlpha = 0.9
-      ctx.fillStyle = s.color
+      ctx.globalAlpha = 0.95
+      ctx.shadowColor = s.color
+      ctx.shadowBlur = 12
+      ctx.fillStyle = '#fff'
       ctx.beginPath()
-      ctx.arc(s.x, s.y, 3, 0, Math.PI * 2)
+      ctx.arc(s.x, s.y, 3.5, 0, Math.PI * 2)
       ctx.fill()
       ctx.restore()
       if (s.vy >= 0) {
@@ -260,25 +287,48 @@ function makeFireworksTick(
       }
     }
 
-    let sparksAlive = false
-    for (const p of sparks) {
-      p.life -= p.decay * dt
-      if (p.life <= 0) continue
-      sparksAlive = true
-      p.vy += 0.0007 * dt
-      p.x += p.vx * dt
-      p.y += p.vy * dt
+    // Burst flashes — quick expanding glow.
+    let flashAlive = false
+    for (const f of flashes) {
+      f.life -= dt / 260
+      if (f.life <= 0) continue
+      flashAlive = true
+      f.r += 0.5 * dt
+      const grd = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r)
+      grd.addColorStop(0, f.color)
+      grd.addColorStop(1, 'transparent')
       ctx.save()
-      ctx.globalAlpha = Math.max(0, p.life)
-      ctx.fillStyle = p.color
+      ctx.globalAlpha = Math.max(0, f.life) * 0.6
+      ctx.fillStyle = grd
       ctx.beginPath()
-      ctx.arc(p.x, p.y, 2.3, 0, Math.PI * 2)
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
       ctx.fill()
       ctx.restore()
     }
 
+    // Glowing sparks falling under gravity.
+    let sparksAlive = false
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter' // additive glow where sparks overlap
+    for (const p of sparks) {
+      p.life -= p.decay * dt
+      if (p.life <= 0) continue
+      sparksAlive = true
+      p.vy += 0.0006 * dt
+      p.x += p.vx * dt
+      p.y += p.vy * dt
+      ctx.globalAlpha = Math.max(0, p.life)
+      ctx.shadowColor = p.color
+      ctx.shadowBlur = 10
+      ctx.fillStyle = p.color
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.restore()
+
     const pending = launched < launches.length || shells.some((s) => !s.done)
-    if (pending || sparksAlive) rafRef.current = requestAnimationFrame(tick)
+    if (pending || sparksAlive || flashAlive) rafRef.current = requestAnimationFrame(tick)
     else ctx.clearRect(0, 0, w, h)
   }
   return tick
