@@ -149,22 +149,24 @@ describe('scoring details', () => {
     })
   })
 
-  it('text: quadrants and live templates commit their own fields', () => {
-    // Quadrants: four words land in the grid and publish on commit.
+  it('text: quadrants layout commits its four words', () => {
     let s = run({ type: 'text.setTemplate', id: 'card-1', template: 'quadrants' })
     s = reduce(s, { type: 'text.setQuad', id: 'card-1', index: 0, value: 'TL' })
     s = reduce(s, { type: 'text.setQuad', id: 'card-1', index: 3, value: 'BR' })
     const q = reduce(s, { type: 'text.commit' }).text.live
     expect(q.template).toBe('quadrants')
     expect(q.quads).toEqual(['TL', '', '', 'BR'])
+  })
 
-    // Live: liveText publishes; commit snapshots it (the operator re-commits per keystroke).
-    let l = run({ type: 'text.setTemplate', id: 'card-1', template: 'live' })
-    l = reduce(l, { type: 'text.setField', id: 'card-1', field: 'liveText', value: 'guess this' })
-    expect(reduce(l, { type: 'text.commit' }).text.live).toMatchObject({
-      template: 'live',
-      liveText: 'guess this',
-    })
+  it('text: live-type is a per-card toggle, independent of layout', () => {
+    // Off by default; can be turned on for a basic or a quadrants card.
+    let s = run({ type: 'text.setLiveType', id: 'card-1', value: true })
+    expect(s.text.cards[0].liveType).toBe(true)
+    expect(s.text.cards[0].template).toBe('basic') // layout unchanged
+    s = reduce(s, { type: 'text.setTemplate', id: 'card-1', template: 'quadrants' })
+    expect(s.text.cards[0].liveType).toBe(true) // toggle survives a layout change
+    s = reduce(s, { type: 'text.setLiveType', id: 'card-1', value: false })
+    expect(s.text.cards[0].liveType).toBe(false)
   })
 
   it('text: add / select / remove cards; commit follows the selection', () => {

@@ -35,7 +35,8 @@ export type Command =
   | { type: 'text.removeCard'; id: string }
   | { type: 'text.selectCard'; id: string }
   | { type: 'text.setTemplate'; id: string; template: TextTemplate }
-  | { type: 'text.setField'; id: string; field: 'headline' | 'body' | 'liveText'; value: string }
+  | { type: 'text.setLiveType'; id: string; value: boolean } // per-card live-typing toggle
+  | { type: 'text.setField'; id: string; field: 'headline' | 'body'; value: string }
   | { type: 'text.setQuad'; id: string; index: number; value: string } // index 0..3 (TL,TR,BL,BR)
   | { type: 'text.commit' } // publish the selected card to the live snapshot
   | { type: 'slideshow.addSlide'; id: string } // append a new (empty) slide and select it

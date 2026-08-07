@@ -23,23 +23,23 @@ export type RevealPhase = 'idle' | 'revealing' | 'finale'
 // Only meaningful while revealPhase === 'finale'.
 export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
 
-// Each Text card renders with one of these templates on the projector:
+// Each Text card renders with one of these layouts on the projector:
 //  - basic:     a headline + body line (the default)
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
-//  - live:      one big box that mirrors the operator's typing in real time once on air
-export type TextTemplate = 'basic' | 'quadrants' | 'live'
+export type TextTemplate = 'basic' | 'quadrants'
 
 // One clue/message in the Text scene queue. Every card carries the fields for
-// all templates; only the ones its `template` uses are rendered.
+// every layout; only the ones its `template` uses are rendered. `liveType` is a
+// per-card toggle: when on and the card is on air, edits mirror to the projector
+// in real time (works with either layout) instead of waiting for a reveal.
 export interface TextCard {
   id: string
   template: TextTemplate
+  liveType: boolean
   headline: string
   body: string
   /** [top-left, top-right, bottom-left, bottom-right] — quadrants template. */
   quads: [string, string, string, string]
-  /** Free text mirrored live — live template. */
-  liveText: string
 }
 
 // What the projector currently shows: a snapshot of the published card plus the
@@ -50,11 +50,10 @@ export interface TextLive {
   headline: string
   body: string
   quads: [string, string, string, string]
-  liveText: string
 }
 
 export function emptyTextCard(id: string, template: TextTemplate = 'basic'): TextCard {
-  return { id, template, headline: '', body: '', quads: ['', '', '', ''], liveText: '' }
+  return { id, template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
 }
 
 // One slideshow URL in the Pre-show queue.
@@ -164,7 +163,7 @@ export function createInitialState(): AppState {
     text: {
       cards: [emptyTextCard('card-1')],
       selectedId: 'card-1',
-      live: { cardId: '', template: 'basic', headline: '', body: '', quads: ['', '', '', ''], liveText: '' },
+      live: { cardId: '', template: 'basic', headline: '', body: '', quads: ['', '', '', ''] },
     },
     slideshow: {
       slides: [emptySlide('slide-1')],

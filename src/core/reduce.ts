@@ -119,6 +119,16 @@ export function reduce(state: AppState, command: Command): AppState {
           ),
         },
       }
+    case 'text.setLiveType':
+      return {
+        ...state,
+        text: {
+          ...state.text,
+          cards: state.text.cards.map((c) =>
+            c.id === command.id ? { ...c, liveType: command.value } : c,
+          ),
+        },
+      }
     case 'text.setField':
       return {
         ...state,
@@ -155,7 +165,6 @@ export function reduce(state: AppState, command: Command): AppState {
             headline: c.headline,
             body: c.body,
             quads: c.quads,
-            liveText: c.liveText,
           },
         },
       }

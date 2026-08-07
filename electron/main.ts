@@ -54,44 +54,49 @@ function loadState(): AppState {
       const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
       // ribbonsLive backfills from fresh so older state (no ribbons) can't break.
       const ribbonsLive = { ...fresh.ribbonsLive, ...(parsed.ribbonsLive ?? parsed.ribbons) }
-      // Text: normalize each card to the full template shape (template, quads,
-      // liveText), migrate an older single-string text into one card, or fall
-      // back to a fresh empty card.
-      const TEMPLATES = ['basic', 'quadrants', 'live']
+      // Text: normalize each card to the current shape. The retired 'live'
+      // template becomes a basic card with liveType on (its old liveText moves
+      // into the headline). Older single-string text becomes one basic card.
+      const TEMPLATES = ['basic', 'quadrants']
       const template = (v: unknown) => (TEMPLATES.includes(String(v)) ? String(v) : 'basic')
       const quads = (v: unknown) => {
         const a = Array.isArray(v) ? v : []
         return [String(a[0] ?? ''), String(a[1] ?? ''), String(a[2] ?? ''), String(a[3] ?? '')]
       }
+      const normCard = (c: Record<string, unknown>) => {
+        const wasLive = String(c.template) === 'live'
+        return {
+          id: String(c.id ?? `card-${Math.random().toString(36).slice(2, 8)}`),
+          template: template(c.template),
+          liveType: wasLive ? true : Boolean(c.liveType),
+          headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
+          body: String(c.body ?? ''),
+          quads: quads(c.quads),
+        }
+      }
       const pt = parsed.text
-      const emptyLive = { cardId: '', template: 'basic', headline: '', body: '', quads: quads(null), liveText: '' }
+      const emptyLive = { cardId: '', template: 'basic', headline: '', body: '', quads: quads(null) }
+      const normLive = (l: Record<string, unknown>) => {
+        const wasLive = String(l.template) === 'live'
+        return {
+          cardId: String(l.cardId ?? ''),
+          template: template(l.template),
+          headline: wasLive ? String(l.liveText ?? l.headline ?? '') : String(l.headline ?? ''),
+          body: String(l.body ?? ''),
+          quads: quads(l.quads),
+        }
+      }
       const text =
         pt && Array.isArray(pt.cards) && pt.cards.length
           ? {
-              cards: pt.cards.map((c: Record<string, unknown>) => ({
-                id: String(c.id ?? `card-${Math.random().toString(36).slice(2, 8)}`),
-                template: template(c.template),
-                headline: String(c.headline ?? ''),
-                body: String(c.body ?? ''),
-                quads: quads(c.quads),
-                liveText: String(c.liveText ?? ''),
-              })),
+              cards: pt.cards.map(normCard),
               selectedId: String(pt.selectedId ?? pt.cards[0].id),
-              live: pt.live
-                ? {
-                    cardId: String(pt.live.cardId ?? ''),
-                    template: template(pt.live.template),
-                    headline: String(pt.live.headline ?? ''),
-                    body: String(pt.live.body ?? ''),
-                    quads: quads(pt.live.quads),
-                    liveText: String(pt.live.liveText ?? ''),
-                  }
-                : emptyLive,
+              live: pt.live ? normLive(pt.live) : emptyLive,
             }
           : pt && typeof pt.live === 'string'
             ? {
                 cards: [
-                  { id: 'card-1', template: 'basic', headline: String(pt.live || pt.draft || ''), body: '', quads: quads(null), liveText: '' },
+                  { id: 'card-1', template: 'basic', liveType: false, headline: String(pt.live || pt.draft || ''), body: '', quads: quads(null) },
                 ],
                 selectedId: 'card-1',
                 live: { ...emptyLive, headline: String(pt.live || '') },

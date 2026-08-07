@@ -1,6 +1,7 @@
-// Full-screen text scene. Renders the committed (live) card in one of three
-// templates: a headline+body clue, a 2x2 grid of words, or a single block of
-// text that mirrors the operator's live typing.
+// Full-screen text scene. Renders the committed (live) card in one of two
+// layouts: a headline+body clue, or a 2x2 grid of words. Either can be driven
+// live (the operator's live-type toggle just re-commits on every keystroke —
+// the projector doesn't need to know or care).
 
 import { useAppState } from '../../store/react'
 
@@ -17,14 +18,6 @@ export function TextScene() {
             </div>
           ))}
         </div>
-      </div>
-    )
-  }
-
-  if (live.template === 'live') {
-    return (
-      <div className="scene-text">
-        {live.liveText && <div className="scene-text__live">{live.liveText}</div>}
       </div>
     )
   }

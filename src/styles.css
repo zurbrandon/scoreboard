@@ -369,12 +369,17 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .text-card__template:focus { outline: none; border-color: var(--accent); }
-.text-card__livebadge {
+/* Per-card live-type toggle: a small label + the shared switch. */
+.text-card__livetoggle { display: inline-flex; align-items: center; gap: 6px; flex: none; cursor: pointer; }
+.text-card__livelabel {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--red);
+  color: var(--muted);
+  min-width: 3.2em;
+  text-align: right;
 }
+.text-card__livelabel.is-on { color: var(--red); }
 
 .text-card textarea,
 .text-card__quad,

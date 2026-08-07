@@ -56,7 +56,6 @@ export function OperatorApp() {
       c.template !== L.template ||
       c.headline !== L.headline ||
       c.body !== L.body ||
-      c.liveText !== L.liveText ||
       c.quads.some((q, i) => q !== L.quads[i])
     )
   })
@@ -323,7 +322,6 @@ function LogoConfig() {
 const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
   { value: 'basic', label: 'Headline + body' },
   { value: 'quadrants', label: 'Four quadrants' },
-  { value: 'live', label: 'Live typing' },
 ]
 
 function TextConfig() {
@@ -339,10 +337,18 @@ function TextConfig() {
     <div className="cards">
       {cards.map((card) => {
         const isOnAir = programScene === 'text' && liveCardId === card.id
-        // For a live card that's on air, republish on every keystroke.
-        const setField = (field: 'headline' | 'body' | 'liveText', value: string) => {
+        // When live-type is on and this card is on air, republish on every edit
+        // so keystrokes mirror to the projector — works with either layout.
+        const commitIfLive = () => {
+          if (card.liveType && isOnAir) dispatch({ type: 'text.commit' })
+        }
+        const setField = (field: 'headline' | 'body', value: string) => {
           dispatch({ type: 'text.setField', id: card.id, field, value })
-          if (card.template === 'live' && isOnAir) dispatch({ type: 'text.commit' })
+          commitIfLive()
+        }
+        const setQuad = (index: number, value: string) => {
+          dispatch({ type: 'text.setQuad', id: card.id, index, value })
+          commitIfLive()
         }
         return (
           <div
@@ -354,7 +360,7 @@ function TextConfig() {
               <select
                 className="text-card__template"
                 value={card.template}
-                aria-label="Card template"
+                aria-label="Card layout"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) =>
                   dispatch({
@@ -370,9 +376,25 @@ function TextConfig() {
                   </option>
                 ))}
               </select>
-              {card.template === 'live' && isOnAir && (
-                <span className="text-card__livebadge">● LIVE</span>
-              )}
+              <label
+                className="text-card__livetoggle switch"
+                title="Live type: mirror keystrokes to the screen while this card is on air"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className={`text-card__livelabel ${card.liveType ? 'is-on' : ''}`}>
+                  {card.liveType && isOnAir ? '● LIVE' : 'Live'}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={card.liveType}
+                  onChange={(e) =>
+                    dispatch({ type: 'text.setLiveType', id: card.id, value: e.target.checked })
+                  }
+                />
+                <span className="switch__track">
+                  <span className="switch__thumb" />
+                </span>
+              </label>
               {cards.length > 1 && (
                 <button
                   className="text-card__remove"
@@ -418,31 +440,19 @@ function TextConfig() {
                       value={card.quads[i]}
                       placeholder={label}
                       aria-label={label}
-                      onChange={(e) =>
-                        dispatch({ type: 'text.setQuad', id: card.id, index: i, value: e.target.value })
-                      }
+                      onChange={(e) => setQuad(i, e.target.value)}
                     />
                   ),
                 )}
               </div>
             )}
 
-            {card.template === 'live' && (
-              <>
-                <textarea
-                  className="text-card__live"
-                  value={card.liveText}
-                  placeholder="Type here — goes straight to the screen once revealed"
-                  aria-label="Live text"
-                  rows={2}
-                  onChange={(e) => setField('liveText', e.target.value)}
-                />
-                <span className="text-card__hint">
-                  {isOnAir
-                    ? 'Live — every keystroke shows on the projector.'
-                    : 'Press Reveal to go on air, then it types live.'}
-                </span>
-              </>
+            {card.liveType && (
+              <span className="text-card__hint">
+                {isOnAir
+                  ? 'Live — every keystroke shows on the projector.'
+                  : 'Reveal to put this on air, then it types live.'}
+              </span>
             )}
           </div>
         )
