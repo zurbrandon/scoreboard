@@ -26,11 +26,20 @@ const ON_AIR_LABEL: Record<Scene, string> = {
   black: 'Black',
 }
 
-// Overlay effects — fire on top of whatever scene is showing. Add more here.
-const EFFECTS: { kind: string; icon: string; title: string }[] = [
+// Overlay effects — fire on top of whatever scene is showing. Two groups:
+// particle bursts and full-screen light effects. Add more by extending these
+// (and the matching kind in EffectOverlay).
+const FX_BURSTS: { kind: string; icon: string; title: string }[] = [
   { kind: 'confetti', icon: '🎉', title: 'Confetti cannon' },
+  { kind: 'streamers', icon: '🎊', title: 'Streamers' },
+  { kind: 'fireworks', icon: '🎆', title: 'Fireworks' },
   { kind: 'hearts', icon: '❤️', title: 'Hearts' },
   { kind: 'stars', icon: '⭐', title: 'Stars' },
+]
+const FX_SCREEN: { kind: string; icon: string; title: string }[] = [
+  { kind: 'flash', icon: '⚡', title: 'Camera flash' },
+  { kind: 'wash-blue', icon: '🔵', title: 'Blue wash' },
+  { kind: 'wash-red', icon: '🔴', title: 'Red wash' },
 ]
 
 export function OperatorApp() {
@@ -166,7 +175,19 @@ export function OperatorApp() {
 
       <footer className="deck">
         <div className="fx-row">
-          {EFFECTS.map((fx) => (
+          {FX_BURSTS.map((fx) => (
+            <button
+              key={fx.kind}
+              className="fx-btn"
+              title={fx.title}
+              aria-label={fx.title}
+              onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+            >
+              {fx.icon}
+            </button>
+          ))}
+          <span className="fx-divider" aria-hidden="true" />
+          {FX_SCREEN.map((fx) => (
             <button
               key={fx.kind}
               className="fx-btn"

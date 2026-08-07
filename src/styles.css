@@ -611,6 +611,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .fx-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
 .fx-btn:active { transform: translateY(0) scale(0.94); }
+.fx-divider { width: 1px; height: 22px; background: #2c3346; margin: 0 2px; align-self: center; }
 .deck__row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; }
 .deck-black { justify-self: center; min-width: 88px; height: 52px; padding: 0 14px; border-radius: 12px; background: var(--panel); border: 1px solid #2c3346; color: var(--text); font-size: 13px; font-weight: 600; }
 .deck-black:hover { border-color: #fff; }
@@ -992,6 +993,33 @@ button { font-family: inherit; cursor: pointer; }
   height: 100%;
   pointer-events: none;
   z-index: 60;
+}
+/* Full-screen light effects (flash / team color wash). */
+.fx-screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 62;
+  opacity: 0;
+}
+.fx-screen--flash { background: #fff; animation: fx-flash 220ms ease-out; }
+@keyframes fx-flash {
+  0% { opacity: 0; }
+  12% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+.fx-screen--wash-blue {
+  background: radial-gradient(120% 85% at 50% 120%, var(--blue), transparent 70%);
+  animation: fx-wash 850ms ease-out;
+}
+.fx-screen--wash-red {
+  background: radial-gradient(120% 85% at 50% 120%, var(--red), transparent 70%);
+  animation: fx-wash 850ms ease-out;
+}
+@keyframes fx-wash {
+  0% { opacity: 0; transform: translateY(14%); }
+  30% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(0); }
 }
 
 .team-panel__name {
