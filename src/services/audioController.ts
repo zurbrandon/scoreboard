@@ -88,8 +88,9 @@ export function createAudioController(store: Store): AudioController {
 
   // Play a bumper. On a reveal (useSelection), honor the operator's "next song"
   // pick if one is set and still loaded; otherwise fall back to random. The Test
-  // button ignores the pick — it's just a sound-check.
-  function playBumper(useSelection: boolean): void {
+  // button ignores the pick — it's just a sound-check. `fade` off lets a track
+  // play out in full (used for the Final-score celebration, which runs long).
+  function playBumper(useSelection: boolean, fade = true): void {
     const { music } = store.getState()
     if (!music.enabled || tracks.length === 0) return
 
@@ -113,7 +114,7 @@ export function createAudioController(store: Store): AudioController {
       void audio.play().catch((err) => {
         console.warn('[audio] bumper playback failed; continuing show:', err)
       })
-      scheduleFade()
+      if (fade) scheduleFade() // else let it ride out to the end of the track
       store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
       // A picked track is a one-shot: consume it so the next reveal is random again.
       if (wasChosen) store.dispatch({ type: 'music.setNextTrack', id: null })
@@ -153,7 +154,10 @@ export function createAudioController(store: Store): AudioController {
     }
     if (s.revealNonce !== lastNonce) {
       lastNonce = s.revealNonce
-      playBumper(true)
+      // The Final-score celebration runs long — let its song play out instead of
+      // fading after 15s. Normal reveals still fade.
+      const isFinaleCelebration = s.revealPhase === 'finale' && s.finaleStage === 'celebrate'
+      playBumper(true, !isFinaleCelebration)
     }
     // Keep a playing track's volume in sync with the operator's slider
     // (respecting any in-progress fade).
