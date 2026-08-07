@@ -1040,18 +1040,19 @@ button { font-family: inherit; cursor: pointer; }
 .fx-slam--success {
   color: #2fe08a;
   text-shadow: 0 0 3vw rgba(47, 224, 138, 0.7), 0 0.4vw 1.4vw rgba(0, 0, 0, 0.65);
+  --tilt: -5deg; /* leans left */
 }
 .fx-slam--nope {
   color: #ff4d4d;
   text-shadow: 0 0 3vw rgba(255, 77, 77, 0.7), 0 0.4vw 1.4vw rgba(0, 0, 0, 0.65);
+  --tilt: 5deg; /* leans right */
 }
 @keyframes fx-slam {
-  0% { opacity: 0; transform: translateY(-45%) scale(2.6); }
-  16% { opacity: 1; transform: translateY(0) scale(0.9); } /* impact */
-  26% { transform: scale(1.07); }
-  36% { transform: scale(1); }
-  80% { opacity: 1; transform: scale(1); } /* hold */
-  100% { opacity: 0; transform: scale(1.05); } /* fade out */
+  0% { opacity: 0; transform: translateY(-45%) scale(2.6) rotate(calc(var(--tilt) * 2.4)); }
+  16% { opacity: 1; transform: translateY(0) scale(0.9) rotate(calc(var(--tilt) * 1.2)); } /* impact */
+  26% { transform: scale(1.07) rotate(var(--tilt)); }
+  36%, 80% { opacity: 1; transform: scale(1) rotate(var(--tilt)); } /* settle + hold at a tilt */
+  100% { opacity: 0; transform: scale(1.05) rotate(var(--tilt)); } /* fade out */
 }
 
 .team-panel__name {
