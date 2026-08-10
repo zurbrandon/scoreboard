@@ -29,10 +29,10 @@ export function ProjectorApp() {
           <motion.div
             key={animNonce}
             className="slide-stage"
-            initial={{ opacity: 0, scale: 0.985 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.015 }}
-            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
           >
             {liveSlide?.type === 'logo' && <LogoScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'text' && <TextScene slide={liveSlide} animate={animate} />}
