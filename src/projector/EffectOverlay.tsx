@@ -47,6 +47,15 @@ const SLAMS: Record<string, { words: string[]; cls: string }> = {
 const GRAVITY = 0.0012 // px per ms^2
 const DRAG = 0.9996
 
+// Cap the canvas' internal render resolution. The particle effects — the
+// fireworks especially — are fill-rate bound: every frame clears the whole
+// canvas and blends hundreds of additive glow sprites over it, so cost scales
+// with pixel count. On a 4K projector that's ~4× the fill of 1080p and it can
+// crawl. The canvas is CSS-stretched to fill the screen (see .fx-overlay), so we
+// render at a capped backing resolution and let the browser upscale; the glow is
+// soft enough that the downscale is invisible. 1080p and below are left as-is.
+const MAX_RENDER_WIDTH = 1920
+
 function rand(a: number, b: number) {
   return a + Math.random() * (b - a)
 }
@@ -155,8 +164,9 @@ export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) 
     if (!ctx) return
     if (typeof document !== 'undefined' && document.hidden) return // rAF is paused anyway
 
-    const w = (canvas.width = canvas.clientWidth)
-    const h = (canvas.height = canvas.clientHeight)
+    const scale = Math.min(1, MAX_RENDER_WIDTH / canvas.clientWidth)
+    const w = (canvas.width = Math.max(1, Math.round(canvas.clientWidth * scale)))
+    const h = (canvas.height = Math.max(1, Math.round(canvas.clientHeight * scale)))
 
     const tick =
       kind === 'fireworks' ? makeFireworksTick(ctx, w, h, rafRef) : makeParticleTick(ctx, w, h, kind, rafRef)
@@ -249,7 +259,7 @@ function makeFireworksTick(
     y: number
     vx: number
     vy: number
-    color: string
+    sprite: HTMLCanvasElement
     size: number
     life: number
     decay: number
@@ -258,7 +268,7 @@ function makeFireworksTick(
     x: number
     y: number
     r: number
-    color: string
+    sprite: HTMLCanvasElement
     life: number
   }
   // More shells, staggered, at varied positions and heights.
@@ -279,8 +289,11 @@ function makeFireworksTick(
   const whiteGlow = glowSprite('#ffffff')
 
   const burst = (x: number, y: number, color: string) => {
+    // Every spark and the flash of one burst share a color, so resolve the glow
+    // sprite once here rather than looking it up per particle per frame.
+    const sprite = glowSprite(color)
     // A bright pop at the burst point...
-    flashes.push({ x, y, r: 10, color, life: 1 })
+    flashes.push({ x, y, r: 10, sprite, life: 1 })
     // ...then a big, dense ring of glowing sparks.
     const n = 70
     for (let i = 0; i < n; i++) {
@@ -291,7 +304,7 @@ function makeFireworksTick(
         y,
         vx: Math.cos(a) * sp,
         vy: Math.sin(a) * sp,
-        color,
+        sprite,
         size: rand(3, 5),
         life: 1,
         decay: 1 / rand(1300, 2200),
@@ -335,7 +348,7 @@ function makeFireworksTick(
       flashAlive = true
       f.r += 0.5 * dt
       ctx.globalAlpha = Math.max(0, f.life) * 0.7
-      ctx.drawImage(glowSprite(f.color), f.x - f.r, f.y - f.r, f.r * 2, f.r * 2)
+      ctx.drawImage(f.sprite, f.x - f.r, f.y - f.r, f.r * 2, f.r * 2)
     }
 
     // Glowing sparks falling under gravity.
@@ -349,7 +362,7 @@ function makeFireworksTick(
       p.y += p.vy * dt
       const rad = p.size * 3
       ctx.globalAlpha = Math.max(0, p.life)
-      ctx.drawImage(glowSprite(p.color), p.x - rad, p.y - rad, rad * 2, rad * 2)
+      ctx.drawImage(p.sprite, p.x - rad, p.y - rad, rad * 2, rad * 2)
     }
 
     ctx.globalCompositeOperation = 'source-over'

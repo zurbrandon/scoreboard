@@ -1231,7 +1231,7 @@ button { font-family: inherit; cursor: pointer; }
   justify-content: center;
   gap: 1vh;
   background: radial-gradient(75% 75% at 50% 50%, color-mix(in srgb, var(--win) 40%, #05070d), #05070d);
-  animation: finale-in 0.5s ease-out;
+  /* entrance driven by Motion (see FinaleOverlay) */
 }
 @keyframes finale-in {
   from { opacity: 0; transform: scale(0.95); }
@@ -1307,11 +1307,5 @@ button { font-family: inherit; cursor: pointer; }
   line-height: 0.8;
   color: #eafcff;
   text-shadow: 0 0 3vw #fff, 0 0 9vw var(--accent), 0 0 18vw var(--accent);
-  animation: count-pop 1s ease-out;
-}
-@keyframes count-pop {
-  0% { transform: scale(0.3); opacity: 0; }
-  22% { transform: scale(1.15); opacity: 1; }
-  38% { transform: scale(1); }
-  100% { transform: scale(1); opacity: 1; }
+  /* pop driven by Motion (see FinaleCountdown) */
 }

@@ -3,7 +3,8 @@
 // their scores stay with them. Reveal animations (count-up, winner grow,
 // confetti) are driven off revealPhase / revealNonce; the store holds truth.
 
-import { useEffect, useState } from 'react'
+import { type CSSProperties, useEffect, useState } from 'react'
+import { motion } from 'motion/react'
 import { useAppState } from '../../store/react'
 import { determineWinner } from '../../core/winner'
 import { formatScore } from '../../core/score'
@@ -118,23 +119,64 @@ function FinaleOverlay() {
   const winName = winner === 'blue' ? blueName : winner === 'red' ? redName : ''
   const winScore = winner === 'blue' ? blueScore : redScore
 
+  const pop = { type: 'spring', stiffness: 300, damping: 15, mass: 0.8 } as const
+  const rise = { type: 'spring', stiffness: 260, damping: 20 } as const
   return (
-    <div className="finale" style={{ ['--win' as string]: color }}>
+    <motion.div
+      className="finale"
+      style={{ ['--win' as string]: color } as CSSProperties}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+    >
       {winner === 'tie' ? (
         <>
-          <div className="finale__label">It's a tie</div>
-          <div className="finale__score">
+          <motion.div
+            className="finale__label"
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={rise}
+          >
+            It's a tie
+          </motion.div>
+          <motion.div
+            className="finale__score"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ ...pop, delay: 0.12 }}
+          >
             {formatScore(blueScore)} – {formatScore(redScore)}
-          </div>
+          </motion.div>
         </>
       ) : (
         <>
-          <div className="finale__label">Winner</div>
-          <div className="finale__name">{winName}</div>
-          <div className="finale__score">{formatScore(winScore)}</div>
+          <motion.div
+            className="finale__label"
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={rise}
+          >
+            Winner
+          </motion.div>
+          <motion.div
+            className="finale__name"
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ ...pop, delay: 0.08 }}
+          >
+            {winName}
+          </motion.div>
+          <motion.div
+            className="finale__score"
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ ...pop, delay: 0.2 }}
+          >
+            {formatScore(winScore)}
+          </motion.div>
         </>
       )}
-    </div>
+    </motion.div>
   )
 }
 
@@ -167,13 +209,20 @@ function FinaleTabulating() {
   )
 }
 
-// Step 2: the 3 · 2 · 1 countdown. Keying on the value restarts the pop each tick.
+// Step 2: the 3 · 2 · 1 countdown. Keying on the value remounts the number so
+// its spring pop replays on each tick.
 function FinaleCountdown({ value }: { value: number }) {
   return (
     <div className="finale-count">
-      <div className="finale-count__num" key={value}>
+      <motion.div
+        key={value}
+        className="finale-count__num"
+        initial={{ scale: 0.2, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 13, mass: 0.7 }}
+      >
         {value}
-      </div>
+      </motion.div>
     </div>
   )
 }
