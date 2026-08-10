@@ -32,19 +32,17 @@ export type Command =
   | { type: 'half.set'; half: Half }
   | { type: 'display.set'; scene: Scene } // switch scene with no entrance animation (silent/black)
   | { type: 'display.reveal'; scene: Scene } // switch scene AND play its entrance animation
-  | { type: 'logo.select'; id: string } // preview a logo (draft)
-  | { type: 'logo.commit' } // make the drafted logo live
-  | { type: 'logo.setWebsite'; id: string; website: string }
-  | { type: 'logo.add'; id: string; name: string; src: string } // add an uploaded logo and select it
-  | { type: 'logo.remove'; id: string }
-  | { type: 'text.addCard'; id: string } // append a new (empty) card and select it
-  | { type: 'text.removeCard'; id: string }
-  | { type: 'text.selectCard'; id: string }
-  | { type: 'text.setTemplate'; id: string; template: TextTemplate }
-  | { type: 'text.setLiveType'; id: string; value: boolean } // per-card live-typing toggle
-  | { type: 'text.setField'; id: string; field: 'headline' | 'body'; value: string }
-  | { type: 'text.setQuad'; id: string; index: number; value: string } // index 0..3 (TL,TR,BL,BR)
-  | { type: 'text.commit' } // publish the selected card to the live snapshot
+  // Unified Slides deck (logo + text slides share one queue/selection/reveal).
+  | { type: 'slide.select'; id: string } // preview a slide (draft)
+  | { type: 'slide.commit' } // publish the selected slide to `live`
+  | { type: 'slide.remove'; id: string }
+  | { type: 'slide.addLogo'; id: string; name: string; src: string } // add a logo slide and select it
+  | { type: 'slide.addText'; id: string; template: TextTemplate } // add a text slide and select it
+  | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
+  | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
+  | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle
+  | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
+  | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3
   | { type: 'slideshow.addSlide'; id: string } // append a new (empty) slide and select it
   | { type: 'slideshow.removeSlide'; id: string }
   | { type: 'slideshow.selectSlide'; id: string }

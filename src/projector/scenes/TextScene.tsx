@@ -3,10 +3,10 @@
 // live (the operator's live-type toggle just re-commits on every keystroke —
 // the projector doesn't need to know or care).
 
-import { useAppState } from '../../store/react'
+import type { TextSlide } from '../../core/state'
 
-export function TextScene({ animate = false }: { animate?: boolean }) {
-  const live = useAppState((s) => s.text.live)
+export function TextScene({ slide, animate = false }: { slide: TextSlide; animate?: boolean }) {
+  const live = slide
   const revealCls = animate ? 'scene-text--reveal' : ''
 
   if (live.template === 'quadrants') {

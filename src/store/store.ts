@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, type AppState } from '../core/state'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
@@ -71,9 +71,11 @@ function loadPersisted(): AppState {
       // build (missing a newly-added nested field, e.g. music.library) can never
       // leave the renderer reading `undefined`. Mirrors the Electron loader.
       const fresh = createInitialState()
+      const KNOWN_SCENES = ['scoreboard', 'slides', 'slideshow', 'black']
       return {
         ...fresh,
         ...parsed,
+        scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
         teams: {
           blue: { ...fresh.teams.blue, ...parsed.teams.blue },
           red: { ...fresh.teams.red, ...parsed.teams.red },
@@ -82,10 +84,9 @@ function loadPersisted(): AppState {
         audienceLive: { ...fresh.audienceLive, ...parsed.audienceLive },
         ribbons: { ...fresh.ribbons, ...parsed.ribbons },
         ribbonsLive: { ...fresh.ribbonsLive, ...parsed.ribbonsLive },
-        logos: Array.isArray(parsed.logos) && parsed.logos.length ? parsed.logos : fresh.logos,
-        logo: { ...fresh.logo, ...parsed.logo },
+        // Logo + Text merged into one Slides deck (migrateSlides handles old shapes).
+        slides: migrateSlides(parsed, fresh),
         music: { ...fresh.music, ...parsed.music },
-        text: { ...fresh.text, ...parsed.text },
         slideshow: { ...fresh.slideshow, ...parsed.slideshow },
       }
     }

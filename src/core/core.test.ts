@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from './state'
+import type { AppState, LogoSlide, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
 import { sideOf, teamOnSide } from './sides'
@@ -11,6 +12,19 @@ import type { Command } from './commands'
 function run(...commands: Command[]) {
   return commands.reduce(reduce, createInitialState())
 }
+
+// Narrowing helpers for the Slides deck (union of logo | text slides).
+function textSlide(s: AppState, id: string): TextSlide {
+  const slide = s.slides.items.find((i) => i.id === id)
+  if (slide?.type !== 'text') throw new Error(`${id} is not a text slide`)
+  return slide
+}
+function logoSlideOf(s: AppState, id: string): LogoSlide {
+  const slide = s.slides.items.find((i) => i.id === id)
+  if (slide?.type !== 'logo') throw new Error(`${id} is not a logo slide`)
+  return slide
+}
+const hasId = (s: AppState, id: string) => s.slides.items.some((i) => i.id === id)
 
 describe('pending vs live (the sacred rule)', () => {
   it('score edits touch pending only, never live', () => {
@@ -135,101 +149,88 @@ describe('scoring details', () => {
   })
 
   it('display.reveal flags an animated entrance and bumps the nonce; display.set does not', () => {
-    const revealed = run({ type: 'display.reveal', scene: 'logo' })
-    expect(revealed.scene).toBe('logo')
+    const revealed = run({ type: 'display.reveal', scene: 'slides' })
+    expect(revealed.scene).toBe('slides')
     expect(revealed.displayWasReveal).toBe(true)
     expect(revealed.revealAnimNonce).toBe(1)
     // A subsequent silent switch clears the flag and leaves the nonce alone.
-    const silent = reduce(revealed, { type: 'display.set', scene: 'text' })
+    const silent = reduce(revealed, { type: 'display.set', scene: 'black' })
     expect(silent.displayWasReveal).toBe(false)
     expect(silent.revealAnimNonce).toBe(1)
   })
 
-  it('logo select stages a draft; commit makes it live', () => {
-    const s = run({ type: 'logo.select', id: 'theater' })
-    expect(s.logo.draftId).toBe('theater')
-    expect(s.logo.liveId).not.toBe('theater') // still the default until committed
-    const s2 = reduce(s, { type: 'logo.commit' })
-    expect(s2.logo.liveId).toBe('theater')
+  it('slide select stages a draft; commit publishes it to live', () => {
+    const s = run({ type: 'slide.select', id: 'theater' })
+    expect(s.slides.selectedId).toBe('theater')
+    expect(s.slides.live).toBeNull() // nothing live until committed
+    const s2 = reduce(s, { type: 'slide.commit' })
+    expect(s2.slides.live?.id).toBe('theater')
   })
 
-  it('logo library: add (auto-selects), edit website, remove (keeps selection valid)', () => {
-    // Add an uploaded logo — it becomes the draft selection.
-    let s = run({ type: 'logo.add', id: 'up1', name: 'Sponsor', src: 'data:image/png;base64,AA' })
-    expect(s.logos.some((l) => l.id === 'up1')).toBe(true)
-    expect(s.logo.draftId).toBe('up1')
+  it('slides deck: add logo (auto-selects), edit website, remove (selection stays valid)', () => {
+    let s = run({ type: 'slide.addLogo', id: 'up1', name: 'Sponsor', src: 'data:image/png;base64,AA' })
+    expect(hasId(s, 'up1')).toBe(true)
+    expect(s.slides.selectedId).toBe('up1') // adding selects it
 
-    // Website is editable per logo.
-    s = reduce(s, { type: 'logo.setWebsite', id: 'up1', website: 'sponsor.com' })
-    expect(s.logos.find((l) => l.id === 'up1')?.website).toBe('sponsor.com')
+    s = reduce(s, { type: 'slide.setWebsite', id: 'up1', website: 'sponsor.com' })
+    expect(logoSlideOf(s, 'up1').website).toBe('sponsor.com')
 
-    // Make it live, then remove it — selection falls back to a remaining logo.
-    s = reduce(s, { type: 'logo.commit' })
-    expect(s.logo.liveId).toBe('up1')
-    s = reduce(s, { type: 'logo.remove', id: 'up1' })
-    expect(s.logos.some((l) => l.id === 'up1')).toBe(false)
-    expect(s.logo.liveId).not.toBe('up1')
-    expect(s.logos.some((l) => l.id === s.logo.liveId)).toBe(true) // still valid
+    s = reduce(s, { type: 'slide.remove', id: 'up1' })
+    expect(hasId(s, 'up1')).toBe(false)
+    expect(hasId(s, s.slides.selectedId)).toBe(true) // selection still points at a real slide
   })
 
-  it('text: editing a card stages; commit publishes the selected card', () => {
-    // Fill in the default card, then commit — live shows headline + body.
-    let s = run({ type: 'text.setField', id: 'card-1', field: 'headline', value: 'Skiing' })
-    s = reduce(s, { type: 'text.setField', id: 'card-1', field: 'body', value: 'but with pizza sauce' })
-    expect(s.text.cards[0]).toMatchObject({ headline: 'Skiing', body: 'but with pizza sauce' })
-    expect(s.text.live.headline).toBe('') // not shown until committed
-    const committed = reduce(s, { type: 'text.commit' })
-    expect(committed.text.live).toMatchObject({
-      cardId: 'card-1',
-      template: 'basic',
-      headline: 'Skiing',
-      body: 'but with pizza sauce',
-    })
+  it('text slide: editing stages; commit publishes the selected slide', () => {
+    let s = run({ type: 'slide.select', id: 'text-1' })
+    s = reduce(s, { type: 'slide.setField', id: 'text-1', field: 'headline', value: 'Skiing' })
+    s = reduce(s, { type: 'slide.setField', id: 'text-1', field: 'body', value: 'but with pizza sauce' })
+    expect(textSlide(s, 'text-1')).toMatchObject({ headline: 'Skiing', body: 'but with pizza sauce' })
+    expect(s.slides.live).toBeNull() // not shown until committed
+    const live = reduce(s, { type: 'slide.commit' }).slides.live
+    expect(live).toMatchObject({ id: 'text-1', type: 'text', headline: 'Skiing', body: 'but with pizza sauce' })
   })
 
-  it('text: quadrants layout commits its four words', () => {
-    let s = run({ type: 'text.setTemplate', id: 'card-1', template: 'quadrants' })
-    s = reduce(s, { type: 'text.setQuad', id: 'card-1', index: 0, value: 'TL' })
-    s = reduce(s, { type: 'text.setQuad', id: 'card-1', index: 3, value: 'BR' })
-    const q = reduce(s, { type: 'text.commit' }).text.live
-    expect(q.template).toBe('quadrants')
-    expect(q.quads).toEqual(['TL', '', '', 'BR'])
+  it('text slide: quadrants layout commits its four words', () => {
+    let s = run({ type: 'slide.select', id: 'text-1' })
+    s = reduce(s, { type: 'slide.setTemplate', id: 'text-1', template: 'quadrants' })
+    s = reduce(s, { type: 'slide.setQuad', id: 'text-1', index: 0, value: 'TL' })
+    s = reduce(s, { type: 'slide.setQuad', id: 'text-1', index: 3, value: 'BR' })
+    const live = reduce(s, { type: 'slide.commit' }).slides.live
+    expect(live?.type).toBe('text')
+    if (live?.type === 'text') {
+      expect(live.template).toBe('quadrants')
+      expect(live.quads).toEqual(['TL', '', '', 'BR'])
+    }
   })
 
-  it('text: live-type is a per-card toggle, independent of layout', () => {
-    // Off by default; can be turned on for a basic or a quadrants card.
-    let s = run({ type: 'text.setLiveType', id: 'card-1', value: true })
-    expect(s.text.cards[0].liveType).toBe(true)
-    expect(s.text.cards[0].template).toBe('basic') // layout unchanged
-    s = reduce(s, { type: 'text.setTemplate', id: 'card-1', template: 'quadrants' })
-    expect(s.text.cards[0].liveType).toBe(true) // toggle survives a layout change
-    s = reduce(s, { type: 'text.setLiveType', id: 'card-1', value: false })
-    expect(s.text.cards[0].liveType).toBe(false)
+  it('text slide: live-type is a toggle, independent of layout', () => {
+    let s = run({ type: 'slide.setLiveType', id: 'text-1', value: true })
+    expect(textSlide(s, 'text-1').liveType).toBe(true)
+    expect(textSlide(s, 'text-1').template).toBe('basic') // layout unchanged
+    s = reduce(s, { type: 'slide.setTemplate', id: 'text-1', template: 'quadrants' })
+    expect(textSlide(s, 'text-1').liveType).toBe(true) // survives a layout change
+    s = reduce(s, { type: 'slide.setLiveType', id: 'text-1', value: false })
+    expect(textSlide(s, 'text-1').liveType).toBe(false)
   })
 
-  it('text: add / select / remove cards; commit follows the selection', () => {
-    // Give card-1 content, add a second card (auto-selected), give it content.
-    let s = run({ type: 'text.setField', id: 'card-1', field: 'headline', value: 'First' })
-    s = reduce(s, { type: 'text.addCard', id: 'card-2' })
-    expect(s.text.cards).toHaveLength(2)
-    expect(s.text.selectedId).toBe('card-2') // adding selects the new card
-    s = reduce(s, { type: 'text.setField', id: 'card-2', field: 'headline', value: 'Second' })
+  it('slides: add / select / remove; commit follows the selection', () => {
+    // Add a second text slide (auto-selected), give it content.
+    let s = run({ type: 'slide.addText', id: 't2', template: 'basic' })
+    expect(s.slides.selectedId).toBe('t2')
+    s = reduce(s, { type: 'slide.setField', id: 't2', field: 'headline', value: 'Second' })
 
-    // Committing publishes the selected (second) card.
-    expect(reduce(s, { type: 'text.commit' }).text.live.headline).toBe('Second')
+    // Commit publishes the selected (second) slide.
+    const liveB = reduce(s, { type: 'slide.commit' }).slides.live
+    expect(liveB?.type === 'text' && liveB.headline).toBe('Second')
 
-    // Select back to the first, commit publishes it instead.
-    s = reduce(s, { type: 'text.selectCard', id: 'card-1' })
-    expect(reduce(s, { type: 'text.commit' }).text.live.headline).toBe('First')
+    // Select the default text slide, commit publishes it instead.
+    s = reduce(s, { type: 'slide.select', id: 'text-1' })
+    expect(reduce(s, { type: 'slide.commit' }).slides.live?.id).toBe('text-1')
 
-    // Removing the selected card falls back to the remaining one.
-    s = reduce(s, { type: 'text.removeCard', id: 'card-1' })
-    expect(s.text.cards).toHaveLength(1)
-    expect(s.text.selectedId).toBe('card-2')
-
-    // The last card can't be removed — always keep one.
-    const after = reduce(s, { type: 'text.removeCard', id: 'card-2' })
-    expect(after.text.cards).toHaveLength(1)
+    // Removing the selected slide falls back to a remaining one.
+    s = reduce(s, { type: 'slide.remove', id: 'text-1' })
+    expect(hasId(s, 'text-1')).toBe(false)
+    expect(hasId(s, s.slides.selectedId)).toBe(true)
   })
 
   it('slideshow: edit stages; commit publishes the selected slide; add/select/remove', () => {

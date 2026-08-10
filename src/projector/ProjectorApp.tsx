@@ -14,13 +14,19 @@ export function ProjectorApp() {
   // entrance; `animate` gates whether the entrance runs at all (off for silent).
   const animNonce = useAppState((s) => s.revealAnimNonce)
   const animate = useAppState((s) => s.displayWasReveal)
+  const liveSlide = useAppState((s) => s.slides.live)
   const effect = useAppState((s) => s.effect)
 
   return (
     <div className="projector">
       {scene === 'scoreboard' && <Scoreboard />}
-      {scene === 'logo' && <LogoScene key={animNonce} animate={animate} />}
-      {scene === 'text' && <TextScene key={animNonce} animate={animate} />}
+      {scene === 'slides' && liveSlide?.type === 'logo' && (
+        <LogoScene key={animNonce} slide={liveSlide} animate={animate} />
+      )}
+      {scene === 'slides' && liveSlide?.type === 'text' && (
+        <TextScene key={animNonce} slide={liveSlide} animate={animate} />
+      )}
+      {scene === 'slides' && !liveSlide && <div className="scene-logo" />}
       {scene === 'slideshow' && <Slideshow />}
       {scene === 'black' && <div className="scene-black" />}
       {/* Overlay effects play on top of every scene. */}

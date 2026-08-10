@@ -9,22 +9,7 @@ export type TeamId = 'blue' | 'red'
 // Match phase. 'end' is the finale — Reveal triggers the winner celebration.
 export type Half = 'first' | 'second' | 'end'
 
-// A logo in the (editable) Logo scene library. `src` is either a bundled path
-// like 'logos/comedysportz.png' (built-ins) or a data: URL (uploaded images,
-// so they persist without any file management). `website` shows small beneath.
-export interface LogoItem {
-  id: string
-  name: string
-  website: string
-  src: string
-}
-
-export type Scene =
-  | 'scoreboard'
-  | 'logo'
-  | 'text'
-  | 'slideshow'
-  | 'black'
+export type Scene = 'scoreboard' | 'slides' | 'slideshow' | 'black'
 
 export type RevealPhase = 'idle' | 'revealing' | 'finale'
 
@@ -38,12 +23,27 @@ export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
 export type TextTemplate = 'basic' | 'quadrants'
 
-// One clue/message in the Text scene queue. Every card carries the fields for
-// every layout; only the ones its `template` uses are rendered. `liveType` is a
-// per-card toggle: when on and the card is on air, edits mirror to the projector
-// in real time (works with either layout) instead of waiting for a reveal.
-export interface TextCard {
+// A slide in the unified Slides deck. Two kinds today — a logo (image + website)
+// and text (headline+body or a 2x2 quadrant grid). Both share one queue, one
+// selection, and one reveal, so any slide type flips the same way.
+export type SlideType = 'logo' | 'text'
+
+export interface LogoSlide {
   id: string
+  type: 'logo'
+  name: string
+  /** Bundled path like 'logos/comedysportz.png', or a data: URL (uploads). */
+  src: string
+  /** Website shown small beneath the logo. */
+  website: string
+}
+
+// Text slide carries fields for every layout; only the ones its `template` uses
+// are rendered. `liveType`: when on and the slide is on air, edits mirror to the
+// projector in real time instead of waiting for a reveal.
+export interface TextSlide {
+  id: string
+  type: 'text'
   template: TextTemplate
   liveType: boolean
   headline: string
@@ -52,18 +52,13 @@ export interface TextCard {
   quads: [string, string, string, string]
 }
 
-// What the projector currently shows: a snapshot of the published card plus the
-// id it came from (so the operator knows which card is on air for live typing).
-export interface TextLive {
-  cardId: string
-  template: TextTemplate
-  headline: string
-  body: string
-  quads: [string, string, string, string]
-}
+export type Slide = LogoSlide | TextSlide
 
-export function emptyTextCard(id: string, template: TextTemplate = 'basic'): TextCard {
-  return { id, template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
+export function logoSlide(id: string, name: string, src: string, website = ''): LogoSlide {
+  return { id, type: 'logo', name, src, website }
+}
+export function emptyTextSlide(id: string, template: TextTemplate = 'basic'): TextSlide {
+  return { id, type: 'text', template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
 }
 
 // One slideshow URL in the Pre-show queue.
@@ -121,18 +116,14 @@ export interface AppState {
   half: Half
   halfLive: Half
   scene: Scene
-  /** The editable logo library (built-ins + uploads). */
-  logos: LogoItem[]
-  /** Logo scene selection. draftId is what the operator has picked (preview);
-   *  liveId is what the projector shows. Reveal commits draft → live. */
-  logo: { draftId: string; liveId: string }
-  /** Text scene: a queue of cards (headline + body) the operator sets up. The
-   *  selected card is published to `live` on Reveal, so you can flip between
-   *  pre-loaded clues quickly. */
-  text: {
-    cards: TextCard[]
+  /** The unified Slides deck (logo + text slides). The selected slide is
+   *  published to `live` on Reveal; the projector renders whatever `live` is.
+   *  `live` is the exact committed slide object, so a reference !== check tells
+   *  us when the selected slide has un-published edits. */
+  slides: {
+    items: Slide[]
     selectedId: string
-    live: TextLive
+    live: Slide | null
   }
   /** Pre-show scene: a queue of slideshow URLs (e.g. published Google Slides
    *  embed links). The selected slide is published to `liveUrl` on Reveal, so
@@ -180,12 +171,13 @@ export function createInitialState(): AppState {
     half: 'first',
     halfLive: 'first',
     scene: 'scoreboard',
-    logos: LOGO_LIBRARY.map((l) => ({ id: l.id, name: l.name, website: '', src: `logos/${l.file}` })),
-    logo: { draftId: LOGO_LIBRARY[0].id, liveId: LOGO_LIBRARY[0].id },
-    text: {
-      cards: [emptyTextCard('card-1')],
-      selectedId: 'card-1',
-      live: { cardId: '', template: 'basic', headline: '', body: '', quads: ['', '', '', ''] },
+    slides: {
+      items: [
+        ...LOGO_LIBRARY.map((l) => logoSlide(l.id, l.name, `logos/${l.file}`)),
+        emptyTextSlide('text-1'),
+      ],
+      selectedId: LOGO_LIBRARY[0].id,
+      live: null,
     },
     slideshow: {
       slides: [emptySlide('slide-1')],
@@ -211,4 +203,65 @@ export function createInitialState(): AppState {
       nextTrackId: null,
     },
   }
+}
+
+// --- Slides migration -------------------------------------------------------
+// Build the Slides deck from persisted state: pass the new shape through, or
+// migrate the retired `logos` + `text.cards` (and their older variants) into one
+// deck. `live` always starts null — reveal state resets on launch.
+function rid(prefix: string): string {
+  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`
+}
+function normQuads(v: unknown): [string, string, string, string] {
+  const a = Array.isArray(v) ? v : []
+  return [String(a[0] ?? ''), String(a[1] ?? ''), String(a[2] ?? ''), String(a[3] ?? '')]
+}
+function textSlideFrom(c: Record<string, unknown>): TextSlide {
+  // The retired 'live' template becomes a basic slide with liveType on (its old
+  // liveText moves into the headline).
+  const wasLive = String(c.template) === 'live'
+  return {
+    id: String(c.id ?? rid('text')),
+    type: 'text',
+    template: c.template === 'quadrants' ? 'quadrants' : 'basic',
+    liveType: wasLive ? true : Boolean(c.liveType),
+    headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
+    body: String(c.body ?? ''),
+    quads: normQuads(c.quads),
+  }
+}
+function normSlide(s: Record<string, unknown>): Slide | null {
+  if (!s || typeof s !== 'object') return null
+  if (s.type === 'logo') {
+    return logoSlide(String(s.id ?? rid('logo')), String(s.name ?? 'Logo'), String(s.src ?? ''), String(s.website ?? ''))
+  }
+  if (s.type === 'text') return textSlideFrom(s)
+  return null
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function migrateSlides(parsed: any, fresh: AppState): AppState['slides'] {
+  const pick = (id: string, items: Slide[]) =>
+    items.some((i) => i.id === id) ? id : (items[0]?.id ?? '')
+
+  // New shape already present.
+  const src = parsed?.slides
+  if (src && Array.isArray(src.items)) {
+    const items = src.items.map(normSlide).filter((s: Slide | null): s is Slide => s !== null)
+    if (items.length) return { items, selectedId: pick(String(src.selectedId ?? ''), items), live: null }
+  }
+
+  // Migrate the old logos + text.cards into one deck (logos first, then text).
+  const items: Slide[] = []
+  if (Array.isArray(parsed?.logos)) {
+    for (const l of parsed.logos) {
+      const s = normSlide({ ...l, type: 'logo' })
+      if (s) items.push(s)
+    }
+  }
+  if (Array.isArray(parsed?.text?.cards)) {
+    for (const c of parsed.text.cards) items.push(textSlideFrom(c))
+  }
+  if (!items.length) return fresh.slides
+  return { items, selectedId: items[0].id, live: null }
 }

@@ -4,26 +4,25 @@
 // (Reveal / update silently / Black) is what actually changes the projector.
 
 import { useRef, useState } from 'react'
-import { MdScoreboard, MdImage, MdTextFields, MdSlideshow } from 'react-icons/md'
+import { MdScoreboard, MdViewCarousel, MdSlideshow } from 'react-icons/md'
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
-import type { Scene, TextTemplate } from '../core/state'
+import { LOGO_LIBRARY } from '../core/logos'
+import type { LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
 
 const SCENE_TABS: { scene: Scene; label: string; Icon: IconType }[] = [
   { scene: 'scoreboard', label: 'Score', Icon: MdScoreboard },
-  { scene: 'logo', label: 'Logo', Icon: MdImage },
-  { scene: 'text', label: 'Text', Icon: MdTextFields },
+  { scene: 'slides', label: 'Slides', Icon: MdViewCarousel },
   { scene: 'slideshow', label: 'Pre-show', Icon: MdSlideshow },
 ]
 
 const ON_AIR_LABEL: Record<Scene, string> = {
   scoreboard: 'Score',
-  logo: 'Logo',
-  text: 'Text',
+  slides: 'Slides',
   slideshow: 'Pre-show',
   black: 'Black',
 }
@@ -65,28 +64,22 @@ export function OperatorApp() {
       s.ribbons.visible !== s.ribbonsLive.visible,
   )
 
-  const draftLogoId = useAppState((s) => s.logo.draftId)
-  const liveLogoId = useAppState((s) => s.logo.liveId)
-  const textDirty = useAppState((s) => {
-    const c = s.text.cards.find((card) => card.id === s.text.selectedId)
-    if (!c) return true
-    const L = s.text.live
-    return (
-      c.id !== L.cardId ||
-      c.template !== L.template ||
-      c.headline !== L.headline ||
-      c.body !== L.body ||
-      c.quads.some((q, i) => q !== L.quads[i])
-    )
+  // Slides deck: dirty when the selected slide isn't the one that's live. `live`
+  // holds the exact committed object, so a reference check catches un-published
+  // edits (an edit replaces the item with a new object) and selection changes.
+  const slidesDirty = useAppState((s) => {
+    const sel = s.slides.items.find((i) => i.id === s.slides.selectedId)
+    return !!sel && sel !== s.slides.live
   })
   const slideshowDirty = useAppState((s) => {
     const slide = s.slideshow.slides.find((sl) => sl.id === s.slideshow.selectedId)
     return !slide || slide.url !== s.slideshow.liveUrl
   })
-  // A live-type text card mirrors keystrokes, so its reveal shouldn't animate.
-  const selectedTextIsLive = useAppState(
-    (s) => !!s.text.cards.find((c) => c.id === s.text.selectedId)?.liveType,
-  )
+  // A live-type text slide mirrors keystrokes, so its reveal shouldn't animate.
+  const selectedSlideIsLiveText = useAppState((s) => {
+    const sel = s.slides.items.find((i) => i.id === s.slides.selectedId)
+    return sel?.type === 'text' && sel.liveType
+  })
 
   // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
   const [activeTab, setActiveTab] = useState<Scene>(
@@ -101,13 +94,10 @@ export function OperatorApp() {
     if (activeTab === 'scoreboard') {
       dispatch({ type: 'display.set', scene: 'scoreboard' })
       dispatch({ type: withReveal ? 'score.reveal' : 'score.commitSilent' })
-    } else if (activeTab === 'logo') {
-      dispatch({ type: 'logo.commit' })
-      dispatch({ type: withReveal ? 'display.reveal' : 'display.set', scene: 'logo' })
-    } else if (activeTab === 'text') {
-      dispatch({ type: 'text.commit' })
-      const animate = withReveal && !selectedTextIsLive
-      dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'text' })
+    } else if (activeTab === 'slides') {
+      dispatch({ type: 'slide.commit' })
+      const animate = withReveal && !selectedSlideIsLiveText
+      dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'slides' })
     } else if (activeTab === 'slideshow') {
       dispatch({ type: 'slideshow.commit' })
       dispatch({ type: 'display.set', scene: 'slideshow' })
@@ -129,13 +119,11 @@ export function OperatorApp() {
   const armed =
     activeTab === 'scoreboard'
       ? anyDirty || programScene !== 'scoreboard' || half === 'end'
-      : activeTab === 'logo'
-        ? programScene !== 'logo' || draftLogoId !== liveLogoId
-        : activeTab === 'text'
-          ? programScene !== 'text' || textDirty
-          : activeTab === 'slideshow'
-            ? programScene !== 'slideshow' || slideshowDirty
-            : programScene !== activeTab
+      : activeTab === 'slides'
+        ? programScene !== 'slides' || slidesDirty
+        : activeTab === 'slideshow'
+          ? programScene !== 'slideshow' || slideshowDirty
+          : programScene !== activeTab
 
   return (
     <div className="operator">
@@ -174,8 +162,7 @@ export function OperatorApp() {
 
       <div className="scene-config">
         {activeTab === 'scoreboard' && <ScoreboardConfig />}
-        {activeTab === 'logo' && <LogoConfig />}
-        {activeTab === 'text' && <TextConfig />}
+        {activeTab === 'slides' && <SlidesConfig />}
         {activeTab === 'slideshow' && <SlideshowConfig />}
       </div>
 
@@ -389,81 +376,101 @@ async function fileToLogoSrc(file: File, maxDim = 800): Promise<string> {
   return canvas.toDataURL('image/png')
 }
 
-function LogoConfig() {
+const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
+  { value: 'basic', label: 'Headline + body' },
+  { value: 'quadrants', label: 'Four quadrants' },
+]
+
+// Built-in logo presets for the "add slide" menu.
+const LOGO_PRESETS = LOGO_LIBRARY.map((l) => ({ name: l.name, src: `logos/${l.file}` }))
+
+const newSlideId = (p: string) =>
+  `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+
+// The unified Slides deck: logo and text slides in one selectable/reorderable
+// list, plus an "add slide" menu with presets.
+function SlidesConfig() {
   const dispatch = useDispatch()
-  const logos = useAppState((s) => s.logos)
-  const draftId = useAppState((s) => s.logo.draftId)
-  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const items = useAppState((s) => s.slides.items)
+  const selectedId = useAppState((s) => s.slides.selectedId)
+  const programScene = useAppState((s) => s.scene)
+  const liveId = useAppState((s) => s.slides.live?.id ?? null)
+  const [addOpen, setAddOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
   async function onFiles(files: FileList | null) {
     for (const file of Array.from(files ?? [])) {
       try {
         const src = await fileToLogoSrc(file)
-        const id = `logo-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-        dispatch({ type: 'logo.add', id, name: file.name.replace(/\.[^.]+$/, ''), src })
+        dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: file.name.replace(/\.[^.]+$/, ''), src })
       } catch (err) {
-        console.warn('[logo] could not read image; skipping:', err)
+        console.warn('[slide] could not read image; skipping:', err)
       }
     }
+    setAddOpen(false)
   }
 
   return (
-    <div className="logo-list">
-      {logos.map((logo) => (
-        <div
-          key={logo.id}
-          className={`logo-card ${draftId === logo.id ? 'logo-card--active' : ''}`}
-          onClick={() => dispatch({ type: 'logo.select', id: logo.id })}
-        >
-          <div className="logo-card__preview">
-            <img src={logoImgSrc(logo.src)} alt={logo.name} />
-          </div>
-          <input
-            className="logo-card__site"
-            type="text"
-            value={logo.website}
-            placeholder="website (shown under the logo)"
-            aria-label={`${logo.name} website`}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => dispatch({ type: 'logo.setWebsite', id: logo.id, website: e.target.value })}
+    <div className="cards">
+      {items.map((slide) =>
+        slide.type === 'logo' ? (
+          <LogoSlideCard key={slide.id} slide={slide} selected={slide.id === selectedId} />
+        ) : (
+          <TextSlideCard
+            key={slide.id}
+            slide={slide}
+            selected={slide.id === selectedId}
+            isOnAir={programScene === 'slides' && liveId === slide.id}
           />
+        ),
+      )}
+
+      {addOpen ? (
+        <div className="slide-add">
+          <span className="slide-add__label">Add a slide</span>
+          {LOGO_PRESETS.map((p) => (
+            <button
+              key={p.name}
+              className="slide-add__item"
+              onClick={() => {
+                dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: p.name, src: p.src })
+                setAddOpen(false)
+              }}
+            >
+              {p.name} logo
+            </button>
+          ))}
+          <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
+            Upload logo…
+          </button>
           <button
-            className="logo-card__remove"
-            aria-label={`Remove ${logo.name}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              setConfirmingId(logo.id)
+            className="slide-add__item"
+            onClick={() => {
+              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic' })
+              setAddOpen(false)
             }}
           >
-            ✕
+            Text — headline + body
           </button>
-          {confirmingId === logo.id && (
-            <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
-              <span className="logo-card__confirm-q">Remove this logo?</span>
-              <div className="logo-card__confirm-row">
-                <button
-                  className="logo-card__confirm-yes"
-                  onClick={() => {
-                    dispatch({ type: 'logo.remove', id: logo.id })
-                    setConfirmingId(null)
-                  }}
-                >
-                  Remove
-                </button>
-                <button className="logo-card__confirm-no" onClick={() => setConfirmingId(null)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
+          <button
+            className="slide-add__item"
+            onClick={() => {
+              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'quadrants' })
+              setAddOpen(false)
+            }}
+          >
+            Text — four quadrants
+          </button>
+          <button className="slide-add__cancel" onClick={() => setAddOpen(false)}>
+            Cancel
+          </button>
         </div>
-      ))}
+      ) : (
+        <button className="add-card" onClick={() => setAddOpen(true)}>
+          + Add slide
+        </button>
+      )}
 
-      <button className="logo-add" onClick={() => fileInput.current?.click()}>
-        <span className="logo-add__plus">+</span>
-        Add logo
-      </button>
       <input
         ref={fileInput}
         type="file"
@@ -479,156 +486,176 @@ function LogoConfig() {
   )
 }
 
-const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
-  { value: 'basic', label: 'Headline + body' },
-  { value: 'quadrants', label: 'Four quadrants' },
-]
-
-function TextConfig() {
+function LogoSlideCard({ slide, selected }: { slide: LogoSlide; selected: boolean }) {
   const dispatch = useDispatch()
-  const cards = useAppState((s) => s.text.cards)
-  const selectedId = useAppState((s) => s.text.selectedId)
-  // A live-template card mirrors keystrokes to the projector, but only once it's
-  // the card that's actually on air (Text scene showing, and this card revealed).
-  const programScene = useAppState((s) => s.scene)
-  const liveCardId = useAppState((s) => s.text.live.cardId)
-
+  const [confirming, setConfirming] = useState(false)
   return (
-    <div className="cards">
-      {cards.map((card) => {
-        const isOnAir = programScene === 'text' && liveCardId === card.id
-        // When live-type is on and this card is on air, republish on every edit
-        // so keystrokes mirror to the projector — works with either layout.
-        const commitIfLive = () => {
-          if (card.liveType && isOnAir) dispatch({ type: 'text.commit' })
-        }
-        const setField = (field: 'headline' | 'body', value: string) => {
-          dispatch({ type: 'text.setField', id: card.id, field, value })
-          commitIfLive()
-        }
-        const setQuad = (index: number, value: string) => {
-          dispatch({ type: 'text.setQuad', id: card.id, index, value })
-          commitIfLive()
-        }
-        return (
-          <div
-            key={card.id}
-            className={`text-card ${card.id === selectedId ? 'text-card--active' : ''}`}
-            onClick={() => dispatch({ type: 'text.selectCard', id: card.id })}
-          >
-            <div className="text-card__head">
-              <label
-                className="text-card__livetoggle switch"
-                title="Live type: mirror keystrokes to the screen while this card is on air"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className={`text-card__livelabel ${card.liveType ? 'is-on' : ''}`}>
-                  {card.liveType && isOnAir ? '● LIVE' : 'Live'}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={card.liveType}
-                  onChange={(e) =>
-                    dispatch({ type: 'text.setLiveType', id: card.id, value: e.target.checked })
-                  }
-                />
-                <span className="switch__track">
-                  <span className="switch__thumb" />
-                </span>
-              </label>
-              {cards.length > 1 && (
-                <button
-                  className="text-card__remove"
-                  aria-label="Remove card"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    dispatch({ type: 'text.removeCard', id: card.id })
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <select
-              className="text-card__template"
-              value={card.template}
-              aria-label="Card layout"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                dispatch({
-                  type: 'text.setTemplate',
-                  id: card.id,
-                  template: e.target.value as TextTemplate,
-                })
-              }
-            >
-              {TEMPLATE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-
-            {card.template === 'basic' && (
-              <>
-                <textarea
-                  className="text-card__headline"
-                  value={card.headline}
-                  placeholder="Headline (e.g. Skiing)"
-                  aria-label="Card headline"
-                  rows={1}
-                  onChange={(e) => setField('headline', e.target.value)}
-                />
-                <textarea
-                  className="text-card__body"
-                  value={card.body}
-                  placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
-                  aria-label="Card body"
-                  rows={1}
-                  onChange={(e) => setField('body', e.target.value)}
-                />
-              </>
-            )}
-
-            {card.template === 'quadrants' && (
-              <div className="quad-inputs">
-                {(['Top left', 'Top right', 'Bottom left', 'Bottom right'] as const).map(
-                  (label, i) => (
-                    <input
-                      key={i}
-                      className="text-card__quad"
-                      value={card.quads[i]}
-                      placeholder={label}
-                      aria-label={label}
-                      onChange={(e) => setQuad(i, e.target.value)}
-                    />
-                  ),
-                )}
-              </div>
-            )}
-
-            {card.liveType && (
-              <span className="text-card__hint">
-                {isOnAir
-                  ? 'Live — every keystroke shows on the projector.'
-                  : 'Reveal to put this on air, then it types live.'}
-              </span>
-            )}
-          </div>
-        )
-      })}
+    <div
+      className={`logo-card ${selected ? 'logo-card--active' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+    >
+      <div className="logo-card__preview">
+        <img src={logoImgSrc(slide.src)} alt={slide.name} />
+      </div>
+      <input
+        className="logo-card__site"
+        type="text"
+        value={slide.website}
+        placeholder="website (shown under the logo)"
+        aria-label={`${slide.name} website`}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => dispatch({ type: 'slide.setWebsite', id: slide.id, website: e.target.value })}
+      />
       <button
-        className="add-card"
-        onClick={() =>
-          dispatch({
-            type: 'text.addCard',
-            id: `card-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-          })
+        className="logo-card__remove"
+        aria-label={`Remove ${slide.name}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
+      >
+        ✕
+      </button>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this slide?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TextSlideCard({
+  slide,
+  selected,
+  isOnAir,
+}: {
+  slide: TextSlide
+  selected: boolean
+  isOnAir: boolean
+}) {
+  const dispatch = useDispatch()
+  // When live-type is on and this slide is on air, republish on every edit so
+  // keystrokes mirror to the projector.
+  const commitIfLive = () => {
+    if (slide.liveType && isOnAir) dispatch({ type: 'slide.commit' })
+  }
+  const setField = (field: 'headline' | 'body', value: string) => {
+    dispatch({ type: 'slide.setField', id: slide.id, field, value })
+    commitIfLive()
+  }
+  const setQuad = (index: number, value: string) => {
+    dispatch({ type: 'slide.setQuad', id: slide.id, index, value })
+    commitIfLive()
+  }
+  return (
+    <div
+      className={`text-card ${selected ? 'text-card--active' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+    >
+      <div className="text-card__head">
+        <label
+          className="text-card__livetoggle switch"
+          title="Live type: mirror keystrokes to the screen while this slide is on air"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className={`text-card__livelabel ${slide.liveType ? 'is-on' : ''}`}>
+            {slide.liveType && isOnAir ? '● LIVE' : 'Live'}
+          </span>
+          <input
+            type="checkbox"
+            checked={slide.liveType}
+            onChange={(e) => dispatch({ type: 'slide.setLiveType', id: slide.id, value: e.target.checked })}
+          />
+          <span className="switch__track">
+            <span className="switch__thumb" />
+          </span>
+        </label>
+        <button
+          className="text-card__remove"
+          aria-label="Remove slide"
+          onClick={(e) => {
+            e.stopPropagation()
+            dispatch({ type: 'slide.remove', id: slide.id })
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <select
+        className="text-card__template"
+        value={slide.template}
+        aria-label="Slide layout"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) =>
+          dispatch({ type: 'slide.setTemplate', id: slide.id, template: e.target.value as TextTemplate })
         }
       >
-        + Add card
-      </button>
+        {TEMPLATE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+
+      {slide.template === 'basic' && (
+        <>
+          <textarea
+            className="text-card__headline"
+            value={slide.headline}
+            placeholder="Headline (e.g. Skiing)"
+            aria-label="Headline"
+            rows={1}
+            onChange={(e) => setField('headline', e.target.value)}
+          />
+          <textarea
+            className="text-card__body"
+            value={slide.body}
+            placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
+            aria-label="Body"
+            rows={1}
+            onChange={(e) => setField('body', e.target.value)}
+          />
+        </>
+      )}
+
+      {slide.template === 'quadrants' && (
+        <div className="quad-inputs">
+          {(['Top left', 'Top right', 'Bottom left', 'Bottom right'] as const).map((label, i) => (
+            <input
+              key={i}
+              className="text-card__quad"
+              value={slide.quads[i]}
+              placeholder={label}
+              aria-label={label}
+              onChange={(e) => setQuad(i, e.target.value)}
+            />
+          ))}
+        </div>
+      )}
+
+      {slide.liveType && (
+        <span className="text-card__hint">
+          {isOnAir
+            ? 'Live — every keystroke shows on the projector.'
+            : 'Reveal to put this on air, then it types live.'}
+        </span>
+      )}
     </div>
   )
 }

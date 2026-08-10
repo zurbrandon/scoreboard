@@ -3,7 +3,7 @@
 // reveal (animate), the logo pops in and the website staggers in per character.
 
 import { useState } from 'react'
-import { useAppState } from '../../store/react'
+import type { LogoSlide } from '../../core/state'
 
 // Built-ins are bundled paths (resolved against BASE_URL for file:// builds);
 // uploads are data: URLs used as-is.
@@ -11,11 +11,8 @@ export function logoSrc(src: string): string {
   return src.startsWith('data:') ? src : `${import.meta.env.BASE_URL}${src}`
 }
 
-export function LogoScene({ animate = false }: { animate?: boolean }) {
-  const logo = useAppState((s) => s.logos.find((l) => l.id === s.logo.liveId))
+export function LogoScene({ slide: logo, animate = false }: { slide: LogoSlide; animate?: boolean }) {
   const [failed, setFailed] = useState(false)
-
-  if (!logo) return <div className="scene-logo" />
 
   return (
     <div className={`scene-logo ${animate ? 'scene-logo--reveal' : ''}`}>

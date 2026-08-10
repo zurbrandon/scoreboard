@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 import { reduce } from '../src/core/reduce'
-import { createInitialState, type AppState } from '../src/core/state'
+import { createInitialState, migrateSlides, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type { BumperTrackInfo, DisplayInfo, DrumrollUpdate, MusicUpdate } from '../src/shared/bridge'
 
@@ -46,7 +46,7 @@ function loadState(): AppState {
       // Nested objects fall back to fresh defaults so state written by an older
       // build (missing logo/text) can't leave the renderer with undefined fields,
       // and an unknown scene id resets to the scoreboard.
-      const KNOWN_SCENES = ['scoreboard', 'logo', 'text', 'slideshow', 'black']
+      const KNOWN_SCENES = ['scoreboard', 'slides', 'slideshow', 'black']
       const liveHalf = ['first', 'second', 'end'].includes(parsed.halfLive ?? parsed.half)
         ? (parsed.halfLive ?? parsed.half)
         : 'first'
@@ -54,54 +54,9 @@ function loadState(): AppState {
       const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
       // ribbonsLive backfills from fresh so older state (no ribbons) can't break.
       const ribbonsLive = { ...fresh.ribbonsLive, ...(parsed.ribbonsLive ?? parsed.ribbons) }
-      // Text: normalize each card to the current shape. The retired 'live'
-      // template becomes a basic card with liveType on (its old liveText moves
-      // into the headline). Older single-string text becomes one basic card.
-      const TEMPLATES = ['basic', 'quadrants']
-      const template = (v: unknown) => (TEMPLATES.includes(String(v)) ? String(v) : 'basic')
-      const quads = (v: unknown) => {
-        const a = Array.isArray(v) ? v : []
-        return [String(a[0] ?? ''), String(a[1] ?? ''), String(a[2] ?? ''), String(a[3] ?? '')]
-      }
-      const normCard = (c: Record<string, unknown>) => {
-        const wasLive = String(c.template) === 'live'
-        return {
-          id: String(c.id ?? `card-${Math.random().toString(36).slice(2, 8)}`),
-          template: template(c.template),
-          liveType: wasLive ? true : Boolean(c.liveType),
-          headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
-          body: String(c.body ?? ''),
-          quads: quads(c.quads),
-        }
-      }
-      const pt = parsed.text
-      const emptyLive = { cardId: '', template: 'basic', headline: '', body: '', quads: quads(null) }
-      const normLive = (l: Record<string, unknown>) => {
-        const wasLive = String(l.template) === 'live'
-        return {
-          cardId: String(l.cardId ?? ''),
-          template: template(l.template),
-          headline: wasLive ? String(l.liveText ?? l.headline ?? '') : String(l.headline ?? ''),
-          body: String(l.body ?? ''),
-          quads: quads(l.quads),
-        }
-      }
-      const text =
-        pt && Array.isArray(pt.cards) && pt.cards.length
-          ? {
-              cards: pt.cards.map(normCard),
-              selectedId: String(pt.selectedId ?? pt.cards[0].id),
-              live: pt.live ? normLive(pt.live) : emptyLive,
-            }
-          : pt && typeof pt.live === 'string'
-            ? {
-                cards: [
-                  { id: 'card-1', template: 'basic', liveType: false, headline: String(pt.live || pt.draft || ''), body: '', quads: quads(null) },
-                ],
-                selectedId: 'card-1',
-                live: { ...emptyLive, headline: String(pt.live || '') },
-              }
-            : fresh.text
+      // Slides deck: new shape passes through; the retired logos + text.cards
+      // migrate into one deck (see migrateSlides).
+      const slides = migrateSlides(parsed, fresh)
       // Slideshow: use the slide-queue shape if present; migrate an older single
       // `slideshowUrl` string into one slide; otherwise fall back to fresh.
       const ps = parsed.slideshow
@@ -122,29 +77,11 @@ function loadState(): AppState {
                 liveUrl: parsed.slideshowUrl,
               }
             : fresh.slideshow
-      // Logos: use the saved (editable) library if present, else the built-ins.
-      // Keep the draft/live selection valid if it points at a since-removed logo.
-      const logos =
-        Array.isArray(parsed.logos) && parsed.logos.length
-          ? parsed.logos.map((l: Record<string, unknown>) => ({
-              id: String(l.id ?? `logo-${Math.random().toString(36).slice(2, 8)}`),
-              name: String(l.name ?? 'Logo'),
-              website: String(l.website ?? ''),
-              src: String(l.src ?? ''),
-            }))
-          : fresh.logos
-      const ids = new Set(logos.map((l: { id: string }) => l.id))
-      const clampLogo = (id: unknown) => (ids.has(String(id)) ? String(id) : logos[0]?.id ?? '')
       return {
         ...fresh,
         ...parsed,
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
-        logos,
-        logo: {
-          draftId: clampLogo(parsed.logo?.draftId),
-          liveId: clampLogo(parsed.logo?.liveId),
-        },
-        text,
+        slides,
         slideshow,
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.

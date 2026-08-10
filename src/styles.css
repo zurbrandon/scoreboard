@@ -441,6 +441,43 @@ button { font-family: inherit; cursor: pointer; }
   padding: 10px;
 }
 .add-card:hover { border-color: var(--accent); color: var(--text); }
+
+/* "Add a slide" menu (type/preset picker) shown in place of the + button. */
+.slide-add {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px dashed #3a4358;
+  border-radius: 10px;
+}
+.slide-add__label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.slide-add__item {
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 12px;
+}
+.slide-add__item:hover { border-color: var(--accent); }
+.slide-add__cancel {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 4px;
+}
+.slide-add__cancel:hover { color: var(--text); }
 .pill:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* scene nav — a single-row segmented control */

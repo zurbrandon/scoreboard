@@ -3,9 +3,20 @@
 // which keeps this trivially testable on a MacBook (Principles: "Build for Testability").
 
 import type { Command } from './commands'
-import type { AppState, TeamId, TeamState } from './state'
-import { emptySlide, emptyTextCard } from './state'
+import type { AppState, Slide, TeamId, TeamState } from './state'
+import { emptySlide, emptyTextSlide, logoSlide } from './state'
 import { determineWinner } from './winner'
+
+// Map over the Slides deck, replacing the slide with matching id.
+function updateSlide(state: AppState, id: string, fn: (s: Slide) => Slide): AppState {
+  return {
+    ...state,
+    slides: {
+      ...state.slides,
+      items: state.slides.items.map((s) => (s.id === id ? fn(s) : s)),
+    },
+  }
+}
 
 function setTeam(
   state: AppState,
@@ -95,113 +106,61 @@ export function reduce(state: AppState, command: Command): AppState {
         revealAnimNonce: state.revealAnimNonce + 1,
       }
 
-    case 'logo.select':
-      return { ...state, logo: { ...state.logo, draftId: command.id } }
-    case 'logo.commit':
-      return { ...state, logo: { ...state.logo, liveId: state.logo.draftId } }
-    case 'logo.setWebsite':
-      return {
-        ...state,
-        logos: state.logos.map((l) => (l.id === command.id ? { ...l, website: command.website } : l)),
-      }
-    case 'logo.add':
-      return {
-        ...state,
-        logos: [...state.logos, { id: command.id, name: command.name, website: '', src: command.src }],
-        logo: { ...state.logo, draftId: command.id }, // preview the new one immediately
-      }
-    case 'logo.remove': {
-      const logos = state.logos.filter((l) => l.id !== command.id)
-      const fallback = logos[0]?.id ?? ''
-      // Keep the selection valid if it pointed at the removed logo.
-      return {
-        ...state,
-        logos,
-        logo: {
-          draftId: state.logo.draftId === command.id ? fallback : state.logo.draftId,
-          liveId: state.logo.liveId === command.id ? fallback : state.logo.liveId,
-        },
-      }
+    case 'slide.select':
+      return { ...state, slides: { ...state.slides, selectedId: command.id } }
+    case 'slide.commit': {
+      // Publish the selected slide. `live` holds the exact object reference so a
+      // later edit (which produces a new object) reads as "dirty" until re-committed.
+      const sel = state.slides.items.find((s) => s.id === state.slides.selectedId) ?? null
+      return { ...state, slides: { ...state.slides, live: sel } }
     }
-
-    case 'text.addCard':
+    case 'slide.addLogo':
       return {
         ...state,
-        text: {
-          ...state.text,
-          cards: [...state.text.cards, emptyTextCard(command.id)],
+        slides: {
+          ...state.slides,
+          items: [...state.slides.items, logoSlide(command.id, command.name, command.src)],
           selectedId: command.id,
         },
       }
-    case 'text.removeCard': {
-      if (state.text.cards.length <= 1) return state // always keep one
-      const cards = state.text.cards.filter((c) => c.id !== command.id)
+    case 'slide.addText':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: [...state.slides.items, emptyTextSlide(command.id, command.template)],
+          selectedId: command.id,
+        },
+      }
+    case 'slide.remove': {
+      const items = state.slides.items.filter((s) => s.id !== command.id)
       const selectedId =
-        state.text.selectedId === command.id ? cards[0].id : state.text.selectedId
-      return { ...state, text: { ...state.text, cards, selectedId } }
+        state.slides.selectedId === command.id ? (items[0]?.id ?? '') : state.slides.selectedId
+      return { ...state, slides: { ...state.slides, items, selectedId } }
     }
-    case 'text.selectCard':
-      return { ...state, text: { ...state.text, selectedId: command.id } }
-    case 'text.setTemplate':
-      return {
-        ...state,
-        text: {
-          ...state.text,
-          cards: state.text.cards.map((c) =>
-            c.id === command.id ? { ...c, template: command.template } : c,
-          ),
-        },
-      }
-    case 'text.setLiveType':
-      return {
-        ...state,
-        text: {
-          ...state.text,
-          cards: state.text.cards.map((c) =>
-            c.id === command.id ? { ...c, liveType: command.value } : c,
-          ),
-        },
-      }
-    case 'text.setField':
-      return {
-        ...state,
-        text: {
-          ...state.text,
-          cards: state.text.cards.map((c) =>
-            c.id === command.id ? { ...c, [command.field]: command.value } : c,
-          ),
-        },
-      }
-    case 'text.setQuad':
-      return {
-        ...state,
-        text: {
-          ...state.text,
-          cards: state.text.cards.map((c) => {
-            if (c.id !== command.id) return c
-            const quads = [...c.quads] as [string, string, string, string]
-            quads[command.index] = command.value
-            return { ...c, quads }
-          }),
-        },
-      }
-    case 'text.commit': {
-      const c = state.text.cards.find((card) => card.id === state.text.selectedId)
-      if (!c) return state
-      return {
-        ...state,
-        text: {
-          ...state.text,
-          live: {
-            cardId: c.id,
-            template: c.template,
-            headline: c.headline,
-            body: c.body,
-            quads: c.quads,
-          },
-        },
-      }
-    }
+    case 'slide.setWebsite':
+      return updateSlide(state, command.id, (s) =>
+        s.type === 'logo' ? { ...s, website: command.website } : s,
+      )
+    case 'slide.setTemplate':
+      return updateSlide(state, command.id, (s) =>
+        s.type === 'text' ? { ...s, template: command.template } : s,
+      )
+    case 'slide.setLiveType':
+      return updateSlide(state, command.id, (s) =>
+        s.type === 'text' ? { ...s, liveType: command.value } : s,
+      )
+    case 'slide.setField':
+      return updateSlide(state, command.id, (s) =>
+        s.type === 'text' ? { ...s, [command.field]: command.value } : s,
+      )
+    case 'slide.setQuad':
+      return updateSlide(state, command.id, (s) => {
+        if (s.type !== 'text') return s
+        const quads = [...s.quads] as [string, string, string, string]
+        quads[command.index] = command.value
+        return { ...s, quads }
+      })
 
     case 'slideshow.addSlide':
       return {
