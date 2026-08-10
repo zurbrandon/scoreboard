@@ -4,6 +4,7 @@
 // (Reveal / update silently / Black) is what actually changes the projector.
 
 import { useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { MdScoreboard, MdViewCarousel, MdSlideshow } from 'react-icons/md'
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
@@ -153,6 +154,13 @@ export function OperatorApp() {
             className={`scene-tab ${activeTab === scene ? 'scene-tab--active' : ''}`}
             onClick={() => setActiveTab(scene)}
           >
+            {activeTab === scene && (
+              <motion.span
+                className="scene-tab__pill"
+                layoutId="sceneTabPill"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              />
+            )}
             <Icon className="scene-tab__icon" aria-hidden="true" />
             <span className="scene-tab__label">{label}</span>
           </button>
@@ -178,9 +186,14 @@ export function OperatorApp() {
           >
             Black screen
           </button>
-          <button className={`reveal ${armed ? 'reveal--armed' : ''}`} onClick={reveal}>
+          <motion.button
+            className={`reveal ${armed ? 'reveal--armed' : ''}`}
+            onClick={reveal}
+            whileTap={{ scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          >
             REVEAL
-          </button>
+          </motion.button>
           <button className="silent-btn" onClick={silent}>
             update silently
           </button>
@@ -450,20 +463,27 @@ function SlidesConfig() {
 
   return (
     <div className="cards">
-      {items.map((slide) => {
-        if (slide.type === 'logo')
-          return <LogoSlideCard key={slide.id} slide={slide} selected={slide.id === selectedId} />
-        if (slide.type === 'image')
-          return <ImageSlideCard key={slide.id} slide={slide} selected={slide.id === selectedId} />
-        return (
-          <TextSlideCard
+      <AnimatePresence initial={false}>
+        {items.map((slide) => (
+          <motion.div
             key={slide.id}
-            slide={slide}
-            selected={slide.id === selectedId}
-            isOnAir={programScene === 'slides' && liveId === slide.id}
-          />
-        )
-      })}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.18 }}
+          >
+            {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
+            {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
+            {slide.type === 'text' && (
+              <TextSlideCard
+                slide={slide}
+                selected={slide.id === selectedId}
+                isOnAir={programScene === 'slides' && liveId === slide.id}
+              />
+            )}
+          </motion.div>
+        ))}
+      </AnimatePresence>
 
       {addOpen ? (
         <div className="slide-add">
