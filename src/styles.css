@@ -842,6 +842,10 @@ button { font-family: inherit; cursor: pointer; }
   animation-delay: calc(0.35s + var(--i) * 0.035s);
 }
 
+/* Slide stage: holds one slide, absolutely positioned so the outgoing and
+   incoming slides stack while Motion crossfades between them on reveal. */
+.slide-stage { position: absolute; inset: 0; }
+
 /* Image slide: the picture contained on a black field, popping in on reveal. */
 .scene-image {
   width: 100%;
