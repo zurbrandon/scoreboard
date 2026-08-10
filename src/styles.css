@@ -628,6 +628,60 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 13px;
   padding: 7px 14px;
 }
+
+/* Image slide: a drop target for a desktop file or a dragged website image. */
+.image-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel);
+  border: 1.5px solid #2c3346;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+}
+.image-card--active { border-color: var(--accent); }
+.image-card--drag { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.image-card__preview {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(120% 100% at 50% 0%, #141a2c, #0b0e16);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.image-card__preview img { max-height: 116px; max-width: 100%; object-fit: contain; }
+.image-card__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 120px;
+  width: 100%;
+  border: 1px dashed #3a4358;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.image-card--drag .image-card__drop { border-color: var(--accent); }
+.image-card__hint { color: var(--muted); font-size: 11px; font-weight: 500; text-align: center; }
+.image-card__replace {
+  align-self: center;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+}
+.image-card__replace:hover { border-color: var(--accent); }
+.image-card__remove { top: 8px; right: 8px; }
 .logo-add {
   display: flex;
   align-items: center;
@@ -786,6 +840,24 @@ button { font-family: inherit; cursor: pointer; }
 .scene-logo--reveal .scene-logo__site span {
   animation: reveal-char 0.32s ease-out both;
   animation-delay: calc(0.35s + var(--i) * 0.035s);
+}
+
+/* Image slide: the picture contained on a black field, popping in on reveal. */
+.scene-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+.scene-image__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.scene-image--reveal .scene-image__img {
+  animation: reveal-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
 .scene-text--reveal .scene-text__headline {

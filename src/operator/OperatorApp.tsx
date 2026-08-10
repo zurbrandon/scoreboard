@@ -9,7 +9,7 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
@@ -355,25 +355,63 @@ function logoImgSrc(src: string): string {
   return src.startsWith('data:') ? src : `${import.meta.env.BASE_URL}${src}`
 }
 
-// Read an uploaded image, downscale it (max dimension) and return a PNG data URL
-// so it persists in state without any file management. Transparency preserved.
-async function fileToLogoSrc(file: File, maxDim = 800): Promise<string> {
-  const dataUrl: string = await new Promise((res, rej) => {
+// Read a File/Blob into a data URL.
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((res, rej) => {
     const fr = new FileReader()
     fr.onload = () => res(fr.result as string)
     fr.onerror = () => rej(fr.error)
-    fr.readAsDataURL(file)
+    fr.readAsDataURL(blob)
   })
+}
+
+// Downscale a data-URL image to a max dimension and re-encode. Logos keep PNG
+// (transparency); full-screen image slides use JPEG to keep the data URL small.
+async function downscaleDataUrl(
+  dataUrl: string,
+  maxDim: number,
+  mime: 'image/png' | 'image/jpeg' = 'image/png',
+  quality?: number,
+): Promise<string> {
   const img = new Image()
   img.src = dataUrl
   await img.decode()
   const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
-  if (scale >= 1) return dataUrl // already small enough
+  if (scale >= 1 && mime === 'image/png') return dataUrl // already small enough
   const canvas = document.createElement('canvas')
-  canvas.width = Math.round(img.width * scale)
-  canvas.height = Math.round(img.height * scale)
+  canvas.width = Math.max(1, Math.round(img.width * scale))
+  canvas.height = Math.max(1, Math.round(img.height * scale))
   canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/png')
+  return canvas.toDataURL(mime, quality)
+}
+
+// Uploaded logo → downscaled PNG data URL (transparency preserved).
+async function fileToLogoSrc(file: File, maxDim = 800): Promise<string> {
+  return downscaleDataUrl(await blobToDataUrl(file), maxDim)
+}
+
+// A dropped file → a downscaled JPEG data URL for a full-screen image slide.
+async function fileToImageSrc(file: File): Promise<string> {
+  return downscaleDataUrl(await blobToDataUrl(file), 1600, 'image/jpeg', 0.85)
+}
+
+// A URL dragged from a website → a data URL. Electron downloads it in main (no
+// CORS); browser-dev tries a fetch and otherwise falls back to the live URL.
+async function urlToImageSrc(url: string): Promise<string> {
+  const bridge = window.showboard
+  if (bridge) {
+    const downloaded = await bridge.downloadImage(url)
+    if (downloaded) return downscaleDataUrl(downloaded, 1600, 'image/jpeg', 0.85)
+    return url
+  }
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return url
+    const dataUrl = await blobToDataUrl(await res.blob())
+    return downscaleDataUrl(dataUrl, 1600, 'image/jpeg', 0.85)
+  } catch {
+    return url // fall back to referencing the URL directly
+  }
 }
 
 const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
@@ -412,18 +450,20 @@ function SlidesConfig() {
 
   return (
     <div className="cards">
-      {items.map((slide) =>
-        slide.type === 'logo' ? (
-          <LogoSlideCard key={slide.id} slide={slide} selected={slide.id === selectedId} />
-        ) : (
+      {items.map((slide) => {
+        if (slide.type === 'logo')
+          return <LogoSlideCard key={slide.id} slide={slide} selected={slide.id === selectedId} />
+        if (slide.type === 'image')
+          return <ImageSlideCard key={slide.id} slide={slide} selected={slide.id === selectedId} />
+        return (
           <TextSlideCard
             key={slide.id}
             slide={slide}
             selected={slide.id === selectedId}
             isOnAir={programScene === 'slides' && liveId === slide.id}
           />
-        ),
-      )}
+        )
+      })}
 
       {addOpen ? (
         <div className="slide-add">
@@ -442,6 +482,15 @@ function SlidesConfig() {
           ))}
           <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
             Upload logo…
+          </button>
+          <button
+            className="slide-add__item"
+            onClick={() => {
+              dispatch({ type: 'slide.addImage', id: newSlideId('image') })
+              setAddOpen(false)
+            }}
+          >
+            Image — drag one in
           </button>
           <button
             className="slide-add__item"
@@ -535,6 +584,124 @@ function LogoSlideCard({ slide, selected }: { slide: LogoSlide; selected: boolea
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function ImageSlideCard({ slide, selected }: { slide: ImageSlide; selected: boolean }) {
+  const dispatch = useDispatch()
+  const [dragOver, setDragOver] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  const setSrc = (src: string) => dispatch({ type: 'slide.setImage', id: slide.id, src })
+
+  // Handle a drop: a local image file, or an image URL dragged from a website.
+  async function ingest(dt: DataTransfer) {
+    setBusy(true)
+    try {
+      const file = Array.from(dt.files).find((f) => f.type.startsWith('image/'))
+      if (file) {
+        setSrc(await fileToImageSrc(file))
+        return
+      }
+      const url = (dt.getData('text/uri-list') || dt.getData('text/plain')).trim()
+      if (url) setSrc(await urlToImageSrc(url))
+    } catch (err) {
+      console.warn('[slide] could not load dropped image:', err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div
+      className={`image-card ${selected ? 'image-card--active' : ''} ${dragOver ? 'image-card--drag' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setDragOver(true)
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragOver(false)
+        void ingest(e.dataTransfer)
+      }}
+    >
+      {slide.src ? (
+        <div className="image-card__preview">
+          <img src={slide.src} alt="" />
+        </div>
+      ) : (
+        <button
+          className="image-card__drop"
+          onClick={(e) => {
+            e.stopPropagation()
+            fileInput.current?.click()
+          }}
+        >
+          {busy ? 'Loading…' : 'Drag an image here'}
+          <span className="image-card__hint">from your desktop or a website — or click to choose</span>
+        </button>
+      )}
+      {slide.src && (
+        <button
+          className="image-card__replace"
+          onClick={(e) => {
+            e.stopPropagation()
+            fileInput.current?.click()
+          }}
+        >
+          {busy ? 'Loading…' : 'Replace'}
+        </button>
+      )}
+      <button
+        className="text-card__remove image-card__remove"
+        aria-label="Remove slide"
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
+      >
+        ✕
+      </button>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this slide?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) {
+            setBusy(true)
+            void fileToImageSrc(f)
+              .then(setSrc)
+              .finally(() => setBusy(false))
+          }
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }

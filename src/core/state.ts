@@ -23,10 +23,9 @@ export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
 export type TextTemplate = 'basic' | 'quadrants'
 
-// A slide in the unified Slides deck. Two kinds today — a logo (image + website)
-// and text (headline+body or a 2x2 quadrant grid). Both share one queue, one
-// selection, and one reveal, so any slide type flips the same way.
-export type SlideType = 'logo' | 'text'
+// A slide in the unified Slides deck. All types share one queue, one selection,
+// and one reveal, so any slide flips the same way.
+export type SlideType = 'logo' | 'text' | 'image'
 
 export interface LogoSlide {
   id: string
@@ -36,6 +35,14 @@ export interface LogoSlide {
   src: string
   /** Website shown small beneath the logo. */
   website: string
+}
+
+// A full-screen image. `src` is a data: URL (dropped/uploaded/downloaded) or ''
+// when the slide is still empty (awaiting a drop).
+export interface ImageSlide {
+  id: string
+  type: 'image'
+  src: string
 }
 
 // Text slide carries fields for every layout; only the ones its `template` uses
@@ -52,13 +59,16 @@ export interface TextSlide {
   quads: [string, string, string, string]
 }
 
-export type Slide = LogoSlide | TextSlide
+export type Slide = LogoSlide | TextSlide | ImageSlide
 
 export function logoSlide(id: string, name: string, src: string, website = ''): LogoSlide {
   return { id, type: 'logo', name, src, website }
 }
 export function emptyTextSlide(id: string, template: TextTemplate = 'basic'): TextSlide {
   return { id, type: 'text', template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
+}
+export function emptyImageSlide(id: string, src = ''): ImageSlide {
+  return { id, type: 'image', src }
 }
 
 // One slideshow URL in the Pre-show queue.
@@ -236,6 +246,7 @@ function normSlide(s: Record<string, unknown>): Slide | null {
     return logoSlide(String(s.id ?? rid('logo')), String(s.name ?? 'Logo'), String(s.src ?? ''), String(s.website ?? ''))
   }
   if (s.type === 'text') return textSlideFrom(s)
+  if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''))
   return null
 }
 

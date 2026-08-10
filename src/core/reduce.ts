@@ -4,7 +4,7 @@
 
 import type { Command } from './commands'
 import type { AppState, Slide, TeamId, TeamState } from './state'
-import { emptySlide, emptyTextSlide, logoSlide } from './state'
+import { emptySlide, emptyImageSlide, emptyTextSlide, logoSlide } from './state'
 import { determineWinner } from './winner'
 
 // Map over the Slides deck, replacing the slide with matching id.
@@ -132,6 +132,17 @@ export function reduce(state: AppState, command: Command): AppState {
           selectedId: command.id,
         },
       }
+    case 'slide.addImage':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: [...state.slides.items, emptyImageSlide(command.id)],
+          selectedId: command.id,
+        },
+      }
+    case 'slide.setImage':
+      return updateSlide(state, command.id, (s) => (s.type === 'image' ? { ...s, src: command.src } : s))
     case 'slide.remove': {
       const items = state.slides.items.filter((s) => s.id !== command.id)
       const selectedId =

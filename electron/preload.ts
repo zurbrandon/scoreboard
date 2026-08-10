@@ -40,6 +40,7 @@ const bridge: ShowboardBridge = {
 
   chooseDrumroll: () => ipcRenderer.send('showboard:chooseDrumroll'),
   requestDrumroll: () => ipcRenderer.send('showboard:requestDrumroll'),
+  downloadImage: (url) => ipcRenderer.invoke('showboard:downloadImage', url) as Promise<string | null>,
   onDrumroll: (callback) => {
     const listener = (_e: unknown, update: DrumrollUpdate) => callback(update)
     ipcRenderer.on('showboard:drumroll', listener)

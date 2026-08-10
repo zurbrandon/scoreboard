@@ -372,6 +372,22 @@ function registerIpc() {
     pushDrumroll()
   })
   ipcMain.on('showboard:requestDrumroll', () => pushDrumroll())
+
+  // Download an image dragged from a website and return it as a data URL. The
+  // main process has no CORS restrictions, so this works for any image host.
+  ipcMain.handle('showboard:downloadImage', async (_event, url: string): Promise<string | null> => {
+    try {
+      const res = await net.fetch(url)
+      if (!res.ok) return null
+      const type = res.headers.get('content-type') || 'image/png'
+      if (!type.startsWith('image/')) return null
+      const buf = Buffer.from(await res.arrayBuffer())
+      return `data:${type};base64,${buf.toString('base64')}`
+    } catch (err) {
+      console.warn('[main] image download failed:', err)
+      return null
+    }
+  })
 }
 
 // --- lifecycle ---------------------------------------------------------------

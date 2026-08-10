@@ -51,6 +51,10 @@ export interface ShowboardBridge {
   chooseDrumroll(): void
   requestDrumroll(): void
   onDrumroll(callback: (update: DrumrollUpdate) => void): () => void
+
+  // Download an image URL (dragged from a website) in the main process — no CORS
+  // limits — and return it as a data: URL, or null on failure.
+  downloadImage(url: string): Promise<string | null>
 }
 
 declare global {

@@ -38,6 +38,8 @@ export type Command =
   | { type: 'slide.remove'; id: string }
   | { type: 'slide.addLogo'; id: string; name: string; src: string } // add a logo slide and select it
   | { type: 'slide.addText'; id: string; template: TextTemplate } // add a text slide and select it
+  | { type: 'slide.addImage'; id: string } // add an empty image slide (awaiting a drop) and select it
+  | { type: 'slide.setImage'; id: string; src: string } // set an image slide's picture (data URL)
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
   | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle

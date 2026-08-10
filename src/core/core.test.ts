@@ -213,6 +213,17 @@ describe('scoring details', () => {
     expect(textSlide(s, 'text-1').liveType).toBe(false)
   })
 
+  it('image slide: added empty, then set the picture; commit publishes it', () => {
+    let s = run({ type: 'slide.addImage', id: 'img1' })
+    expect(s.slides.selectedId).toBe('img1')
+    const empty = s.slides.items.find((i) => i.id === 'img1')
+    expect(empty?.type === 'image' && empty.src).toBe('') // created empty, no picker
+
+    s = reduce(s, { type: 'slide.setImage', id: 'img1', src: 'data:image/jpeg;base64,ZZ' })
+    const live = reduce(s, { type: 'slide.commit' }).slides.live
+    expect(live).toMatchObject({ id: 'img1', type: 'image', src: 'data:image/jpeg;base64,ZZ' })
+  })
+
   it('slides: add / select / remove; commit follows the selection', () => {
     // Add a second text slide (auto-selected), give it content.
     let s = run({ type: 'slide.addText', id: 't2', template: 'basic' })

@@ -5,6 +5,7 @@ import { useAppState } from '../store/react'
 import { Scoreboard } from './scenes/Scoreboard'
 import { LogoScene } from './scenes/LogoScene'
 import { TextScene } from './scenes/TextScene'
+import { ImageScene } from './scenes/ImageScene'
 import { Slideshow } from './scenes/Slideshow'
 import { EffectOverlay } from './EffectOverlay'
 
@@ -25,6 +26,9 @@ export function ProjectorApp() {
       )}
       {scene === 'slides' && liveSlide?.type === 'text' && (
         <TextScene key={animNonce} slide={liveSlide} animate={animate} />
+      )}
+      {scene === 'slides' && liveSlide?.type === 'image' && (
+        <ImageScene key={animNonce} slide={liveSlide} animate={animate} />
       )}
       {scene === 'slides' && !liveSlide && <div className="scene-logo" />}
       {scene === 'slideshow' && <Slideshow />}
