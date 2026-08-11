@@ -961,7 +961,12 @@ button { font-family: inherit; cursor: pointer; }
     radial-gradient(120% 75% at 50% 0%, var(--team-soft), transparent 62%),
     linear-gradient(180deg, #0e1524, #070a12);
   box-shadow: 0 0 4vh var(--team-soft), inset 0 0 3vh rgba(0, 0, 0, 0.55);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  /* Only transition TRANSFORM (GPU-composited, cheap). Deliberately NOT box-shadow
+     or filter: transitioning those animates a large blur / re-rasters the card
+     over 0.3s at each reveal boundary, which is the subtle flicker at the very
+     start and end of a reveal. The winner glow and loser dimming now snap in/out
+     instantly (masked by the pop), while the scale still eases smoothly. */
+  transition: transform 0.3s ease;
 }
 .team-panel--blue { --team: #2f6bff; --team-soft: rgba(47, 107, 255, 0.22); }
 .team-panel--red { --team: #ff3b46; --team-soft: rgba(255, 59, 70, 0.22); }
@@ -1037,21 +1042,30 @@ button { font-family: inherit; cursor: pointer; }
    and forth across the panel. All stop cleanly when the class is removed. */
 .team-panel--winner {
   z-index: 1;
-  animation:
-    winner-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards,
-    winner-glow 1.8s ease-in-out infinite;
+  /* Pop in on reveal (transform — GPU-composited, cheap), then HOLD a strong
+     STATIC glow. We deliberately do NOT animate box-shadow per frame: on a large
+     projector a pulsing 130px blur re-rasterizes the whole card every frame and
+     blows past the GPU tile budget ("tile memory limits exceeded, some content
+     may not draw"), which shows up as the winner card FLICKERING. A static glow
+     paints once and holds; the pop + confetti + emoji rain carry the celebration
+     with zero per-frame repaint. */
+  box-shadow: 0 0 110px rgba(255, 210, 63, 0.85), inset 0 0 3vh rgba(0, 0, 0, 0.55);
+  /* No will-change here: toggling it with the class creates/destroys a compositor
+     layer at each boundary — a blip in itself. The pop is a transform animation,
+     which the browser composites on its own for its duration. */
+  animation: winner-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
 }
 @keyframes winner-pop {
   0% { transform: scale(1); }
   55% { transform: scale(1.14); }
   100% { transform: scale(1.07); }
 }
-@keyframes winner-glow {
-  0%, 100% { box-shadow: 0 0 55px rgba(255, 210, 63, 0.45); }
-  50% { box-shadow: 0 0 130px rgba(255, 210, 63, 0.95); }
-}
 
-/* Moving sheen: a soft light band that glides across and back over the winner. */
+/* Moving sheen: a soft light band that glides across the winner TWICE on reveal,
+   then settles off-card. Finite (not infinite) on purpose — a forever-sweeping
+   background-position is a per-frame paint that keeps flickering once the
+   confetti canvas (which had been forcing full-frame redraws) stops. Two sweeps
+   read as celebratory, then it goes quiet. */
 .team-panel--winner::after {
   content: '';
   position: absolute;
@@ -1067,7 +1081,8 @@ button { font-family: inherit; cursor: pointer; }
     transparent 65%
   );
   background-size: 250% 100%;
-  animation: winner-sheen 2.6s ease-in-out infinite;
+  background-position: 160% 0; /* rest state: band parked off-card */
+  animation: winner-sheen 2.6s ease-in-out 2;
 }
 @keyframes winner-sheen {
   0% { background-position: 160% 0; }
@@ -1085,22 +1100,17 @@ button { font-family: inherit; cursor: pointer; }
    the whole reveal celebration (~10s). Both reset when the reveal ends and the
    --pop class is removed. */
 .team-panel__score--pop {
-  animation:
-    score-grow 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) forwards,
-    score-glow 1.6s ease-in-out infinite;
+  /* Grows a touch and holds (transform — cheap). The glow is a STATIC brighter
+     text-shadow, not an infinite pulse: a pulsing multi-vw text-shadow blur is a
+     huge per-frame re-raster on a big projector and flickers (see the note on
+     .team-panel--winner). Held bright reads as "lit up" without the repaint. */
+  text-shadow: 0 0 1.4vw rgba(255, 255, 255, 1), 0 0 4vw var(--team), 0 0 8vw var(--team);
+  animation: score-grow 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
 }
 @keyframes score-grow {
   0% { transform: scale(1); }
   55% { transform: scale(1.16); }
   100% { transform: scale(1.09); }
-}
-@keyframes score-glow {
-  0%, 100% {
-    text-shadow: 0 0 1vw rgba(255, 255, 255, 0.9), 0 0 3vw var(--team), 0 0 6vw var(--team);
-  }
-  50% {
-    text-shadow: 0 0 1.8vw rgba(255, 255, 255, 1), 0 0 5vw var(--team), 0 0 12vw var(--team);
-  }
 }
 
 .confetti {

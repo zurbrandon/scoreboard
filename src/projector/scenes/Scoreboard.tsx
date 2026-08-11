@@ -290,11 +290,11 @@ function TeamPanel({ team, side }: { team: TeamId; side: Side }) {
         {mood && <span className="team-panel__mood">{mood}</span>}
       </div>
       <div className="led-screen">
-        {/* key on the phase so the pop animation restarts on each reveal */}
-        <div
-          className={`team-panel__score ${isWinner ? 'team-panel__score--pop' : ''}`}
-          key={isWinner ? `pop-${winner}` : 'rest'}
-        >
+        {/* Stable element — the --pop class alone drives the reveal pop (adding
+            the class restarts its CSS animation). Do NOT key this on the reveal
+            phase: a key that flips at reveal start/end remounts the div and
+            resets useAnimatedNumber, making the score flash on and off. */}
+        <div className={`team-panel__score ${isWinner ? 'team-panel__score--pop' : ''}`}>
           {formatScore(shownScore)}
         </div>
       </div>
