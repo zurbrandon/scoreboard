@@ -2,7 +2,7 @@
 // window.showboard by the preload script. The renderer talks to main ONLY
 // through this — no direct Node access (contextIsolation).
 
-import type { AppState } from '../core/state'
+import type { AppState, MomentKind } from '../core/state'
 import type { Command } from '../core/commands'
 import type { HotkeyAction } from './hotkeys'
 
@@ -28,6 +28,12 @@ export interface MusicUpdate {
 export interface DrumrollUpdate {
   file: string | null // absolute path of the chosen file, for display
   track: BumperTrackInfo | null // playable track, or null to fall back to a bumper
+}
+
+export interface MomentTracksUpdate {
+  kind: MomentKind // 'out' (run out) or 'in' (run in)
+  folder: string | null // chosen folder, for display in Settings
+  tracks: BumperTrackInfo[] // scanned songs for this moment
 }
 
 export interface ShowboardBridge {
@@ -60,6 +66,11 @@ export interface ShowboardBridge {
   // Macro-pad / keyboard global shortcuts: main registers them OS-wide and
   // forwards each press here so the operator can run the action.
   onHotkey(callback: (action: HotkeyAction) => void): () => void
+
+  // Run-out / run-in music folders (one each). Same model as the bumper folder.
+  chooseMomentFolder(kind: MomentKind): void
+  requestMomentTracks(): void
+  onMomentTracks(callback: (update: MomentTracksUpdate) => void): () => void
 }
 
 declare global {

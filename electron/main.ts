@@ -11,7 +11,14 @@ import { pathToFileURL } from 'node:url'
 import { reduce } from '../src/core/reduce'
 import { createInitialState, migrateSlides, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
-import type { BumperTrackInfo, DisplayInfo, DrumrollUpdate, MusicUpdate } from '../src/shared/bridge'
+import type {
+  BumperTrackInfo,
+  DisplayInfo,
+  DrumrollUpdate,
+  MomentTracksUpdate,
+  MusicUpdate,
+} from '../src/shared/bridge'
+import type { MomentKind } from '../src/core/state'
 import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
 
 const isDev = !app.isPackaged
@@ -32,6 +39,8 @@ interface Settings {
   projectorDisplayId: number | null
   musicFolder: string | null
   drumrollFile: string | null
+  momentOutFolder: string | null
+  momentInFolder: string | null
   operatorBounds: { x: number; y: number; width: number; height: number } | null
 }
 
@@ -129,10 +138,19 @@ function loadSettings(): Settings {
       projectorDisplayId: parsed.projectorDisplayId ?? null,
       musicFolder: parsed.musicFolder ?? null,
       drumrollFile: parsed.drumrollFile ?? null,
+      momentOutFolder: parsed.momentOutFolder ?? null,
+      momentInFolder: parsed.momentInFolder ?? null,
       operatorBounds: parsed.operatorBounds ?? null,
     }
   } catch {
-    return { projectorDisplayId: null, musicFolder: null, drumrollFile: null, operatorBounds: null }
+    return {
+      projectorDisplayId: null,
+      musicFolder: null,
+      drumrollFile: null,
+      momentOutFolder: null,
+      momentInFolder: null,
+      operatorBounds: null,
+    }
   }
 }
 
@@ -141,6 +159,8 @@ let settings: Settings = {
   projectorDisplayId: null,
   musicFolder: null,
   drumrollFile: null,
+  momentOutFolder: null,
+  momentInFolder: null,
   operatorBounds: null,
 }
 
@@ -293,6 +313,20 @@ function pushTracks() {
   operatorWin?.webContents.send('showboard:tracks', update)
 }
 
+function momentFolder(kind: MomentKind): string | null {
+  return kind === 'out' ? settings.momentOutFolder : settings.momentInFolder
+}
+
+function pushMomentTracks(kind: MomentKind) {
+  const folder = momentFolder(kind)
+  const update: MomentTracksUpdate = {
+    kind,
+    folder,
+    tracks: folder ? scanMusicFolder(folder) : [],
+  }
+  operatorWin?.webContents.send('showboard:momentTracks', update)
+}
+
 function pushDrumroll() {
   const file = settings.drumrollFile
   const update: DrumrollUpdate = {
@@ -362,6 +396,23 @@ function registerIpc() {
   })
 
   ipcMain.on('showboard:requestTracks', () => pushTracks())
+
+  ipcMain.on('showboard:chooseMomentFolder', async (_event, kind: MomentKind) => {
+    if (!operatorWin) return
+    const result = await dialog.showOpenDialog(operatorWin, {
+      title: kind === 'out' ? 'Choose run-OUT music folder' : 'Choose run-IN music folder',
+      properties: ['openDirectory'],
+    })
+    if (result.canceled || result.filePaths.length === 0) return
+    if (kind === 'out') settings.momentOutFolder = result.filePaths[0]
+    else settings.momentInFolder = result.filePaths[0]
+    saveSettings()
+    pushMomentTracks(kind)
+  })
+  ipcMain.on('showboard:requestMomentTracks', () => {
+    pushMomentTracks('out')
+    pushMomentTracks('in')
+  })
 
   ipcMain.on('showboard:chooseDrumroll', async () => {
     if (!operatorWin) return

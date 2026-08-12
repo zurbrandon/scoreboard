@@ -9,6 +9,7 @@
 // selection logic (core/bumper.ts) stays identical.
 
 import { pickBumper, type BumperTrack } from '../core/bumper'
+import type { MomentKind } from '../core/state'
 import type { Store } from '../store/store'
 
 export interface LoadedTrack extends BumperTrack {
@@ -20,6 +21,8 @@ export interface AudioController {
   setTracks(tracks: LoadedTrack[]): void
   /** Set (or clear) the custom Final-score drum roll. null → fall back to a bumper. */
   setDrumroll(track: LoadedTrack | null): void
+  /** Replace the song pool for a run-out / run-in moment. */
+  setMomentTracks(kind: MomentKind, tracks: LoadedTrack[]): void
   /** Sound-check: play a random bumper now, without a reveal. */
   test(): void
   /** Stop any current playback. */
@@ -32,14 +35,19 @@ export interface AudioController {
 const FADE_AFTER_MS = 15000 // start fading this long after a bumper begins
 const FADE_MS = 3000 // slow fade to silence over this long
 const STOP_FADE_MS = 250 // fast fade when the operator hits STOP (no speaker pop)
+const MOMENT_LEAVE_FADE_MS = 6500 // slow, graceful fade when leaving a moment for another scene
 
 export function createAudioController(store: Store): AudioController {
   let tracks: LoadedTrack[] = []
   let drumroll: LoadedTrack | null = null
+  const momentTracks: Record<MomentKind, LoadedTrack[]> = { out: [], in: [] }
   let audio: HTMLAudioElement | null = null
   let lastNonce = store.getState().revealNonce
   let lastFinaleNonce = store.getState().finaleNonce
   let lastStopNonce = store.getState().stopNonce
+  let lastMomentNonce = store.getState().momentNonce
+  let lastScene = store.getState().scene
+  let currentIsMoment = false // is the track now playing a run-out / run-in song?
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -82,19 +90,21 @@ export function createAudioController(store: Store): AudioController {
     audio.removeAttribute('src')
     audio.load()
     audio = null
+    currentIsMoment = false
     setPlaying(false)
   }
 
-  // The STOP kill switch: ramp the current track to silence fast, then release
-  // it. A short fade (vs. a hard pause) avoids the click/pop of cutting a playing
-  // buffer dead. No-op if nothing is playing.
-  function fadeOutAndStop(): void {
+  // Ramp the current track to silence over `ms`, then release it. A fade (vs. a
+  // hard pause) avoids the click/pop of cutting a playing buffer dead. Used both
+  // for the fast STOP kill switch and the slow graceful fade on leaving a moment.
+  // No-op if nothing is playing.
+  function fadeOutOver(ms: number): void {
     if (!audio) return
     clearFade()
     const startGain = fadeGain
     const start = performance.now()
     fadeInterval = setInterval(() => {
-      const t = Math.min(1, (performance.now() - start) / STOP_FADE_MS)
+      const t = Math.min(1, (performance.now() - start) / ms)
       fadeGain = startGain * (1 - t)
       applyVolume()
       if (t >= 1) {
@@ -183,6 +193,31 @@ export function createAudioController(store: Store): AudioController {
     }
   }
 
+  // A run-out / run-in moment: play a random song from that moment's pool. Like a
+  // bumper, it fades out after a while rather than running on forever.
+  function playMoment(kind: MomentKind): void {
+    const { music } = store.getState()
+    if (!music.enabled) return
+    const pool = momentTracks[kind]
+    if (pool.length === 0) return
+    const track = pool[Math.floor(Math.random() * pool.length)]
+    try {
+      clearFade()
+      releaseAudio()
+      fadeGain = 1
+      audio = new Audio(track.url)
+      applyVolume()
+      void audio.play().catch((err) => {
+        console.warn('[audio] moment playback failed; continuing show:', err)
+      })
+      // No auto-fade: the song rides until the operator cues the next scene,
+      // which triggers the slow graceful fade (see the scene-change hook below).
+      currentIsMoment = true
+    } catch (err) {
+      console.warn('[audio] could not start moment audio; continuing show:', err)
+    }
+  }
+
   const unsubscribe = store.subscribe(() => {
     const s = store.getState()
     // Final score started → drum roll. The celebration bumper comes later, when
@@ -201,8 +236,21 @@ export function createAudioController(store: Store): AudioController {
     // STOP kill switch: fade the current sound out fast.
     if (s.stopNonce !== lastStopNonce) {
       lastStopNonce = s.stopNonce
-      fadeOutAndStop()
+      fadeOutOver(STOP_FADE_MS)
     }
+    // Run-out / run-in moment fired → play a random song from its pool.
+    if (s.momentNonce !== lastMomentNonce) {
+      lastMomentNonce = s.momentNonce
+      playMoment(s.moment?.kind ?? 'out')
+    }
+    // Leaving a moment for any other scene gracefully fades the moment song out
+    // over several seconds — the operator's "let it ride, then cue away" gesture.
+    // Skipped if the new scene started its own music (a reveal), which already
+    // replaced the track above, so currentIsMoment is no longer true.
+    if (lastScene === 'moment' && s.scene !== 'moment' && currentIsMoment) {
+      fadeOutOver(MOMENT_LEAVE_FADE_MS)
+    }
+    lastScene = s.scene
     // Keep a playing track's volume in sync with the operator's slider
     // (respecting any in-progress fade).
     applyVolume()
@@ -222,6 +270,10 @@ export function createAudioController(store: Store): AudioController {
     setDrumroll(track) {
       if (drumroll) URL.revokeObjectURL(drumroll.url) // no-op for sbmedia:// URLs
       drumroll = track
+    },
+    setMomentTracks(kind, next) {
+      for (const t of momentTracks[kind]) URL.revokeObjectURL(t.url) // no-op for sbmedia://
+      momentTracks[kind] = next
     },
     test() {
       playBumper(false)

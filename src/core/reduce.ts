@@ -281,6 +281,18 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'effect.fire':
       return { ...state, effect: { kind: command.kind, nonce: state.effect.nonce + 1 } }
 
+    case 'moment.play':
+      // Show the chosen run-out / run-in visual full-screen. It stays up until
+      // the operator cues the next thing (reveal / slide / black). The random
+      // pick was made operator-side, so the reducer just records it.
+      return {
+        ...state,
+        scene: 'moment',
+        moment: { kind: command.kind, visual: command.visual },
+        momentNonce: state.momentNonce + 1,
+        music: { ...state.music, duck: 1 }, // a fresh cue plays at full volume
+      }
+
     case 'audio.setPlaying':
       return { ...state, audioPlaying: command.value }
 

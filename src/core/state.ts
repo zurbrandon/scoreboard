@@ -9,7 +9,18 @@ export type TeamId = 'blue' | 'red'
 // Match phase. 'end' is the finale — Reveal triggers the winner celebration.
 export type Half = 'first' | 'second' | 'end'
 
-export type Scene = 'scoreboard' | 'slides' | 'slideshow' | 'black'
+export type Scene = 'scoreboard' | 'slides' | 'slideshow' | 'black' | 'moment'
+
+// "Moments" are one-press quick triggers for a team running OUT of / back IN to
+// the room: a random full-screen visual (an animated text card or a GIF) plus a
+// random song. The random pick happens operator-side (reducer stays pure), so
+// state just carries the chosen visual to show.
+export type MomentKind = 'out' | 'in'
+export type MomentVisual = { type: 'text'; phrase: string } | { type: 'image'; src: string }
+export interface Moment {
+  kind: MomentKind
+  visual: MomentVisual
+}
 
 export type RevealPhase = 'idle' | 'revealing' | 'finale'
 
@@ -180,6 +191,12 @@ export interface AppState {
    *  from the audio controller so the operator's STOP button stays available for
    *  the whole sound — a bumper can outlast the 10s winner-emphasis window. */
   audioPlaying: boolean
+  /** The live run-out / run-in moment (what the projector shows while scene ===
+   *  'moment'). null before the first trigger. */
+  moment: Moment | null
+  /** Bumped on each moment trigger so the projector replays the animation even
+   *  when the same visual is chosen twice. */
+  momentNonce: number
   music: MusicState
 }
 
@@ -221,6 +238,8 @@ export function createInitialState(): AppState {
     stopNonce: 0,
     effect: { kind: '', nonce: 0 },
     audioPlaying: false,
+    moment: null,
+    momentNonce: 0,
     music: {
       volume: 0.8,
       duck: 1,

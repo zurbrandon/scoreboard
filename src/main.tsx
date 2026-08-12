@@ -34,6 +34,8 @@ if (audio && window.showboard) {
   window.showboard.requestTracks()
   window.showboard.onDrumroll((update) => audio.setDrumroll(update.track))
   window.showboard.requestDrumroll()
+  window.showboard.onMomentTracks((update) => audio.setMomentTracks(update.kind, update.tracks))
+  window.showboard.requestMomentTracks()
 }
 
 createRoot(document.getElementById('root')!).render(

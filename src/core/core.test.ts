@@ -160,6 +160,16 @@ describe('reveal sequence flags', () => {
     expect(s.music.duck).toBe(1)
   })
 
+  it('moment.play switches to the moment scene, stores the visual, and bumps the nonce', () => {
+    const s = run(
+      { type: 'moment.play', kind: 'out', visual: { type: 'text', phrase: 'BYEEEEEE' } },
+      { type: 'moment.play', kind: 'in', visual: { type: 'image', src: 'x.gif' } },
+    )
+    expect(s.scene).toBe('moment')
+    expect(s.moment).toEqual({ kind: 'in', visual: { type: 'image', src: 'x.gif' } })
+    expect(s.momentNonce).toBe(2) // bumps each trigger so a repeat replays
+  })
+
   it('a fresh reveal clears the settled flag', () => {
     const s = run(
       { type: 'half.set', half: 'end' },

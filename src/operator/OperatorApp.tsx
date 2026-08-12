@@ -12,6 +12,7 @@ import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
 import type { ImageSlide, LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
+import { pickMomentVisual } from '../moments'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
@@ -27,6 +28,7 @@ const ON_AIR_LABEL: Record<Scene, string> = {
   slides: 'Slides',
   slideshow: 'Pre-show',
   black: 'Black',
+  moment: 'Moment',
 }
 
 // Overlay effects — fire on top of whatever scene is showing. Two groups:
@@ -274,6 +276,22 @@ export function OperatorApp() {
           </motion.button>
           <button className="silent-btn" onClick={silent}>
             update silently
+          </button>
+        </div>
+        <div className="moment-row">
+          <button
+            className="moment-btn moment-btn--out"
+            title="Team runs out: random goodbye visual + song"
+            onClick={() => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })}
+          >
+            <span aria-hidden="true">👋</span> Run out
+          </button>
+          <button
+            className="moment-btn moment-btn--in"
+            title="Team runs back in: random welcome visual + song"
+            onClick={() => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })}
+          >
+            <span aria-hidden="true">🙌</span> Run in
           </button>
         </div>
         <div className="fx-row">

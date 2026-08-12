@@ -3,6 +3,7 @@
 // into defaults/presets later. Opened from the gear in the operator header.
 
 import { MusicPanel } from './MusicPanel'
+import { MomentMusicPanel } from './MomentMusicPanel'
 import { DrumrollPicker } from './DrumrollPicker'
 import { ProjectorDisplayPicker } from './ProjectorDisplayPicker'
 
@@ -26,6 +27,16 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           <section className="settings-section">
             <h3>Final-score drum roll</h3>
             <DrumrollPicker />
+          </section>
+        )}
+
+        {window.showboard && (
+          <section className="settings-section">
+            <h3>Run-out / Run-in music</h3>
+            <MomentMusicPanel />
+            <span className="music-panel__status">
+              A random song from each folder plays on the matching bottom-row button.
+            </span>
           </section>
         )}
 

@@ -8,6 +8,7 @@ import { LogoScene } from './scenes/LogoScene'
 import { TextScene } from './scenes/TextScene'
 import { ImageScene } from './scenes/ImageScene'
 import { Slideshow } from './scenes/Slideshow'
+import { MomentScene } from './scenes/MomentScene'
 import { EffectOverlay } from './EffectOverlay'
 
 export function ProjectorApp() {
@@ -19,6 +20,8 @@ export function ProjectorApp() {
   const animNonce = useAppState((s) => s.revealAnimNonce)
   const animate = useAppState((s) => s.displayWasReveal)
   const liveSlide = useAppState((s) => s.slides.live)
+  const moment = useAppState((s) => s.moment)
+  const momentNonce = useAppState((s) => s.momentNonce)
   const effect = useAppState((s) => s.effect)
 
   return (
@@ -42,6 +45,7 @@ export function ProjectorApp() {
         </AnimatePresence>
       )}
       {scene === 'slideshow' && <Slideshow />}
+      {scene === 'moment' && moment && <MomentScene key={momentNonce} moment={moment} />}
       {scene === 'black' && <div className="scene-black" />}
       {/* Overlay effects play on top of every scene. */}
       <EffectOverlay kind={effect.kind} nonce={effect.nonce} />

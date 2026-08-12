@@ -751,6 +751,26 @@ button { font-family: inherit; cursor: pointer; }
 .deck__onair { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
 /* Overlay-effect buttons — a little strip below the reveal deck for fun. */
+/* Run-out / run-in quick triggers — bigger and labeled, set apart from the
+   emoji effect buttons since one press fires a whole moment (visual + song). */
+.moment-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.moment-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid #2c3346;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.moment-btn:hover { transform: translateY(-1px); }
+.moment-btn:active { transform: translateY(0) scale(0.97); }
+.moment-btn--out:hover { border-color: #ff5a5f; }
+.moment-btn--in:hover { border-color: #46d98a; }
+
 .fx-row { display: flex; justify-content: center; gap: 8px; }
 .fx-btn {
   width: 34px;
@@ -1265,6 +1285,51 @@ button { font-family: inherit; cursor: pointer; }
     0 0 6vw var(--team);
   transition: transform 0.35s ease; /* eases back to size when the reveal ends */
 }
+
+/* Run-out / run-in moment: full-screen animated text marquee or a full-bleed
+   GIF. Only transform is animated (composited, no blur re-raster). */
+.moment {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(120% 120% at 50% 50%, #1a2233, #05070d);
+}
+.moment--out { background: radial-gradient(120% 120% at 50% 50%, #3a1420, #0b0508); }
+.moment--in { background: radial-gradient(120% 120% at 50% 50%, #123023, #050b08); }
+/* A single giant phrase, centered, that SLAMS in then holds with a gentle idle
+   pulse. Stationary = readable; the slam + pulse carry the energy. */
+.moment__solo {
+  max-width: 92vw;
+  padding: 0 4vw;
+  text-align: center;
+  font-family: 'Geist Pixel', 'Arial Black', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 15vh;
+  line-height: 0.98;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 2vw rgba(0, 0, 0, 0.55);
+  animation:
+    moment-slam 0.55s cubic-bezier(0.2, 1.5, 0.35, 1) both,
+    moment-pulse 1.8s ease-in-out 0.55s infinite;
+}
+.moment--out .moment__solo { color: #ff5a5f; }
+.moment--in .moment__solo { color: #46d98a; }
+@keyframes moment-slam {
+  0% { transform: scale(1.7) rotate(-3deg); opacity: 0; }
+  55% { transform: scale(0.94) rotate(1.5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes moment-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.045) rotate(0deg); }
+}
+/* Full-bleed GIF / image moment. */
+.moment--image { background: #000; }
+.moment__img { width: 100%; height: 100%; object-fit: contain; }
 
 .scoreboard__bottom { display: flex; align-items: center; gap: 2vw; z-index: 1; }
 /* Three fixed slots keep the audience centered while the edge ribbons come and

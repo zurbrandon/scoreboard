@@ -8,10 +8,12 @@ import type { Command } from '../src/core/commands'
 import type {
   DisplayInfo,
   DrumrollUpdate,
+  MomentTracksUpdate,
   MusicUpdate,
   ShowboardBridge,
 } from '../src/shared/bridge'
 import type { HotkeyAction } from '../src/shared/hotkeys'
+import type { MomentKind } from '../src/core/state'
 
 const role: ShowboardBridge['role'] =
   new URLSearchParams(location.search).get('view') === 'projector'
@@ -51,6 +53,14 @@ const bridge: ShowboardBridge = {
     const listener = (_e: unknown, action: HotkeyAction) => callback(action)
     ipcRenderer.on('showboard:hotkey', listener)
     return () => ipcRenderer.removeListener('showboard:hotkey', listener)
+  },
+
+  chooseMomentFolder: (kind: MomentKind) => ipcRenderer.send('showboard:chooseMomentFolder', kind),
+  requestMomentTracks: () => ipcRenderer.send('showboard:requestMomentTracks'),
+  onMomentTracks: (callback) => {
+    const listener = (_e: unknown, update: MomentTracksUpdate) => callback(update)
+    ipcRenderer.on('showboard:momentTracks', listener)
+    return () => ipcRenderer.removeListener('showboard:momentTracks', listener)
   },
 }
 
