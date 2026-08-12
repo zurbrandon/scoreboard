@@ -145,6 +145,21 @@ describe('reveal sequence flags', () => {
     expect(s.revealNonce).toBe(0) // frozen frame, no new celebration burst
   })
 
+  it('music duck: nudges clamp to 0..1, and any reveal snaps it back to full', () => {
+    let s = run(
+      { type: 'music.nudgeDuck', delta: -0.3 },
+      { type: 'music.nudgeDuck', delta: -0.3 },
+    )
+    expect(s.music.duck).toBeCloseTo(0.4)
+    s = reduce(s, { type: 'music.nudgeDuck', delta: -1 }) // clamps at 0
+    expect(s.music.duck).toBe(0)
+    s = reduce(s, { type: 'score.reveal' }) // revealing something else un-ducks
+    expect(s.music.duck).toBe(1)
+    // clamps at the top too
+    s = reduce(s, { type: 'music.nudgeDuck', delta: +0.5 })
+    expect(s.music.duck).toBe(1)
+  })
+
   it('a fresh reveal clears the settled flag', () => {
     const s = run(
       { type: 'half.set', half: 'end' },

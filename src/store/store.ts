@@ -86,7 +86,7 @@ function loadPersisted(): AppState {
         ribbonsLive: { ...fresh.ribbonsLive, ...parsed.ribbonsLive },
         // Logo + Text merged into one Slides deck (migrateSlides handles old shapes).
         slides: migrateSlides(parsed, fresh),
-        music: { ...fresh.music, ...parsed.music },
+        music: { ...fresh.music, ...parsed.music, duck: 1 },
         slideshow: { ...fresh.slideshow, ...parsed.slideshow },
       }
     }

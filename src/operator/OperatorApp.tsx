@@ -11,6 +11,7 @@ import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
 import type { ImageSlide, LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
+import { DUCK_STEP } from '../shared/hotkeys'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
@@ -171,6 +172,10 @@ export function OperatorApp() {
           return dispatch({ type: 'reveal.stop' })
         case 'black':
           return dispatch({ type: 'display.set', scene: 'black' })
+        case 'duck.down':
+          return dispatch({ type: 'music.nudgeDuck', delta: -DUCK_STEP })
+        case 'duck.up':
+          return dispatch({ type: 'music.nudgeDuck', delta: +DUCK_STEP })
         case 'slide.show': {
           const slide = slidesRef.current[action.index]
           if (!slide) return

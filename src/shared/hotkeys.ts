@@ -18,6 +18,8 @@ export type HotkeyAction =
   | { type: 'stop' } // kill switch
   | { type: 'black' }
   | { type: 'slide.show'; index: number } // show the Nth slide in the deck (0-based)
+  | { type: 'duck.down' } // dial: dip Showboard's music under an external cue
+  | { type: 'duck.up' } // dial: bring it back up
 
 export interface HotkeyBinding {
   accelerator: string // an Electron accelerator string
@@ -47,4 +49,10 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
       label: `Show slide ${i + 1}`,
     }),
   ),
+  // Sound dial: temporary music duck (any reveal snaps it back to full).
+  { accelerator: `${MOD}+[`, action: { type: 'duck.down' }, label: 'Music duck down' },
+  { accelerator: `${MOD}+]`, action: { type: 'duck.up' }, label: 'Music duck up' },
 ]
+
+// How much one dial tick / keypress moves the duck (fraction of full volume).
+export const DUCK_STEP = 0.1

@@ -94,7 +94,11 @@ export interface TeamState {
 }
 
 export interface MusicState {
-  volume: number // 0..1
+  volume: number // 0..1 — the operator's base music level (the Settings slider)
+  /** Temporary "duck" multiplier (0..1) on top of `volume`, driven by the macro
+   *  pad's dial. Lets the operator dip Showboard's music under an external cue,
+   *  then any reveal snaps it back to 1. Never persisted (resets on launch). */
+  duck: number
   enabled: boolean
   /** Id of the most recently played bumper — used to avoid immediate repeats. */
   lastTrackId: string | null
@@ -219,6 +223,7 @@ export function createInitialState(): AppState {
     audioPlaying: false,
     music: {
       volume: 0.8,
+      duck: 1,
       enabled: true,
       lastTrackId: null,
       lastTrackName: null,

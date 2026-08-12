@@ -65,6 +65,7 @@ export type Command =
   | { type: 'effect.fire'; kind: string }
   // Music.
   | { type: 'music.setVolume'; volume: number }
+  | { type: 'music.nudgeDuck'; delta: number } // dial: dip/raise music under a cue (clamped 0..1)
   | { type: 'music.setEnabled'; enabled: boolean }
   | { type: 'music.setLibrary'; tracks: BumperTrack[] } // {id,name} of every loaded bumper
   | { type: 'music.setNextTrack'; id: string | null } // pick the next reveal's bumper (null = random)

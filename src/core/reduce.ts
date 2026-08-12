@@ -104,6 +104,7 @@ export function reduce(state: AppState, command: Command): AppState {
         scene: command.scene,
         displayWasReveal: true,
         revealAnimNonce: state.revealAnimNonce + 1,
+        music: { ...state.music, duck: 1 }, // revealing something else un-ducks
       }
 
     case 'slide.select':
@@ -222,6 +223,7 @@ export function reduce(state: AppState, command: Command): AppState {
       // phase ('end') starts a timed sequence: bump finaleNonce (drum roll) and
       // enter 'tabulating' — the celebration bumper + confetti wait for the
       // 'celebrate' step, so revealNonce is NOT bumped here.
+      // Revealing "something else" un-ducks the music (reset the dial's dip to 1).
       return state.half === 'end'
         ? {
             ...publishBoard(state),
@@ -230,12 +232,14 @@ export function reduce(state: AppState, command: Command): AppState {
             revealSettled: false,
             countdown: 0,
             finaleNonce: state.finaleNonce + 1,
+            music: { ...state.music, duck: 1 },
           }
         : {
             ...publishBoard(state),
             revealPhase: 'revealing',
             revealSettled: false,
             revealNonce: state.revealNonce + 1,
+            music: { ...state.music, duck: 1 },
           }
 
     case 'finale.countdown':
@@ -244,7 +248,12 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'finale.celebrate':
       // Winner takeover. Bumping revealNonce now fires the confetti, emoji rain,
       // and the high-energy bumper — the exact celebration a normal reveal uses.
-      return { ...state, finaleStage: 'celebrate', revealNonce: state.revealNonce + 1 }
+      return {
+        ...state,
+        finaleStage: 'celebrate',
+        revealNonce: state.revealNonce + 1,
+        music: { ...state.music, duck: 1 },
+      }
 
     case 'reveal.finish':
       return { ...state, revealPhase: 'idle', finaleStage: 'idle', revealSettled: false, countdown: 0 }
@@ -295,6 +304,10 @@ export function reduce(state: AppState, command: Command): AppState {
 
     case 'music.setVolume':
       return { ...state, music: { ...state.music, volume: command.volume } }
+    case 'music.nudgeDuck': {
+      const duck = Math.max(0, Math.min(1, state.music.duck + command.delta))
+      return { ...state, music: { ...state.music, duck } }
+    }
     case 'music.setEnabled':
       return { ...state, music: { ...state.music, enabled: command.enabled } }
     case 'music.setLibrary':

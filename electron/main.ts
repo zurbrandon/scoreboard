@@ -107,6 +107,7 @@ function loadState(): AppState {
         music: {
           ...fresh.music,
           ...parsed.music,
+          duck: 1, // temporary dial dip; never carried across launches
           lastTrackId: null,
           lastTrackName: null,
           librarySize: 0, // tracks are re-scanned from the folder on launch
