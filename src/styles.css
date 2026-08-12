@@ -1117,12 +1117,41 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 0 110px rgba(255, 210, 63, 0.85), inset 0 0 3vh rgba(0, 0, 0, 0.55);
   /* No will-change here: toggling it with the class creates/destroys a compositor
      layer at each boundary — a blip in itself. The pop is a transform animation,
-     which the browser composites on its own for its duration. */
-  animation: winner-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+     which the browser composites on its own for its duration. The specific
+     entrance is chosen at random per reveal (--pop / --slam / --bounce / --throb
+     below); all are transform-only and settle at scale ~1.07. */
 }
+/* Random winner-celebration entrances. Transform-only (composited, no re-raster).
+   Each ends held at ~scale(1.07) so the static glow reads clean afterward. */
+.team-panel--winner-pop { animation: winner-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+.team-panel--winner-slam { animation: winner-slam 0.62s cubic-bezier(0.18, 1.5, 0.3, 1) forwards; }
+.team-panel--winner-bounce { animation: winner-bounce 0.8s cubic-bezier(0.28, 0.9, 0.3, 1) forwards; }
+.team-panel--winner-throb { animation: winner-throb 0.85s ease-in-out forwards; }
 @keyframes winner-pop {
   0% { transform: scale(1); }
   55% { transform: scale(1.14); }
+  100% { transform: scale(1.07); }
+}
+@keyframes winner-slam {
+  0% { transform: scale(1.45) rotate(-4deg); }
+  45% { transform: scale(0.9) rotate(2.5deg); }
+  70% { transform: scale(1.12) rotate(-1deg); }
+  100% { transform: scale(1.07) rotate(0deg); }
+}
+@keyframes winner-bounce {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.2); }
+  45% { transform: scale(0.98); }
+  65% { transform: scale(1.13); }
+  82% { transform: scale(1.03); }
+  100% { transform: scale(1.07); }
+}
+@keyframes winner-throb {
+  0% { transform: scale(1); }
+  20% { transform: scale(1.16); }
+  38% { transform: scale(1.04); }
+  56% { transform: scale(1.14); }
+  74% { transform: scale(1.05); }
   100% { transform: scale(1.07); }
 }
 

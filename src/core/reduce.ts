@@ -229,6 +229,7 @@ export function reduce(state: AppState, command: Command): AppState {
             ...publishBoard(state),
             revealPhase: 'finale',
             finaleStage: 'tabulating',
+            revealStyle: command.style ?? 'pop',
             revealSettled: false,
             countdown: 0,
             finaleNonce: state.finaleNonce + 1,
@@ -237,6 +238,7 @@ export function reduce(state: AppState, command: Command): AppState {
         : {
             ...publishBoard(state),
             revealPhase: 'revealing',
+            revealStyle: command.style ?? 'pop',
             revealSettled: false,
             revealNonce: state.revealNonce + 1,
             music: { ...state.music, duck: 1 },

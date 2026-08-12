@@ -11,6 +11,7 @@ import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
 import type { ImageSlide, LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
+import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
 import { TeamControl } from './TeamControl'
@@ -49,6 +50,17 @@ const FX_VERDICTS: { kind: string; icon: string; title: string }[] = [
   { kind: 'success', icon: '✅', title: 'Success!' },
   { kind: 'nope', icon: '❌', title: 'Nope!' },
 ]
+
+// Each random reveal style pairs its winner animation (a CSS class the projector
+// applies) with an accompanying particle effect. null = just the base confetti.
+const REVEAL_STYLE_FX: Record<RevealStyle, string | null> = {
+  pop: null,
+  slam: 'streamers',
+  bounce: 'fireworks',
+  throb: 'stars',
+}
+const pickRevealStyle = (): RevealStyle =>
+  REVEAL_STYLES[Math.floor(Math.random() * REVEAL_STYLES.length)]
 
 export function OperatorApp() {
   const dispatch = useDispatch()
@@ -94,10 +106,25 @@ export function OperatorApp() {
   // The deck pushes the ACTIVE tab to the projector. Nothing else changes what's
   // on air. Reveal plays an entrance animation (display.reveal); silent cuts in
   // quietly (display.set). Live-type text and the slideshow never animate.
+  // Reveal the scoreboard with a random celebration style. A normal reveal also
+  // fires the style's accompanying particle effect (the finale runs its own
+  // sequence, so it skips the extra burst).
+  function revealScoreboard() {
+    const style = pickRevealStyle()
+    dispatch({ type: 'display.set', scene: 'scoreboard' })
+    dispatch({ type: 'score.reveal', style })
+    const fx = REVEAL_STYLE_FX[style]
+    if (fx && half !== 'end') dispatch({ type: 'effect.fire', kind: fx })
+  }
+
   function pushActive(withReveal: boolean) {
     if (activeTab === 'scoreboard') {
-      dispatch({ type: 'display.set', scene: 'scoreboard' })
-      dispatch({ type: withReveal ? 'score.reveal' : 'score.commitSilent' })
+      if (withReveal) {
+        revealScoreboard()
+      } else {
+        dispatch({ type: 'display.set', scene: 'scoreboard' })
+        dispatch({ type: 'score.commitSilent' })
+      }
     } else if (activeTab === 'slides') {
       dispatch({ type: 'slide.commit' })
       const animate = withReveal && !selectedSlideIsLiveText
@@ -145,6 +172,10 @@ export function OperatorApp() {
   const slideItems = useAppState((s) => s.slides.items)
   const slidesRef = useRef(slideItems)
   slidesRef.current = slideItems
+  // Keep the hotkey's reveal in sync with the latest `half` (the onHotkey effect
+  // below captures its closure once, so read the current fn from a ref).
+  const revealScoreboardRef = useRef(revealScoreboard)
+  revealScoreboardRef.current = revealScoreboard
 
   // Macro-pad / keyboard global shortcuts (Electron only). Main registers them
   // OS-wide and forwards each press here. We run the EXPLICIT action — not the
@@ -164,8 +195,7 @@ export function OperatorApp() {
           return dispatch({ type: 'red.decrement' })
         case 'reveal':
           setActiveTab('scoreboard')
-          dispatch({ type: 'display.set', scene: 'scoreboard' })
-          return dispatch({ type: 'score.reveal' })
+          return revealScoreboardRef.current()
         case 'silent':
           setActiveTab('scoreboard')
           dispatch({ type: 'display.set', scene: 'scoreboard' })

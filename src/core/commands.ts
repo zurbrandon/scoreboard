@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, Scene, TeamId, TextTemplate } from './state'
+import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, TeamId, TextTemplate } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -52,7 +52,7 @@ export type Command =
   | { type: 'slideshow.setSlideUrl'; id: string; url: string }
   | { type: 'slideshow.commit' } // publish the selected slide's URL to liveUrl
   // The main event.
-  | { type: 'score.reveal' }
+  | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends
   | { type: 'reveal.stop' } // kill switch: end a playing reveal now (fades audio, freezes the finale winner)
   | { type: 'audio.setPlaying'; value: boolean } // audio controller reflects whether reveal sound is sounding

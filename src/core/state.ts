@@ -24,6 +24,11 @@ export interface Moment {
 
 export type RevealPhase = 'idle' | 'revealing' | 'finale'
 
+// The winning team's celebration animation, picked at random each reveal so the
+// moment doesn't feel identical every time. Drives a CSS class on the projector.
+export type RevealStyle = 'pop' | 'slam' | 'bounce' | 'throb'
+export const REVEAL_STYLES: RevealStyle[] = ['pop', 'slam', 'bounce', 'throb']
+
 // The Final-score reveal is a timed sequence rather than a single moment:
 //   tabulating → countdown (3·2·1) → celebrate (winner takeover).
 // Only meaningful while revealPhase === 'finale'.
@@ -159,6 +164,8 @@ export interface AppState {
     liveUrl: string
   }
   revealPhase: RevealPhase
+  /** Which winner-celebration animation the current reveal uses (random each time). */
+  revealStyle: RevealStyle
   /** Bumped when a Logo/Text scene is REVEALED (not on silent) so those scenes
    *  can replay an entrance animation. `displayWasReveal` says whether the
    *  current display change was a reveal (animate) or silent (don't). */
@@ -227,6 +234,7 @@ export function createInitialState(): AppState {
       liveUrl: '',
     },
     revealPhase: 'idle',
+    revealStyle: 'pop',
     revealAnimNonce: 0,
     displayWasReveal: false,
     finaleStage: 'idle',

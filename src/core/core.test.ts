@@ -102,6 +102,11 @@ describe('reveal sequence flags', () => {
     expect(s.revealNonce).toBe(1)
   })
 
+  it('reveal records the chosen celebration style (defaults to pop)', () => {
+    expect(run({ type: 'score.reveal', style: 'bounce' }).revealStyle).toBe('bounce')
+    expect(run({ type: 'score.reveal' }).revealStyle).toBe('pop') // default when omitted
+  })
+
   it('reveal.finish returns to idle without touching scores', () => {
     const s = run(
       { type: 'blue.increment' },

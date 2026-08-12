@@ -259,6 +259,7 @@ function TeamPanel({ team, side }: { team: TeamId; side: Side }) {
   const liveScore = useAppState((s) => s.teams[team].liveScore)
   const mood = useAppState((s) => s.teams[team].mood)
   const revealPhase = useAppState((s) => s.revealPhase)
+  const revealStyle = useAppState((s) => s.revealStyle)
   const winner = useAppState((s) => s.lastWinner)
   // Ambient highlight of the current leader (from LIVE scores, never pending).
   const leader = useAppState((s) =>
@@ -278,7 +279,7 @@ function TeamPanel({ team, side }: { team: TeamId; side: Side }) {
         'team-panel',
         `team-panel--${team}`,
         isLeading ? 'team-panel--leading' : '',
-        isWinner ? 'team-panel--winner' : '',
+        isWinner ? `team-panel--winner team-panel--winner-${revealStyle}` : '',
         isLoser ? 'team-panel--dimmed' : '',
       ]
         .filter(Boolean)
