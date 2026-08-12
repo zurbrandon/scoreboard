@@ -151,6 +151,10 @@ export interface AppState {
   displayWasReveal: boolean
   /** Which step of the Final-score sequence is on screen (see FinaleStage). */
   finaleStage: FinaleStage
+  /** True when a reveal was STOPPED and is now holding a terminal frame (the
+   *  finale's frozen winner takeover). Distinguishes "held, done" from "playing"
+   *  so the operator's STOP button greys out once the sequence is settled. */
+  revealSettled: boolean
   /** Current countdown number (3·2·1) during the countdown stage; 0 otherwise. */
   countdown: number
   /** Result of the most recent reveal. null before the first reveal. */
@@ -161,10 +165,17 @@ export interface AppState {
   /** Bumped when a Final-score sequence starts — fires the drum roll, distinct
    *  from revealNonce (which fires the celebration bumper + confetti). */
   finaleNonce: number
+  /** Bumped when a reveal is STOPPED (the kill switch). The reveal service cancels
+   *  its pending timers on it, and the audio controller fades the sound out fast. */
+  stopNonce: number
   /** Fire-and-forget overlay effects (confetti cannon, etc.) that play on top of
    *  whatever scene is showing. `kind` selects the effect; `nonce` bumps on each
    *  press so the projector replays it. */
   effect: { kind: string; nonce: number }
+  /** Whether reveal audio (bumper / drum roll) is currently sounding. Reflected
+   *  from the audio controller so the operator's STOP button stays available for
+   *  the whole sound — a bumper can outlast the 10s winner-emphasis window. */
+  audioPlaying: boolean
   music: MusicState
 }
 
@@ -198,11 +209,14 @@ export function createInitialState(): AppState {
     revealAnimNonce: 0,
     displayWasReveal: false,
     finaleStage: 'idle',
+    revealSettled: false,
     countdown: 0,
     lastWinner: null,
     revealNonce: 0,
     finaleNonce: 0,
+    stopNonce: 0,
     effect: { kind: '', nonce: 0 },
+    audioPlaying: false,
     music: {
       volume: 0.8,
       enabled: true,

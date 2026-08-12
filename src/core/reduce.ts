@@ -216,12 +216,14 @@ export function reduce(state: AppState, command: Command): AppState {
             ...publishBoard(state),
             revealPhase: 'finale',
             finaleStage: 'tabulating',
+            revealSettled: false,
             countdown: 0,
             finaleNonce: state.finaleNonce + 1,
           }
         : {
             ...publishBoard(state),
             revealPhase: 'revealing',
+            revealSettled: false,
             revealNonce: state.revealNonce + 1,
           }
 
@@ -234,10 +236,33 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, finaleStage: 'celebrate', revealNonce: state.revealNonce + 1 }
 
     case 'reveal.finish':
-      return { ...state, revealPhase: 'idle', finaleStage: 'idle', countdown: 0 }
+      return { ...state, revealPhase: 'idle', finaleStage: 'idle', revealSettled: false, countdown: 0 }
+
+    case 'reveal.stop': {
+      // Kill switch. A finale jumps to and FREEZES its winner takeover (that's
+      // the finale's "end frame"): stay in 'finale'/'celebrate' but mark settled
+      // so it holds silently instead of auto-advancing. We do NOT bump revealNonce
+      // — no fresh confetti/bumper; the winner card just reads current live scores.
+      // A normal reveal has no separate end card, so it settles to the plain
+      // scoreboard (idle). Either way, stopNonce fires the audio fade + timer
+      // cancel. Guarded by !anyDirty at the call site, so a pending edit reveals
+      // instead of stopping.
+      const finale = state.revealPhase === 'finale'
+      return {
+        ...state,
+        revealPhase: finale ? 'finale' : 'idle',
+        finaleStage: finale ? 'celebrate' : 'idle',
+        revealSettled: finale,
+        countdown: 0,
+        stopNonce: state.stopNonce + 1,
+      }
+    }
 
     case 'effect.fire':
       return { ...state, effect: { kind: command.kind, nonce: state.effect.nonce + 1 } }
+
+    case 'audio.setPlaying':
+      return { ...state, audioPlaying: command.value }
 
     case 'score.commitSilent':
       // Publish the board with no ceremony — no revealNonce/revealPhase change,

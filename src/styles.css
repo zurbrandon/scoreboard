@@ -216,6 +216,14 @@ button { font-family: inherit; cursor: pointer; }
   background: radial-gradient(circle at 50% 35%, #ffe071, #f2b800);
   box-shadow: 0 0 40px rgba(255, 210, 63, 0.5);
 }
+/* Kill-switch state: the same button, now a clear red STOP so it can't be
+   mistaken for GO. Distinct hue is the whole point — one control, two actions. */
+.reveal--stop {
+  border-color: #ff5a5f;
+  color: #fff;
+  background: radial-gradient(circle at 50% 35%, #ff5a5f, #c02329);
+  box-shadow: 0 0 40px rgba(255, 70, 80, 0.55);
+}
 .reveal:active { transform: scale(0.96); }
 .silent-btn {
   background: var(--panel-2);

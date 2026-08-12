@@ -3,7 +3,7 @@
 // to the bottom. Preview/Program: picking a tab only previews a scene; the deck
 // (Reveal / update silently / Black) is what actually changes the projector.
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { MdScoreboard, MdViewCarousel, MdSlideshow } from 'react-icons/md'
 import type { IconType } from 'react-icons'
@@ -110,7 +110,32 @@ export function OperatorApp() {
   const silent = () => pushActive(false)
   const black = () => dispatch({ type: 'display.set', scene: 'black' })
 
-  useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal, black })
+  // Kill switch: while a scoreboard reveal/finale is actually playing (and nothing
+  // has been edited), the otherwise-idle REVEAL button becomes STOP — one press
+  // fades the sound and jumps to the end frame. Scoped to the scoreboard tab while
+  // it's the live scene, so leaving the tab hands the button back to normal Reveal
+  // (and a fresh reveal elsewhere supersedes this one anyway). A pending edit wins:
+  // anyDirty flips it back to REVEAL. A 400ms arm delay stops a double-tap on the
+  // reveal you just fired from instantly killing it.
+  const revealPhase = useAppState((s) => s.revealPhase)
+  const revealSettled = useAppState((s) => s.revealSettled)
+  const audioPlaying = useAppState((s) => s.audioPlaying)
+  // "Playing" = the reveal animation is running, OR its sound is still going
+  // (a bumper can outlast the animation). A settled/frozen finale is not playing.
+  const playing = (revealPhase !== 'idle' && !revealSettled) || audioPlaying
+  const [stopArmed, setStopArmed] = useState(false)
+  useEffect(() => {
+    if (!playing) return setStopArmed(false)
+    const t = setTimeout(() => setStopArmed(true), 400)
+    return () => clearTimeout(t)
+  }, [playing])
+  const canStop =
+    playing && stopArmed && activeTab === 'scoreboard' && programScene === 'scoreboard' && !anyDirty
+
+  // The reveal button's single action: kill a playing reveal, or fire a new one.
+  const primaryAction = () => (canStop ? dispatch({ type: 'reveal.stop' }) : reveal())
+
+  useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal: primaryAction, black })
 
   function openProjector() {
     window.open(`${window.location.pathname}?view=projector`, 'showboard-projector')
@@ -187,12 +212,12 @@ export function OperatorApp() {
             Black screen
           </button>
           <motion.button
-            className={`reveal ${armed ? 'reveal--armed' : ''}`}
-            onClick={reveal}
+            className={`reveal ${canStop ? 'reveal--stop' : armed ? 'reveal--armed' : ''}`}
+            onClick={primaryAction}
             whileTap={{ scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
           >
-            REVEAL
+            {canStop ? 'STOP' : 'REVEAL'}
           </motion.button>
           <button className="silent-btn" onClick={silent}>
             update silently

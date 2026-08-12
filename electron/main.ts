@@ -100,6 +100,8 @@ function loadState(): AppState {
         displayWasReveal: false,
         effect: { kind: '', nonce: 0 },
         finaleStage: 'idle',
+        revealSettled: false,
+        audioPlaying: false,
         countdown: 0,
         music: {
           ...fresh.music,

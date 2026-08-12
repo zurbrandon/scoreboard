@@ -53,6 +53,8 @@ export type Command =
   // The main event.
   | { type: 'score.reveal' }
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends
+  | { type: 'reveal.stop' } // kill switch: end a playing reveal now (fades audio, freezes the finale winner)
+  | { type: 'audio.setPlaying'; value: boolean } // audio controller reflects whether reveal sound is sounding
   // Final-score sequence steps, dispatched by the reveal service on a timer.
   | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown
   | { type: 'finale.celebrate' } // countdown done → winner takeover (fires confetti + bumper)

@@ -25,6 +25,7 @@ export function attachRevealService(
 ): () => void {
   let lastNonce = store.getState().revealNonce
   let lastFinaleNonce = store.getState().finaleNonce
+  let lastStopNonce = store.getState().stopNonce
   const timers = new Set<ReturnType<typeof setTimeout>>()
 
   const clearTimers = () => {
@@ -43,8 +44,18 @@ export function attachRevealService(
     const state = store.getState()
     const finaleStarted = state.finaleNonce !== lastFinaleNonce
     const revealed = state.revealNonce !== lastNonce
+    const stopped = state.stopNonce !== lastStopNonce
     lastFinaleNonce = state.finaleNonce
     lastNonce = state.revealNonce
+    lastStopNonce = state.stopNonce
+
+    if (stopped) {
+      // Kill switch: cancel every pending step so a queued countdown/celebrate/
+      // finish can't fire after the operator stopped. The reducer already put the
+      // board in its terminal frame; the service just stands down.
+      clearTimers()
+      return
+    }
 
     if (finaleStarted) {
       // Final score: tabulating (now) → 3 · 2 · 1 → celebrate → finish.

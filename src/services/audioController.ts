@@ -31,6 +31,7 @@ export interface AudioController {
 // gracefully instead of running on under the next bit.
 const FADE_AFTER_MS = 15000 // start fading this long after a bumper begins
 const FADE_MS = 3000 // slow fade to silence over this long
+const STOP_FADE_MS = 250 // fast fade when the operator hits STOP (no speaker pop)
 
 export function createAudioController(store: Store): AudioController {
   let tracks: LoadedTrack[] = []
@@ -38,6 +39,7 @@ export function createAudioController(store: Store): AudioController {
   let audio: HTMLAudioElement | null = null
   let lastNonce = store.getState().revealNonce
   let lastFinaleNonce = store.getState().finaleNonce
+  let lastStopNonce = store.getState().stopNonce
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -47,6 +49,15 @@ export function createAudioController(store: Store): AudioController {
 
   function applyVolume(): void {
     if (audio) audio.volume = Math.max(0, Math.min(1, store.getState().music.volume * fadeGain))
+  }
+
+  // Mirror "is reveal sound playing" into the store (deduped) so the operator's
+  // STOP button can stay lit for the whole track, not just the animation window.
+  let playingFlag = false
+  function setPlaying(value: boolean): void {
+    if (value === playingFlag) return
+    playingFlag = value
+    store.dispatch({ type: 'audio.setPlaying', value })
   }
 
   function clearFade(): void {
@@ -65,6 +76,26 @@ export function createAudioController(store: Store): AudioController {
     audio.removeAttribute('src')
     audio.load()
     audio = null
+    setPlaying(false)
+  }
+
+  // The STOP kill switch: ramp the current track to silence fast, then release
+  // it. A short fade (vs. a hard pause) avoids the click/pop of cutting a playing
+  // buffer dead. No-op if nothing is playing.
+  function fadeOutAndStop(): void {
+    if (!audio) return
+    clearFade()
+    const startGain = fadeGain
+    const start = performance.now()
+    fadeInterval = setInterval(() => {
+      const t = Math.min(1, (performance.now() - start) / STOP_FADE_MS)
+      fadeGain = startGain * (1 - t)
+      applyVolume()
+      if (t >= 1) {
+        clearFade()
+        releaseAudio()
+      }
+    }, 16)
   }
 
   function scheduleFade(): void {
@@ -114,6 +145,7 @@ export function createAudioController(store: Store): AudioController {
       void audio.play().catch((err) => {
         console.warn('[audio] bumper playback failed; continuing show:', err)
       })
+      setPlaying(true)
       if (fade) scheduleFade() // else let it ride out to the end of the track
       store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
       // A picked track is a one-shot: consume it so the next reveal is random again.
@@ -138,6 +170,7 @@ export function createAudioController(store: Store): AudioController {
       void audio.play().catch((err) => {
         console.warn('[audio] drum roll failed; continuing show:', err)
       })
+      setPlaying(true)
       scheduleFade()
     } catch (err) {
       console.warn('[audio] could not start drum roll; continuing show:', err)
@@ -158,6 +191,11 @@ export function createAudioController(store: Store): AudioController {
       // fading after 15s. Normal reveals still fade.
       const isFinaleCelebration = s.revealPhase === 'finale' && s.finaleStage === 'celebrate'
       playBumper(true, !isFinaleCelebration)
+    }
+    // STOP kill switch: fade the current sound out fast.
+    if (s.stopNonce !== lastStopNonce) {
+      lastStopNonce = s.stopNonce
+      fadeOutAndStop()
     }
     // Keep a playing track's volume in sync with the operator's slider
     // (respecting any in-progress fade).

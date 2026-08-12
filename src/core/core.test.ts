@@ -117,6 +117,45 @@ describe('reveal sequence flags', () => {
     const s = run({ type: 'score.reveal' }, { type: 'score.reveal' })
     expect(s.revealNonce).toBe(2)
   })
+
+  it('stop ends a normal reveal to idle and bumps the stop nonce', () => {
+    const s = run(
+      { type: 'blue.increment' },
+      { type: 'score.reveal' },
+      { type: 'reveal.stop' },
+    )
+    expect(s.revealPhase).toBe('idle')
+    expect(s.revealSettled).toBe(false)
+    expect(s.stopNonce).toBe(1)
+    expect(s.teams.blue.liveScore).toBe(1) // scores untouched
+    expect(s.revealNonce).toBe(1) // no fresh confetti/bumper fired
+  })
+
+  it('stop freezes a finale on the winner takeover (settled)', () => {
+    const s = run(
+      { type: 'blue.increment' },
+      { type: 'half.set', half: 'end' },
+      { type: 'score.reveal' }, // finale → tabulating
+      { type: 'reveal.stop' },
+    )
+    expect(s.revealPhase).toBe('finale')
+    expect(s.finaleStage).toBe('celebrate') // held on the winner frame
+    expect(s.revealSettled).toBe(true)
+    expect(s.stopNonce).toBe(1)
+    expect(s.revealNonce).toBe(0) // frozen frame, no new celebration burst
+  })
+
+  it('a fresh reveal clears the settled flag', () => {
+    const s = run(
+      { type: 'half.set', half: 'end' },
+      { type: 'score.reveal' },
+      { type: 'reveal.stop' }, // settled = true
+      { type: 'half.set', half: 'first' },
+      { type: 'score.reveal' }, // new normal reveal
+    )
+    expect(s.revealSettled).toBe(false)
+    expect(s.revealPhase).toBe('revealing')
+  })
 })
 
 describe('scoring details', () => {
