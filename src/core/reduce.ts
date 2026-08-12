@@ -97,7 +97,13 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, half: command.half }
 
     case 'display.set':
-      return { ...state, scene: command.scene, displayWasReveal: false }
+      // Going to Black clears the GIF overlay too (a clean reset of the screen).
+      return {
+        ...state,
+        scene: command.scene,
+        displayWasReveal: false,
+        gifOverlay: command.scene === 'black' ? null : state.gifOverlay,
+      }
     case 'display.reveal':
       return {
         ...state,
@@ -282,6 +288,9 @@ export function reduce(state: AppState, command: Command): AppState {
 
     case 'effect.fire':
       return { ...state, effect: { kind: command.kind, nonce: state.effect.nonce + 1 } }
+
+    case 'gif.overlay':
+      return { ...state, gifOverlay: command.src }
 
     case 'moment.play':
       // Show the chosen run-out / run-in visual full-screen. It stays up until

@@ -9,6 +9,7 @@ import { TextScene } from './scenes/TextScene'
 import { ImageScene } from './scenes/ImageScene'
 import { Slideshow } from './scenes/Slideshow'
 import { MomentScene } from './scenes/MomentScene'
+import { GifOverlay } from './GifOverlay'
 import { EffectOverlay } from './EffectOverlay'
 
 export function ProjectorApp() {
@@ -47,6 +48,8 @@ export function ProjectorApp() {
       {scene === 'slideshow' && <Slideshow />}
       {scene === 'moment' && moment && <MomentScene key={momentNonce} moment={moment} />}
       {scene === 'black' && <div className="scene-black" />}
+      {/* A searched GIF over the scene; effects still fly on top of it. */}
+      <GifOverlay />
       {/* Overlay effects play on top of every scene. */}
       <EffectOverlay kind={effect.kind} nonce={effect.nonce} />
     </div>

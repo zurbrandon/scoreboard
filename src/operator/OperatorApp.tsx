@@ -14,6 +14,7 @@ import type { ImageSlide, LogoSlide, Scene, TextSlide, TextTemplate } from '../c
 import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
+import { GifSearch } from './GifSearch'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
@@ -289,13 +290,20 @@ export function OperatorApp() {
           <span className="deck__onair-dot" />
           on air · {ON_AIR_LABEL[programScene]}
         </div>
-        <div className="deck__row">
+        <div className="deck__main">
+          {/* Black screen, styled as a little "screen": a dark box with a light
+              border. Lights up when it's actually on air. */}
           <button
-            className={`deck-black ${programScene === 'black' ? 'deck-black--active' : ''}`}
+            className={`black-box ${programScene === 'black' ? 'black-box--active' : ''}`}
             onClick={black}
+            title="Black screen"
           >
-            Black screen
+            <span className="black-box__label">Black</span>
           </button>
+
+          {/* REVEAL is the anchor; the flanking boxes center on the CIRCLE, so
+              `update silently` sits below the row (not inside this column) — else
+              it would pull the row's center down past the circle. */}
           <motion.button
             className={`reveal ${canStop ? 'reveal--stop' : armed ? 'reveal--armed' : ''}`}
             onClick={primaryAction}
@@ -304,67 +312,125 @@ export function OperatorApp() {
           >
             {canStop ? 'STOP' : 'REVEAL'}
           </motion.button>
-          <button className="silent-btn" onClick={silent}>
-            update silently
-          </button>
-        </div>
-        <div className="moment-row">
-          <button
-            className="moment-btn moment-btn--out"
-            title="Team runs out: random goodbye visual + song"
-            onClick={() => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })}
-          >
-            <span aria-hidden="true">👋</span> Run out
-          </button>
-          <button
-            className="moment-btn moment-btn--in"
-            title="Team runs back in: random welcome visual + song"
-            onClick={() => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })}
-          >
-            <span aria-hidden="true">🙌</span> Run in
-          </button>
-        </div>
-        <div className="fx-row">
-          {FX_BURSTS.map((fx) => (
+
+          {/* Run out / Run in as one split button — two actions, one control. */}
+          <div className="run-stack">
             <button
-              key={fx.kind}
-              className="fx-btn"
-              title={fx.title}
-              aria-label={fx.title}
-              onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+              className="run-stack__btn run-stack__btn--out"
+              title="Team runs out: random goodbye visual + song"
+              onClick={() => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })}
             >
-              {fx.icon}
+              <span aria-hidden="true">👋</span> Run out
             </button>
-          ))}
-          <span className="fx-divider" aria-hidden="true" />
-          {FX_SCREEN.map((fx) => (
             <button
-              key={fx.kind}
-              className="fx-btn"
-              title={fx.title}
-              aria-label={fx.title}
-              onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+              className="run-stack__btn run-stack__btn--in"
+              title="Team runs back in: random welcome visual + song"
+              onClick={() => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })}
             >
-              {fx.icon}
+              <span aria-hidden="true">🙌</span> Run in
             </button>
-          ))}
-          <span className="fx-divider" aria-hidden="true" />
-          {FX_VERDICTS.map((fx) => (
-            <button
-              key={fx.kind}
-              className="fx-btn"
-              title={fx.title}
-              aria-label={fx.title}
-              onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
-            >
-              {fx.icon}
-            </button>
-          ))}
+          </div>
         </div>
+        <button className="silent-btn" onClick={silent}>
+          update silently
+        </button>
+
+        <GifSearch />
+        <EffectsFab />
       </footer>
 
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>
+  )
+}
+
+// The discretionary effects, tucked into a corner sparkle. Click and they FAN
+// OUT in a radial arc (Path-style) with a staggered spring pop. Stays open so
+// several can be fired in a row; closes on a second press or a click anywhere
+// outside — and that outside click still lands, so "confetti… then Run out"
+// fires the moment and closes the fan in one motion.
+// Two concentric arcs so nine options don't crowd one row: an inner ring of the
+// verdict + screen effects, an outer ring of the particle bursts.
+const FX_RINGS: { radius: number; items: { kind: string; icon: string; title: string }[] }[] = [
+  { radius: 104, items: [...FX_VERDICTS, ...FX_SCREEN] }, // success · nope · blue · red
+  { radius: 154, items: FX_BURSTS }, // confetti · streamers · fireworks · hearts · stars
+]
+// Fan from straight-up (a=0) to straight-left (a=π/2) out of the bottom-right corner.
+function fxOrbOffset(radius: number, i: number, n: number) {
+  const a = n <= 1 ? Math.PI / 4 : (i / (n - 1)) * (Math.PI / 2)
+  return { x: -radius * Math.sin(a), y: -radius * Math.cos(a) }
+}
+
+function EffectsFab() {
+  const dispatch = useDispatch()
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current?.contains(e.target as Node)) return
+      setOpen(false) // click-away — we don't preventDefault, so the target still gets it
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [open])
+
+  return (
+    <>
+      {/* While open, a corner scrim blocks clicks from falling through to the
+          buttons behind the fan (Run out / Run in). It reads as a soft shadow
+          radiating from the sparkle, and clicking it just closes the fan. */}
+      {open && <div className="fx-scrim" aria-hidden="true" />}
+      <div className="fx-fab" ref={rootRef}>
+        <AnimatePresence>
+        {open &&
+          FX_RINGS.flatMap((ring, ri) =>
+            ring.items.map((fx, i) => {
+              const { x, y } = fxOrbOffset(ring.radius, i, ring.items.length)
+              const order = ri === 0 ? i : FX_RINGS[0].items.length + i
+              return (
+                <motion.button
+                  key={fx.kind}
+                  className="fx-orb"
+                  title={fx.title}
+                  aria-label={fx.title}
+                  initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
+                  animate={{ x, y, scale: 1, opacity: 1 }}
+                  exit={{ x: 0, y: 0, scale: 0, opacity: 0 }}
+                  whileHover={{ scale: 1.25 }}
+                  whileTap={{ scale: 1.1 }}
+                  transition={{ type: 'spring', stiffness: 520, damping: 26, delay: order * 0.022 }}
+                  onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+                >
+                  {fx.icon}
+                </motion.button>
+              )
+            }),
+          )}
+      </AnimatePresence>
+        <button
+          className={`fx-fab__btn ${open ? 'fx-fab__btn--open' : ''}`}
+          aria-expanded={open}
+          aria-label={open ? 'Close effects' : 'Effects'}
+          title={open ? 'Close' : 'Effects'}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <AnimatePresence initial={false}>
+            <motion.span
+              key={open ? 'x' : 'icon'}
+              className={`fab-icon ${open ? 'fab-icon--x' : ''}`}
+              initial={{ rotate: -135, scale: 0.3, opacity: 0 }}
+              animate={{ rotate: 0, scale: 1, opacity: 1 }}
+              exit={{ rotate: 135, scale: 0.3, opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.2, 1.2, 0.4, 1] }}
+            >
+              {open ? '✕' : '✨'}
+            </motion.span>
+          </AnimatePresence>
+        </button>
+      </div>
+    </>
   )
 }
 

@@ -64,6 +64,7 @@ export type Command =
   // Fire an overlay effect (e.g. a confetti cannon) on top of the current scene.
   | { type: 'effect.fire'; kind: string }
   | { type: 'moment.play'; kind: MomentKind; visual: MomentVisual } // run-out / run-in quick trigger
+  | { type: 'gif.overlay'; src: string | null } // overlay a searched GIF on the projector (null clears)
   // Music.
   | { type: 'music.setVolume'; volume: number }
   | { type: 'music.nudgeDuck'; delta: number } // dial: dip/raise music under a cue (clamped 0..1)

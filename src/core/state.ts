@@ -198,6 +198,9 @@ export interface AppState {
    *  from the audio controller so the operator's STOP button stays available for
    *  the whole sound — a bumper can outlast the 10s winner-emphasis window. */
   audioPlaying: boolean
+  /** A GIF overlaid on top of whatever scene is showing (from the operator's GIF
+   *  search), or null for none. Remote Giphy URL. */
+  gifOverlay: string | null
   /** The live run-out / run-in moment (what the projector shows while scene ===
    *  'moment'). null before the first trigger. */
   moment: Moment | null
@@ -246,6 +249,7 @@ export function createInitialState(): AppState {
     stopNonce: 0,
     effect: { kind: '', nonce: 0 },
     audioPlaying: false,
+    gifOverlay: null,
     moment: null,
     momentNonce: 0,
     music: {

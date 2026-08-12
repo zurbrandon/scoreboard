@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { createStore } from './store/store'
 import { StoreProvider } from './store/react'
 import { attachRevealService } from './services/revealService'
+import { attachGifOverlayService } from './services/gifOverlayService'
 import { createAudioController } from './services/audioController'
 import { AudioProvider } from './services/audioContext'
 import { OperatorApp } from './operator/OperatorApp'
@@ -25,6 +26,7 @@ document.title = isProjector ? 'Showboard — Projector' : 'Showboard — Operat
 const audio = role === 'operator' ? createAudioController(store) : null
 if (import.meta.env.DEV && audio) (window as unknown as { __audio: typeof audio }).__audio = audio
 if (role === 'operator') attachRevealService(store)
+if (role === 'operator') attachGifOverlayService(store)
 
 // In Electron, auto-load the persisted music folder's bumpers at startup so
 // they're ready no matter whether the Settings panel is open. (The operator's

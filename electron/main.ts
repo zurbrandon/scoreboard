@@ -112,6 +112,7 @@ function loadState(): AppState {
         finaleStage: 'idle',
         revealSettled: false,
         audioPlaying: false,
+        gifOverlay: null,
         countdown: 0,
         music: {
           ...fresh.music,
