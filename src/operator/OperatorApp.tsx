@@ -3,8 +3,8 @@
 // to the bottom. Preview/Program: picking a tab only previews a scene; the deck
 // (Reveal / update silently / Black) is what actually changes the projector.
 
-import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion, Reorder, useDragControls } from 'motion/react'
 import { MdScoreboard, MdViewCarousel, MdSlideshow } from 'react-icons/md'
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
@@ -136,6 +136,54 @@ export function OperatorApp() {
   const primaryAction = () => (canStop ? dispatch({ type: 'reveal.stop' }) : reveal())
 
   useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal: primaryAction, black })
+
+  // Latest deck, read at key-press time so "show slide N" always maps to the
+  // current ordering (not a value baked in when the effect first ran).
+  const slideItems = useAppState((s) => s.slides.items)
+  const slidesRef = useRef(slideItems)
+  slidesRef.current = slideItems
+
+  // Macro-pad / keyboard global shortcuts (Electron only). Main registers them
+  // OS-wide and forwards each press here. We run the EXPLICIT action — not the
+  // tab-dependent button logic — and sync the on-screen tab so the operator UI
+  // follows whichever folder the pad is on.
+  useEffect(() => {
+    if (!window.showboard) return
+    return window.showboard.onHotkey((action) => {
+      switch (action.type) {
+        case 'blue.up':
+          return dispatch({ type: 'blue.increment' })
+        case 'blue.down':
+          return dispatch({ type: 'blue.decrement' })
+        case 'red.up':
+          return dispatch({ type: 'red.increment' })
+        case 'red.down':
+          return dispatch({ type: 'red.decrement' })
+        case 'reveal':
+          setActiveTab('scoreboard')
+          dispatch({ type: 'display.set', scene: 'scoreboard' })
+          return dispatch({ type: 'score.reveal' })
+        case 'silent':
+          setActiveTab('scoreboard')
+          dispatch({ type: 'display.set', scene: 'scoreboard' })
+          return dispatch({ type: 'score.commitSilent' })
+        case 'stop':
+          return dispatch({ type: 'reveal.stop' })
+        case 'black':
+          return dispatch({ type: 'display.set', scene: 'black' })
+        case 'slide.show': {
+          const slide = slidesRef.current[action.index]
+          if (!slide) return
+          setActiveTab('slides')
+          dispatch({ type: 'slide.select', id: slide.id })
+          dispatch({ type: 'slide.commit' })
+          // Live-type text mirrors keystrokes, so it cuts in without an entrance.
+          const animate = !(slide.type === 'text' && slide.liveType)
+          return dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'slides' })
+        }
+      }
+    })
+  }, [dispatch])
 
   function openProjector() {
     window.open(`${window.location.pathname}?view=projector`, 'showboard-projector')
@@ -474,6 +522,28 @@ function SlidesConfig() {
   const [addOpen, setAddOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
+  // Drag-to-reorder is driven by a LOCAL id order so the drag stays smooth
+  // (no IPC round-trip per move); we persist to the store on drop. `order` holds
+  // ids, not slide objects, so edits to a slide always render fresh from `items`.
+  const [order, setOrder] = useState<string[]>(() => items.map((s) => s.id))
+  const orderRef = useRef(order)
+  orderRef.current = order
+  const itemsById = new Map(items.map((s) => [s.id, s]))
+  // Resync only when the SET of ids changes (add/remove) — never mid-drag or on a
+  // pure reorder echo, which would clobber the order the operator is dragging.
+  const idSetKey = [...items.map((s) => s.id)].sort().join(',')
+  useEffect(() => {
+    setOrder((prev) => {
+      const live = new Set(items.map((s) => s.id))
+      const kept = prev.filter((id) => live.has(id))
+      const added = items.map((s) => s.id).filter((id) => !prev.includes(id))
+      return [...kept, ...added]
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idSetKey])
+
+  const commitOrder = () => dispatch({ type: 'slide.reorder', ids: orderRef.current })
+
   async function onFiles(files: FileList | null) {
     for (const file of Array.from(files ?? [])) {
       try {
@@ -488,27 +558,34 @@ function SlidesConfig() {
 
   return (
     <div className="cards">
-      <AnimatePresence initial={false}>
-        {items.map((slide) => (
-          <motion.div
-            key={slide.id}
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.18 }}
-          >
-            {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
-            {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
-            {slide.type === 'text' && (
-              <TextSlideCard
-                slide={slide}
-                selected={slide.id === selectedId}
-                isOnAir={programScene === 'slides' && liveId === slide.id}
-              />
-            )}
-          </motion.div>
-        ))}
-      </AnimatePresence>
+      <Reorder.Group axis="y" values={order} onReorder={setOrder} className="slide-list" as="div">
+        <AnimatePresence initial={false}>
+          {order.map((id, i) => {
+            const slide = itemsById.get(id)
+            if (!slide) return null
+            return (
+              <SlideRow
+                key={id}
+                id={id}
+                index={i}
+                selected={id === selectedId}
+                onSelect={() => dispatch({ type: 'slide.select', id })}
+                onDrop={commitOrder}
+              >
+                {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
+                {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
+                {slide.type === 'text' && (
+                  <TextSlideCard
+                    slide={slide}
+                    selected={slide.id === selectedId}
+                    isOnAir={programScene === 'slides' && liveId === slide.id}
+                  />
+                )}
+              </SlideRow>
+            )
+          })}
+        </AnimatePresence>
+      </Reorder.Group>
 
       {addOpen ? (
         <div className="slide-add">
@@ -577,6 +654,75 @@ function SlidesConfig() {
         }}
       />
     </div>
+  )
+}
+
+// One reorderable row: a grip rail (the bold slide number, which is also the
+// drag handle) beside the slide's card. Dragging starts ONLY from the grip
+// (dragListener off + explicit controls), so it never fights a card's click-to-
+// select or the image card's drop zone. The order persists on drop.
+function SlideRow({
+  id,
+  index,
+  selected,
+  onSelect,
+  onDrop,
+  children,
+}: {
+  id: string
+  index: number
+  selected: boolean
+  onSelect: () => void
+  onDrop: () => void
+  children: ReactNode
+}) {
+  const controls = useDragControls()
+  // Tap vs drag on the grip. Start the drag on POINTERDOWN via the controls, so
+  // Motion owns the gesture and always releases it cleanly on pointerup (no
+  // sticky drag). Motion's onDrag fires only on real movement → that marks it a
+  // drag. We decide tap-vs-drag on the raw pointerup (which ALWAYS fires, unlike
+  // Motion's onDragEnd, which skips a zero-distance gesture): no movement → tap
+  // → select the card.
+  const moved = useRef(false)
+  return (
+    <Reorder.Item
+      value={id}
+      as="div"
+      dragListener={false}
+      dragControls={controls}
+      onDrag={() => {
+        moved.current = true
+      }}
+      onDragEnd={onDrop}
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.18 }}
+      className="slide-row"
+    >
+      <div
+        className={`slide-row__grip ${selected ? 'slide-row__grip--active' : ''}`}
+        onPointerDown={(e) => {
+          moved.current = false
+          controls.start(e)
+          const cleanup = () => {
+            window.removeEventListener('pointerup', onUp)
+            window.removeEventListener('pointercancel', cleanup)
+          }
+          const onUp = () => {
+            cleanup()
+            if (!moved.current) onSelect() // released without dragging → a tap
+          }
+          window.addEventListener('pointerup', onUp)
+          window.addEventListener('pointercancel', cleanup)
+        }}
+        title="Tap to select · drag to reorder"
+      >
+        <span className="slide-row__num">{index + 1}</span>
+        <span className="slide-row__dots" aria-hidden="true">⠿</span>
+      </div>
+      <div className="slide-row__body">{children}</div>
+    </Reorder.Item>
   )
 }
 

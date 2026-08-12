@@ -349,6 +349,43 @@ button { font-family: inherit; cursor: pointer; }
 .url-input:focus { outline: none; border-color: var(--accent); }
 /* Text scene: a queue of clue cards (headline + body) */
 .cards { display: flex; flex-direction: column; gap: 8px; }
+
+/* Reorderable slide list: each row is a grip rail fused to the slide's card so
+   the two read as ONE card split by a seam. The rail (bold number + drag handle)
+   rounds only its LEFT corners; the card squares its LEFT corners (below) — they
+   meet flush (gap:0) with a single seam line (the card's left border). */
+.slide-list { display: flex; flex-direction: column; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.slide-row { display: flex; align-items: stretch; gap: 0; }
+.slide-row__body { flex: 1; min-width: 0; } /* min-width:0 lets inner cards shrink */
+/* The card squares its left corners so it butts cleanly against the rail. */
+.cards .slide-row__body > * { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+/* Grip rail doubles as the drag handle and the bold slide number that maps to
+   the macro-pad key. Slightly darker than the card so the number segment reads
+   as "different function," while the shared outline keeps it one card.
+   touch-action:none so a drag doesn't scroll the panel. */
+.slide-row__grip {
+  flex: 0 0 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1.5px solid #2c3346;
+  border-right: none; /* the card's left border is the single seam */
+  border-radius: 12px 0 0 12px;
+  background: var(--panel-2, #171d2b);
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.slide-row__grip:active { cursor: grabbing; }
+.slide-row__grip:hover { background: #202840; color: var(--text); } /* lift bg, not border, so the unit stays whole */
+/* Selected: the rail's border goes accent to match the card's, so the whole
+   fused unit highlights as one. */
+.slide-row__grip--active { border-color: var(--accent); }
+.slide-row__num { font-size: 20px; font-weight: 900; line-height: 1; color: var(--text); }
+.slide-row__dots { font-size: 12px; opacity: 0.6; }
 .text-card {
   position: relative;
   display: flex;

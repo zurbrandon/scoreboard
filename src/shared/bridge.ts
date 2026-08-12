@@ -4,6 +4,7 @@
 
 import type { AppState } from '../core/state'
 import type { Command } from '../core/commands'
+import type { HotkeyAction } from './hotkeys'
 
 export interface DisplayInfo {
   id: number
@@ -55,6 +56,10 @@ export interface ShowboardBridge {
   // Download an image URL (dragged from a website) in the main process — no CORS
   // limits — and return it as a data: URL, or null on failure.
   downloadImage(url: string): Promise<string | null>
+
+  // Macro-pad / keyboard global shortcuts: main registers them OS-wide and
+  // forwards each press here so the operator can run the action.
+  onHotkey(callback: (action: HotkeyAction) => void): () => void
 }
 
 declare global {

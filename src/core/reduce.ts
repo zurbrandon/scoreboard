@@ -149,6 +149,17 @@ export function reduce(state: AppState, command: Command): AppState {
         state.slides.selectedId === command.id ? (items[0]?.id ?? '') : state.slides.selectedId
       return { ...state, slides: { ...state.slides, items, selectedId } }
     }
+    case 'slide.reorder': {
+      // Rebuild the deck in the given id order. Any item not named in `ids`
+      // (shouldn't happen, but be safe) keeps its place at the end, so a reorder
+      // can never drop a slide. selectedId/live are untouched.
+      const byId = new Map(state.slides.items.map((s) => [s.id, s]))
+      const ordered = command.ids
+        .map((id) => byId.get(id))
+        .filter((s): s is Slide => s !== undefined)
+      const rest = state.slides.items.filter((s) => !command.ids.includes(s.id))
+      return { ...state, slides: { ...state.slides, items: [...ordered, ...rest] } }
+    }
     case 'slide.setWebsite':
       return updateSlide(state, command.id, (s) =>
         s.type === 'logo' ? { ...s, website: command.website } : s,

@@ -3,7 +3,7 @@
 // pure reducer the browser prototype uses, pushes state to every window, and
 // persists to disk. Windows are thin views; the projector never mutates.
 
-import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net, globalShortcut } from 'electron'
 import { basename, join } from 'node:path'
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -12,6 +12,7 @@ import { reduce } from '../src/core/reduce'
 import { createInitialState, migrateSlides, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type { BumperTrackInfo, DisplayInfo, DrumrollUpdate, MusicUpdate } from '../src/shared/bridge'
+import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
 
 const isDev = !app.isPackaged
 const DEV_URL = 'http://localhost:5173'
@@ -393,6 +394,21 @@ function registerIpc() {
 }
 
 // --- lifecycle ---------------------------------------------------------------
+// Register the macro-pad / keyboard global shortcuts. Each fires system-wide
+// (even when the sound app is focused) and is forwarded to the operator window,
+// which runs the action. A failed register (chord already taken by another app)
+// is logged, not fatal — the show goes on without that one key.
+function registerGlobalShortcuts() {
+  globalShortcut.unregisterAll()
+  for (const { accelerator, action, label } of DEFAULT_HOTKEYS) {
+    const ok = globalShortcut.register(accelerator, () => {
+      operatorWin?.webContents.send('showboard:hotkey', action)
+    })
+    if (!ok) console.warn('[main] could not register shortcut %s (%s)', accelerator, label)
+  }
+  console.log('[main] registered %d global shortcuts', DEFAULT_HOTKEYS.length)
+}
+
 app.whenReady().then(() => {
   protocol.handle('sbmedia', (request) => {
     try {
@@ -410,6 +426,7 @@ app.whenReady().then(() => {
   registerIpc()
   createOperatorWindow()
   createProjectorWindow()
+  registerGlobalShortcuts()
   console.log('[main] Showboard windows created (isDev=%s)', isDev)
 
   app.on('activate', () => {
@@ -422,4 +439,9 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   app.quit()
+})
+
+// Release the OS-level shortcuts so they don't linger after the app exits.
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })

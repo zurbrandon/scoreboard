@@ -11,6 +11,7 @@ import type {
   MusicUpdate,
   ShowboardBridge,
 } from '../src/shared/bridge'
+import type { HotkeyAction } from '../src/shared/hotkeys'
 
 const role: ShowboardBridge['role'] =
   new URLSearchParams(location.search).get('view') === 'projector'
@@ -45,6 +46,11 @@ const bridge: ShowboardBridge = {
     const listener = (_e: unknown, update: DrumrollUpdate) => callback(update)
     ipcRenderer.on('showboard:drumroll', listener)
     return () => ipcRenderer.removeListener('showboard:drumroll', listener)
+  },
+  onHotkey: (callback) => {
+    const listener = (_e: unknown, action: HotkeyAction) => callback(action)
+    ipcRenderer.on('showboard:hotkey', listener)
+    return () => ipcRenderer.removeListener('showboard:hotkey', listener)
   },
 }
 

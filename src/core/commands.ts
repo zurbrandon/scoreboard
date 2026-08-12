@@ -36,6 +36,7 @@ export type Command =
   | { type: 'slide.select'; id: string } // preview a slide (draft)
   | { type: 'slide.commit' } // publish the selected slide to `live`
   | { type: 'slide.remove'; id: string }
+  | { type: 'slide.reorder'; ids: string[] } // new deck order (by id); drag-to-reorder
   | { type: 'slide.addLogo'; id: string; name: string; src: string } // add a logo slide and select it
   | { type: 'slide.addText'; id: string; template: TextTemplate } // add a text slide and select it
   | { type: 'slide.addImage'; id: string } // add an empty image slide (awaiting a drop) and select it

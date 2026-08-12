@@ -219,6 +219,21 @@ describe('scoring details', () => {
     expect(hasId(s, s.slides.selectedId)).toBe(true) // selection still points at a real slide
   })
 
+  it('slide.reorder rebuilds the deck order without dropping or reselecting', () => {
+    let s = run(
+      { type: 'slide.addLogo', id: 'x', name: 'X', src: 'data:,' },
+      { type: 'slide.addLogo', id: 'y', name: 'Y', src: 'data:,' },
+    )
+    const ids = s.slides.items.map((i) => i.id)
+    s = reduce(s, { type: 'slide.select', id: 'x' })
+    // Reverse the whole deck.
+    const reversed = [...ids].reverse()
+    s = reduce(s, { type: 'slide.reorder', ids: reversed })
+    expect(s.slides.items.map((i) => i.id)).toEqual(reversed)
+    expect(s.slides.items.length).toBe(ids.length) // nothing dropped
+    expect(s.slides.selectedId).toBe('x') // selection follows the slide, not the slot
+  })
+
   it('text slide: editing stages; commit publishes the selected slide', () => {
     let s = run({ type: 'slide.select', id: 'text-1' })
     s = reduce(s, { type: 'slide.setField', id: 'text-1', field: 'headline', value: 'Skiing' })
