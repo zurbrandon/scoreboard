@@ -16,6 +16,34 @@ function rosterLines(roster: string): string[] {
     .filter(Boolean)
 }
 
+// A bright gold bar that wipes in under the title — the broadcast "accent rule".
+function AccentBar({ animate, delay = 0.28 }: { animate: boolean; delay?: number }) {
+  return (
+    <motion.div
+      className="show__accent"
+      aria-hidden
+      initial={animate ? { scaleX: 0, opacity: 0 } : false}
+      animate={{ scaleX: 1, opacity: 1 }}
+      transition={{ delay: animate ? delay : 0, type: 'spring', stiffness: 360, damping: 26 }}
+    />
+  )
+}
+
+// A single diagonal light sweep across the whole card on reveal — the glossy
+// "shine" pass sports graphics do. Purely decorative; only plays on a reveal.
+function SheenSweep({ animate, delay = 0.12 }: { animate: boolean; delay?: number }) {
+  if (!animate) return null
+  return (
+    <motion.div
+      className="show__sheen"
+      aria-hidden
+      initial={{ x: '-130%' }}
+      animate={{ x: '130%' }}
+      transition={{ delay, duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+    />
+  )
+}
+
 // A team welcome / captain card: solid team color, an eyebrow label, the team
 // name, and either a roster (2×2 grid) or a single captain name. On reveal the
 // title slams in bold, then each player pops in separately, one after another.
@@ -37,6 +65,7 @@ function TeamCard({
   const slam = { type: 'spring' as const, stiffness: 520, damping: 16, mass: 0.9 }
   return (
     <div className={`show show--team show--${side}`}>
+      <SheenSweep animate={animate} delay={0.18} />
       <motion.div
         className="show__eyebrow"
         initial={animate ? { opacity: 0, y: '-45%' } : false}
@@ -53,6 +82,7 @@ function TeamCard({
       >
         {title}
       </motion.div>
+      <AccentBar animate={animate} delay={0.3} />
       {roster && roster.length > 0 && (
         <ul className="show__roster">
           {roster.map((n, i) => (
@@ -104,6 +134,7 @@ function DualCard({ title, animate }: { title: string; animate: boolean }) {
         animate={{ x: 0 }}
         transition={slam}
       />
+      <SheenSweep animate={animate} delay={0.4} />
       <motion.div
         className="show__dual-copy"
         // Jarring pop: the title punches in oversized right as the halves collide,
@@ -120,6 +151,7 @@ function DualCard({ title, animate }: { title: string; animate: boolean }) {
         }}
       >
         <div className="show__title">{title}</div>
+        <AccentBar animate={animate} delay={0.5} />
       </motion.div>
     </div>
   )
@@ -148,6 +180,7 @@ export function ShowScene({
         <div className="show show--ref">
           <div className="show__stripes" aria-hidden />
           <div className="show__ref-fade" aria-hidden />
+          <SheenSweep animate={animate} delay={0.35} />
           <div className="show__ref-copy">
             <motion.div
               className="show__eyebrow show__eyebrow--ref"
@@ -167,6 +200,7 @@ export function ShowScene({
                 {slide.name}
               </motion.div>
             )}
+            <AccentBar animate={animate} delay={0.7} />
           </div>
         </div>
       )

@@ -1158,18 +1158,45 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 800;
   opacity: 0.85;
 }
-/* Big, bold, white — with a soft billowy shadow (the look that reads best). */
+/* Big, bold, white — with a soft billowy shadow (the look that reads best).
+   Uppercase + tight tracking for a broadcast-graphics feel. */
 .show__title,
 .show__name {
   position: relative;
   z-index: 1;
   font-weight: 900;
-  line-height: 1.02;
-  letter-spacing: -0.01em;
+  line-height: 1.0;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
   text-shadow: 0 0.5vw 2.4vw rgba(0, 0, 0, 0.55), 0 0.1vw 0.5vw rgba(0, 0, 0, 0.5);
 }
 .show__title { font-size: 8.5vw; }
 .show__name { font-size: 7vw; }
+
+/* Broadcast "accent rule": a gold bar under the title. Scales in on reveal. */
+.show__accent {
+  position: relative;
+  z-index: 1;
+  width: 11vw;
+  height: 0.7vh;
+  margin-top: 1.8vh;
+  border-radius: 1vh;
+  background: linear-gradient(90deg, #ffb800, #ffe27a, #ffb800);
+  box-shadow: 0 0 2.2vw rgba(255, 200, 60, 0.55);
+  transform-origin: center;
+}
+
+/* Glossy shine: a soft diagonal highlight band swept across on reveal. */
+.show__sheen {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 55%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 22%, rgba(255, 255, 255, 0.14) 50%, transparent 78%);
+}
 /* Roster as a 2×2 grid of frosted name chips. */
 .show__roster {
   position: relative;
@@ -1192,9 +1219,24 @@ button { font-family: inherit; cursor: pointer; }
   overflow-wrap: anywhere;
 }
 
-/* Team welcome / single captain: solid team color with a soft vignette. */
+/* Team welcome / single captain: solid team color, angled band texture, and a
+   vignette for depth (the "arena floor" feel). */
 .show--blue { background: radial-gradient(120% 120% at 50% 32%, #4f83ff, #0f2358 84%); }
 .show--red { background: radial-gradient(120% 120% at 50% 32%, #ff5f5f, #571212 84%); }
+.show--team::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(115deg, transparent 0 7vw, rgba(255, 255, 255, 0.05) 7vw 14vw);
+}
+.show--team::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(135% 135% at 50% 38%, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+}
 
 /* Dual split (players / captains): a diagonal seam, blue one side, red the other.
    Each half is full-frame and clipped to its slanted triangle, so it can slide in
@@ -1209,11 +1251,22 @@ button { font-family: inherit; cursor: pointer; }
   background: linear-gradient(205deg, #ff6a6a, #571212 92%);
   clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%);
 }
+/* A bright flash where the two halves collide — reads as impact energy. */
+.show--dual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.16), transparent 26%);
+}
 .show__dual-copy {
   position: absolute;
   inset: 0;
+  z-index: 4;
   display: grid;
   place-content: center;
+  justify-items: center;
   gap: 1.5vh;
 }
 
