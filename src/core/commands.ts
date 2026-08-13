@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, SlideDeck, TeamId, TextTemplate, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -37,8 +37,9 @@ export type Command =
   | { type: 'slide.commit' } // publish the selected slide to `live`
   | { type: 'slide.remove'; id: string }
   | { type: 'slide.reorder'; ids: string[] } // new deck order (by id); drag-to-reorder
+  | { type: 'slide.clearDeck'; deck: SlideDeck } // remove all slides in a deck (template load replaces)
   | { type: 'slide.addLogo'; id: string; name: string; src: string; deck?: SlideDeck } // add a logo slide and select it
-  | { type: 'slide.addText'; id: string; template: TextTemplate; deck?: SlideDeck } // add a text slide and select it
+  | { type: 'slide.addText'; id: string; template: TextTemplate; deck?: SlideDeck; theme?: TextTheme } // add a text slide and select it
   | { type: 'slide.addImage'; id: string; deck?: SlideDeck } // add an empty image slide (awaiting a drop) and select it
   | { type: 'slide.addSlideshow'; id: string; deck?: SlideDeck } // add an empty slideshow (Google Slides) slide
   | { type: 'slide.setImage'; id: string; src: string } // set an image slide's picture (data URL)

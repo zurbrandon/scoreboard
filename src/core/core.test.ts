@@ -351,6 +351,23 @@ describe('scoring details', () => {
     expect(s.slides.items.find((i) => i.id === 'g1')?.deck).toBe('games')
     expect(s.slides.items.find((i) => i.id === 's1')?.deck).toBe('show')
   })
+
+  it('clearDeck wipes only its own deck; loading a game template replaces, not piles', () => {
+    // Two games slides + one show slide in the deck.
+    let s = run(
+      { type: 'slide.addText', id: 'old1', template: 'basic', deck: 'games' },
+      { type: 'slide.addText', id: 'old2', template: 'basic', deck: 'games' },
+      { type: 'slide.addLogo', id: 'show1', name: 'X', src: 'data:,', deck: 'show' },
+    )
+    expect(s.slides.items.filter((i) => i.deck === 'games')).toHaveLength(2)
+    // Load a new template: clear games, then add the template's slide.
+    s = reduce(s, { type: 'slide.clearDeck', deck: 'games' })
+    expect(s.slides.items.filter((i) => i.deck === 'games')).toHaveLength(0)
+    expect(s.slides.items.find((i) => i.id === 'show1')).toBeDefined() // show deck untouched
+    s = reduce(s, { type: 'slide.addText', id: 'new1', template: 'basic', deck: 'games', theme: 'spellingbee' })
+    expect(s.slides.items.filter((i) => i.deck === 'games')).toHaveLength(1)
+    expect(s.slides.items.find((i) => i.id === 'new1')?.theme).toBe('spellingbee')
+  })
 })
 
 describe('winner detection', () => {

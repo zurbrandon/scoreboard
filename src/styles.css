@@ -487,6 +487,20 @@ button { font-family: inherit; cursor: pointer; }
 }
 .add-card:hover { border-color: var(--accent); color: var(--text); }
 
+/* Games deck: the game template picker (pick → instantiates that game's slides). */
+.game-picker {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #3a4560;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.game-picker:hover { border-color: var(--accent); }
+
 /* "Add a slide" menu (type/preset picker) shown in place of the + button. */
 .slide-add {
   display: flex;
@@ -1078,6 +1092,23 @@ button { font-family: inherit; cursor: pointer; }
 .quad-cell:nth-child(1) { border-right: 2px solid rgba(255, 255, 255, 0.12); border-bottom: 2px solid rgba(255, 255, 255, 0.12); }
 .quad-cell:nth-child(2) { border-bottom: 2px solid rgba(255, 255, 255, 0.12); }
 .quad-cell:nth-child(3) { border-right: 2px solid rgba(255, 255, 255, 0.12); }
+
+/* Spelling Bee theme: one big Comic-Sans word chalked on a classroom blackboard. */
+.scene-text--spellingbee {
+  background:
+    radial-gradient(140% 120% at 50% 35%, rgba(255, 255, 255, 0.05), transparent 60%),
+    #2f4a3d;
+  color: #f4f1e4;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Marker Felt', cursive;
+  /* Chalk tray / wooden frame around the board. */
+  box-shadow: inset 0 0 0 1.1vw #6b4a2a, inset 0 0 0 1.5vw rgba(0, 0, 0, 0.35);
+}
+.scene-text--spellingbee .scene-text__headline,
+.scene-text--spellingbee .scene-text__body {
+  color: inherit;
+  text-shadow: 0 0.15vw 0.3vw rgba(0, 0, 0, 0.35);
+}
+.scene-text--spellingbee .scene-text__body { opacity: 0.82; }
 
 .scene-slideshow { width: 100%; height: 100%; border: 0; background: #000; display: block; }
 .scene-slideshow--empty {

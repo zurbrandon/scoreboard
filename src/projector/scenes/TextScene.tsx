@@ -8,10 +8,11 @@ import type { TextSlide } from '../../core/state'
 export function TextScene({ slide, animate = false }: { slide: TextSlide; animate?: boolean }) {
   const live = slide
   const revealCls = animate ? 'scene-text--reveal' : ''
+  const themeCls = live.theme ? `scene-text--${live.theme}` : ''
 
   if (live.template === 'quadrants') {
     return (
-      <div className={`scene-text scene-text--quads ${revealCls}`}>
+      <div className={`scene-text scene-text--quads ${themeCls} ${revealCls}`}>
         <div className="quad-grid">
           {live.quads.map((word, i) => (
             <div className="quad-cell" key={i} style={{ ['--i' as string]: i }}>
@@ -25,7 +26,7 @@ export function TextScene({ slide, animate = false }: { slide: TextSlide; animat
 
   // basic
   return (
-    <div className={`scene-text ${revealCls}`}>
+    <div className={`scene-text ${themeCls} ${revealCls}`}>
       {live.headline && <div className="scene-text__headline">{live.headline}</div>}
       {live.body && <div className="scene-text__body">{live.body}</div>}
     </div>

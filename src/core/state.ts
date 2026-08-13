@@ -48,6 +48,8 @@ export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
 //  - basic:     a headline + body line (the default)
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
 export type TextTemplate = 'basic' | 'quadrants'
+// Optional visual theme for a text slide (e.g. a game's look). Undefined = plain.
+export type TextTheme = 'spellingbee'
 
 // A slide in the unified Slides deck. All types share one queue, one selection,
 // and one reveal, so any slide flips the same way.
@@ -81,6 +83,8 @@ export interface TextSlide {
   type: 'text'
   deck: SlideDeck
   template: TextTemplate
+  /** Optional visual theme (a game's look), e.g. 'spellingbee'. */
+  theme?: TextTheme
   liveType: boolean
   headline: string
   body: string
@@ -103,8 +107,13 @@ export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide
 export function logoSlide(id: string, name: string, src: string, website = '', deck: SlideDeck = 'show'): LogoSlide {
   return { id, type: 'logo', deck, name, src, website }
 }
-export function emptyTextSlide(id: string, template: TextTemplate = 'basic', deck: SlideDeck = 'show'): TextSlide {
-  return { id, type: 'text', deck, template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
+export function emptyTextSlide(
+  id: string,
+  template: TextTemplate = 'basic',
+  deck: SlideDeck = 'show',
+  theme?: TextTheme,
+): TextSlide {
+  return { id, type: 'text', deck, template, theme, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
 }
 export function emptyImageSlide(id: string, src = '', deck: SlideDeck = 'show'): ImageSlide {
   return { id, type: 'image', deck, src }
@@ -295,6 +304,7 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
     type: 'text',
     deck: asDeck(c.deck),
     template: c.template === 'quadrants' ? 'quadrants' : 'basic',
+    theme: c.theme === 'spellingbee' ? 'spellingbee' : undefined,
     liveType: wasLive ? true : Boolean(c.liveType),
     headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
     body: String(c.body ?? ''),
@@ -330,7 +340,7 @@ export function migrateSlides(parsed: any, fresh: AppState): AppState['slides'] 
   // New shape already present (items carry their own type/deck, incl. slideshow).
   const src = parsed?.slides
   if (src && Array.isArray(src.items)) {
-    const items = src.items.map(normSlide).filter((s: Slide | null): s is Slide => s !== null)
+    const items: Slide[] = src.items.map(normSlide).filter((s: Slide | null): s is Slide => s !== null)
     // Only fold the retired Pre-show queue if it hasn't been folded already —
     // else a stale `parsed.slideshow` left over from `...parsed` would re-add
     // duplicate slideshow slides on every reload.

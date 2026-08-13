@@ -135,7 +135,7 @@ export function reduce(state: AppState, command: Command): AppState {
         ...state,
         slides: {
           ...state.slides,
-          items: [...state.slides.items, emptyTextSlide(command.id, command.template, command.deck ?? 'show')],
+          items: [...state.slides.items, emptyTextSlide(command.id, command.template, command.deck ?? 'show', command.theme)],
           selectedId: command.id,
         },
       }
@@ -165,6 +165,16 @@ export function reduce(state: AppState, command: Command): AppState {
       const items = state.slides.items.filter((s) => s.id !== command.id)
       const selectedId =
         state.slides.selectedId === command.id ? (items[0]?.id ?? '') : state.slides.selectedId
+      return { ...state, slides: { ...state.slides, items, selectedId } }
+    }
+    case 'slide.clearDeck': {
+      // Wipe one deck (Show or Games). Loading a game template replaces the
+      // deck's contents rather than piling onto them. If the selection lived in
+      // the wiped deck, hand it to whatever survives (or clear it).
+      const items = state.slides.items.filter((s) => s.deck !== command.deck)
+      const selectedId = items.some((s) => s.id === state.slides.selectedId)
+        ? state.slides.selectedId
+        : (items[0]?.id ?? '')
       return { ...state, slides: { ...state.slides, items, selectedId } }
     }
     case 'slide.reorder': {

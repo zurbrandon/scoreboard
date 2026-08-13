@@ -11,6 +11,7 @@ import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
 import type { ImageSlide, LogoSlide, OperatorTab, Scene, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
+import type { Command } from '../core/commands'
 import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
@@ -652,6 +653,29 @@ const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
 // Built-in logo presets for the "add slide" menu.
 const LOGO_PRESETS = LOGO_LIBRARY.map((l) => ({ name: l.name, src: `logos/${l.file}` }))
 
+// Game templates: pick one and it instantiates the slides that game needs into
+// the Games deck, ready to type into. `build` returns the add-commands (ids come
+// from `mk`); the first created slide is selected afterward.
+const GAMES: { id: string; label: string; build: (mk: () => string) => Command[] }[] = [
+  {
+    id: 'four-things',
+    label: 'Four Things',
+    build: (mk) =>
+      Array.from(
+        { length: 4 },
+        () => ({ type: 'slide.addText', id: mk(), template: 'basic', deck: 'games' }) as Command,
+      ),
+  },
+  {
+    id: 'spelling-bee',
+    label: 'Spelling Bee',
+    // Just one slide: a single Comic-Sans headline (the word to spell) on a chalkboard.
+    build: (mk) => [
+      { type: 'slide.addText', id: mk(), template: 'basic', deck: 'games', theme: 'spellingbee' } as Command,
+    ],
+  },
+]
+
 const newSlideId = (p: string) =>
   `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
@@ -691,6 +715,20 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   const commitOrder = () => dispatch({ type: 'slide.reorder', ids: orderRef.current })
 
+  // Load a game template: REPLACE this deck with the game's slides (clear first,
+  // so picking games doesn't pile them up), then select the first. To build by
+  // hand instead, skip the picker and use "add slide" below.
+  function loadGame(game: (typeof GAMES)[number]) {
+    dispatch({ type: 'slide.clearDeck', deck })
+    const ids: string[] = []
+    game.build(() => {
+      const id = newSlideId('game')
+      ids.push(id)
+      return id
+    }).forEach(dispatch)
+    if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
+  }
+
   async function onFiles(files: FileList | null) {
     for (const file of Array.from(files ?? [])) {
       try {
@@ -705,6 +743,26 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   return (
     <div className="cards">
+      {deck === 'games' && (
+        <select
+          className="game-picker"
+          value=""
+          aria-label="Choose a game"
+          onChange={(e) => {
+            const game = GAMES.find((g) => g.id === e.target.value)
+            if (game) loadGame(game)
+          }}
+        >
+          <option value="" disabled>
+            Choose a game…
+          </option>
+          {GAMES.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+      )}
       <Reorder.Group axis="y" values={order} onReorder={setOrder} className="slide-list" as="div">
         <AnimatePresence initial={false}>
           {order.map((id, i) => {
