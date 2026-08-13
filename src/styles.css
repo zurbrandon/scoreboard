@@ -1222,15 +1222,15 @@ button { font-family: inherit; cursor: pointer; }
   bottom: 0;
   left: -50%;
   width: 200%;
-  background: repeating-linear-gradient(115deg, #0d0d0d 0 6vw, #262626 6vw 12vw);
-  opacity: 0.9;
+  background: repeating-linear-gradient(115deg, #0d0d0d 0 6vw, #565656 6vw 12vw);
+  opacity: 1;
   animation: ref-stripes 3s linear infinite;
   will-change: transform;
 }
 .show__ref-fade {
   position: absolute;
   inset: 0;
-  background: radial-gradient(80% 92% at 12% 94%, transparent 0%, rgba(5, 5, 5, 0.45) 32%, #050505 66%);
+  background: radial-gradient(86% 98% at 12% 94%, transparent 0%, rgba(5, 5, 5, 0.4) 38%, #050505 72%);
 }
 .show__ref-copy {
   position: relative;

@@ -54,26 +54,37 @@ function TeamCard({
 // right; they meet on the seam, then the title appears. Just the title — no
 // eyebrow. (Silent update: everything sits at its final spot, no entrance.)
 function DualCard({ title, animate }: { title: string; animate: boolean }) {
-  const spring = { type: 'spring' as const, stiffness: 95, damping: 19 }
+  // Snappy, underdamped spring: the halves slam together fast and bounce back off
+  // each other before settling on the seam.
+  const slam = { type: 'spring' as const, stiffness: 340, damping: 15, mass: 1.1 }
   return (
     <div className="show show--dual">
       <motion.div
         className="show__half show__half--blue"
         initial={animate ? { x: '-105%' } : false}
         animate={{ x: 0 }}
-        transition={spring}
+        transition={slam}
       />
       <motion.div
         className="show__half show__half--red"
         initial={animate ? { x: '105%' } : false}
         animate={{ x: 0 }}
-        transition={spring}
+        transition={slam}
       />
       <motion.div
         className="show__dual-copy"
-        initial={animate ? { opacity: 0, scale: 0.92 } : false}
+        // Jarring pop: the title punches in oversized right as the halves collide,
+        // then springs down to size with a hard little overshoot.
+        initial={animate ? { opacity: 0, scale: 1.55 } : false}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: animate ? 0.55 : 0, duration: 0.45, ease: [0.2, 0.7, 0.2, 1] }}
+        transition={{
+          delay: animate ? 0.34 : 0,
+          opacity: { delay: animate ? 0.34 : 0, duration: 0.08 },
+          type: 'spring',
+          stiffness: 620,
+          damping: 14,
+          mass: 0.9,
+        }}
       >
         <div className="show__title">{title}</div>
       </motion.div>
