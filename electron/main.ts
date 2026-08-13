@@ -56,7 +56,7 @@ function loadState(): AppState {
       // Nested objects fall back to fresh defaults so state written by an older
       // build (missing logo/text) can't leave the renderer with undefined fields,
       // and an unknown scene id resets to the scoreboard.
-      const KNOWN_SCENES = ['scoreboard', 'slides', 'slideshow', 'black']
+      const KNOWN_SCENES = ['scoreboard', 'slides', 'black']
       const liveHalf = ['first', 'second', 'end'].includes(parsed.halfLive ?? parsed.half)
         ? (parsed.halfLive ?? parsed.half)
         : 'first'
@@ -64,35 +64,14 @@ function loadState(): AppState {
       const audienceLive = { ...fresh.audienceLive, ...(parsed.audienceLive ?? parsed.audience) }
       // ribbonsLive backfills from fresh so older state (no ribbons) can't break.
       const ribbonsLive = { ...fresh.ribbonsLive, ...(parsed.ribbonsLive ?? parsed.ribbons) }
-      // Slides deck: new shape passes through; the retired logos + text.cards
-      // migrate into one deck (see migrateSlides).
+      // Everything folds into the Show/Games deck; migrateSlides also folds the
+      // retired Pre-show queue (parsed.slideshow) into slideshow slides.
       const slides = migrateSlides(parsed, fresh)
-      // Slideshow: use the slide-queue shape if present; migrate an older single
-      // `slideshowUrl` string into one slide; otherwise fall back to fresh.
-      const ps = parsed.slideshow
-      const slideshow =
-        ps && Array.isArray(ps.slides) && ps.slides.length
-          ? {
-              slides: ps.slides.map((sl: { id?: unknown; url?: unknown }) => ({
-                id: String(sl.id ?? `slide-${Math.random().toString(36).slice(2, 8)}`),
-                url: String(sl.url ?? ''),
-              })),
-              selectedId: String(ps.selectedId ?? ps.slides[0].id),
-              liveUrl: String(ps.liveUrl ?? ''),
-            }
-          : typeof parsed.slideshowUrl === 'string'
-            ? {
-                slides: [{ id: 'slide-1', url: parsed.slideshowUrl }],
-                selectedId: 'slide-1',
-                liveUrl: parsed.slideshowUrl,
-              }
-            : fresh.slideshow
       return {
         ...fresh,
         ...parsed,
         scene: KNOWN_SCENES.includes(parsed.scene) ? parsed.scene : 'scoreboard',
         slides,
-        slideshow,
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.
         teams: {

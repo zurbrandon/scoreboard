@@ -5,16 +5,16 @@
 
 import { useEffect, useRef } from 'react'
 import type { Command } from '../core/commands'
-import type { Scene } from '../core/state'
+import type { OperatorTab } from '../core/state'
 
-const SCENE_KEYS: Record<string, Scene> = {
-  '1': 'scoreboard',
-  '2': 'slides',
-  '3': 'slideshow',
+const TAB_KEYS: Record<string, OperatorTab> = {
+  '1': 'show',
+  '2': 'score',
+  '3': 'games',
 }
 
 export interface KeyboardHandlers {
-  selectScene: (scene: Scene) => void
+  selectScene: (tab: OperatorTab) => void
   reveal: () => void
   black: () => void
 }
@@ -43,7 +43,7 @@ export function useOperatorKeyboard(
       else if (key === ' ') h.reveal()
       else if (key === 'h') dispatch({ type: 'half.toggle' })
       else if (key === 'b') h.black()
-      else if (SCENE_KEYS[key]) h.selectScene(SCENE_KEYS[key])
+      else if (TAB_KEYS[key]) h.selectScene(TAB_KEYS[key])
       else matched = false
 
       if (matched) e.preventDefault()

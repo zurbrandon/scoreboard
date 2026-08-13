@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, TeamId, TextTemplate, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, SlideDeck, TeamId, TextTemplate, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -37,20 +37,17 @@ export type Command =
   | { type: 'slide.commit' } // publish the selected slide to `live`
   | { type: 'slide.remove'; id: string }
   | { type: 'slide.reorder'; ids: string[] } // new deck order (by id); drag-to-reorder
-  | { type: 'slide.addLogo'; id: string; name: string; src: string } // add a logo slide and select it
-  | { type: 'slide.addText'; id: string; template: TextTemplate } // add a text slide and select it
-  | { type: 'slide.addImage'; id: string } // add an empty image slide (awaiting a drop) and select it
+  | { type: 'slide.addLogo'; id: string; name: string; src: string; deck?: SlideDeck } // add a logo slide and select it
+  | { type: 'slide.addText'; id: string; template: TextTemplate; deck?: SlideDeck } // add a text slide and select it
+  | { type: 'slide.addImage'; id: string; deck?: SlideDeck } // add an empty image slide (awaiting a drop) and select it
+  | { type: 'slide.addSlideshow'; id: string; deck?: SlideDeck } // add an empty slideshow (Google Slides) slide
   | { type: 'slide.setImage'; id: string; src: string } // set an image slide's picture (data URL)
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
+  | { type: 'slide.setSlideshowUrl'; id: string; url: string } // slideshow slide's embed URL
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
   | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3
-  | { type: 'slideshow.addSlide'; id: string } // append a new (empty) slide and select it
-  | { type: 'slideshow.removeSlide'; id: string }
-  | { type: 'slideshow.selectSlide'; id: string }
-  | { type: 'slideshow.setSlideUrl'; id: string; url: string }
-  | { type: 'slideshow.commit' } // publish the selected slide's URL to liveUrl
   // The main event.
   | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

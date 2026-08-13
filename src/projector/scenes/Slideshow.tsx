@@ -3,11 +3,7 @@
 // which auto-plays and loops on its own. This is the one online-dependent scene
 // (it needs internet to reach the slides); everything else runs offline.
 
-import { useAppState } from '../../store/react'
-
-export function Slideshow() {
-  const url = useAppState((s) => s.slideshow.liveUrl)
-
+export function Slideshow({ url }: { url: string }) {
   if (!url.trim()) {
     return (
       <div className="scene-slideshow scene-slideshow--empty">

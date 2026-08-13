@@ -4,7 +4,7 @@
 
 import type { Command } from './commands'
 import type { AppState, Slide, TeamId, TeamState } from './state'
-import { emptySlide, emptyImageSlide, emptyTextSlide, logoSlide } from './state'
+import { emptySlideshowSlide, emptyImageSlide, emptyTextSlide, logoSlide } from './state'
 import { determineWinner } from './winner'
 
 // Map over the Slides deck, replacing the slide with matching id.
@@ -126,7 +126,7 @@ export function reduce(state: AppState, command: Command): AppState {
         ...state,
         slides: {
           ...state.slides,
-          items: [...state.slides.items, logoSlide(command.id, command.name, command.src)],
+          items: [...state.slides.items, logoSlide(command.id, command.name, command.src, '', command.deck ?? 'show')],
           selectedId: command.id,
         },
       }
@@ -135,7 +135,7 @@ export function reduce(state: AppState, command: Command): AppState {
         ...state,
         slides: {
           ...state.slides,
-          items: [...state.slides.items, emptyTextSlide(command.id, command.template)],
+          items: [...state.slides.items, emptyTextSlide(command.id, command.template, command.deck ?? 'show')],
           selectedId: command.id,
         },
       }
@@ -144,12 +144,23 @@ export function reduce(state: AppState, command: Command): AppState {
         ...state,
         slides: {
           ...state.slides,
-          items: [...state.slides.items, emptyImageSlide(command.id)],
+          items: [...state.slides.items, emptyImageSlide(command.id, '', command.deck ?? 'show')],
+          selectedId: command.id,
+        },
+      }
+    case 'slide.addSlideshow':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: [...state.slides.items, emptySlideshowSlide(command.id, '', command.deck ?? 'show')],
           selectedId: command.id,
         },
       }
     case 'slide.setImage':
       return updateSlide(state, command.id, (s) => (s.type === 'image' ? { ...s, src: command.src } : s))
+    case 'slide.setSlideshowUrl':
+      return updateSlide(state, command.id, (s) => (s.type === 'slideshow' ? { ...s, url: command.url } : s))
     case 'slide.remove': {
       const items = state.slides.items.filter((s) => s.id !== command.id)
       const selectedId =
@@ -190,39 +201,6 @@ export function reduce(state: AppState, command: Command): AppState {
         quads[command.index] = command.value
         return { ...s, quads }
       })
-
-    case 'slideshow.addSlide':
-      return {
-        ...state,
-        slideshow: {
-          ...state.slideshow,
-          slides: [...state.slideshow.slides, emptySlide(command.id)],
-          selectedId: command.id,
-        },
-      }
-    case 'slideshow.removeSlide': {
-      if (state.slideshow.slides.length <= 1) return state // always keep one
-      const slides = state.slideshow.slides.filter((s) => s.id !== command.id)
-      const selectedId =
-        state.slideshow.selectedId === command.id ? slides[0].id : state.slideshow.selectedId
-      return { ...state, slideshow: { ...state.slideshow, slides, selectedId } }
-    }
-    case 'slideshow.selectSlide':
-      return { ...state, slideshow: { ...state.slideshow, selectedId: command.id } }
-    case 'slideshow.setSlideUrl':
-      return {
-        ...state,
-        slideshow: {
-          ...state.slideshow,
-          slides: state.slideshow.slides.map((s) =>
-            s.id === command.id ? { ...s, url: command.url } : s,
-          ),
-        },
-      }
-    case 'slideshow.commit': {
-      const slide = state.slideshow.slides.find((s) => s.id === state.slideshow.selectedId)
-      return { ...state, slideshow: { ...state.slideshow, liveUrl: slide?.url ?? '' } }
-    }
 
     case 'score.reveal':
       // Publish the whole board, then run the reveal ceremony. The Final-score

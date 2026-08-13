@@ -328,30 +328,28 @@ describe('scoring details', () => {
     expect(hasId(s, s.slides.selectedId)).toBe(true)
   })
 
-  it('slideshow: edit stages; commit publishes the selected slide; add/select/remove', () => {
+  it('slideshow slide: add to a deck, set its URL, reveal via commit', () => {
     const url = 'https://docs.google.com/presentation/d/e/abc/embed?start=true&loop=true'
-    let s = run({ type: 'slideshow.setSlideUrl', id: 'slide-1', url })
-    expect(s.slideshow.slides[0].url).toBe(url)
-    expect(s.slideshow.liveUrl).toBe('') // not live until committed
-    expect(reduce(s, { type: 'slideshow.commit' }).slideshow.liveUrl).toBe(url)
+    let s = run({ type: 'slide.addSlideshow', id: 'ss-1', deck: 'show' })
+    const added = s.slides.items.find((i) => i.id === 'ss-1')
+    expect(added?.type).toBe('slideshow')
+    expect(added?.deck).toBe('show')
+    expect(s.slides.selectedId).toBe('ss-1') // adding selects it
 
-    // Add a second slide (auto-selected), give it a URL, commit publishes it.
-    const url2 = 'https://example.com/deck-two/embed'
-    s = reduce(s, { type: 'slideshow.addSlide', id: 'slide-2' })
-    expect(s.slideshow.slides).toHaveLength(2)
-    expect(s.slideshow.selectedId).toBe('slide-2')
-    s = reduce(s, { type: 'slideshow.setSlideUrl', id: 'slide-2', url: url2 })
-    expect(reduce(s, { type: 'slideshow.commit' }).slideshow.liveUrl).toBe(url2)
+    s = reduce(s, { type: 'slide.setSlideshowUrl', id: 'ss-1', url })
+    const ss = s.slides.items.find((i) => i.id === 'ss-1')
+    expect(ss?.type === 'slideshow' && ss.url).toBe(url)
+    expect(s.slides.live).toBeNull() // not on air until committed
+    expect(reduce(s, { type: 'slide.commit' }).slides.live?.id).toBe('ss-1')
+  })
 
-    // Toggle back to the first and commit publishes it again.
-    s = reduce(s, { type: 'slideshow.selectSlide', id: 'slide-1' })
-    expect(reduce(s, { type: 'slideshow.commit' }).slideshow.liveUrl).toBe(url)
-
-    // Removing the selected slide falls back; the last slide can't be removed.
-    s = reduce(s, { type: 'slideshow.removeSlide', id: 'slide-1' })
-    expect(s.slideshow.slides).toHaveLength(1)
-    expect(s.slideshow.selectedId).toBe('slide-2')
-    expect(reduce(s, { type: 'slideshow.removeSlide', id: 'slide-2' }).slideshow.slides).toHaveLength(1)
+  it('slides carry a deck; adds land in the requested deck', () => {
+    const s = run(
+      { type: 'slide.addText', id: 'g1', template: 'quadrants', deck: 'games' },
+      { type: 'slide.addLogo', id: 's1', name: 'X', src: 'data:,', deck: 'show' },
+    )
+    expect(s.slides.items.find((i) => i.id === 'g1')?.deck).toBe('games')
+    expect(s.slides.items.find((i) => i.id === 's1')?.deck).toBe('show')
   })
 })
 

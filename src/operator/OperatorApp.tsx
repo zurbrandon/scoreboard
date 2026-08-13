@@ -5,12 +5,12 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, Reorder, useDragControls } from 'motion/react'
-import { MdScoreboard, MdViewCarousel, MdSlideshow } from 'react-icons/md'
+import { MdScoreboard, MdViewCarousel, MdSportsEsports } from 'react-icons/md'
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { ImageSlide, LogoSlide, Scene, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, Scene, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
 import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
@@ -20,16 +20,15 @@ import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
 
-const SCENE_TABS: { scene: Scene; label: string; Icon: IconType }[] = [
-  { scene: 'scoreboard', label: 'Score', Icon: MdScoreboard },
-  { scene: 'slides', label: 'Slides', Icon: MdViewCarousel },
-  { scene: 'slideshow', label: 'Pre-show', Icon: MdSlideshow },
+const TABS: { tab: OperatorTab; label: string; Icon: IconType }[] = [
+  { tab: 'show', label: 'Show', Icon: MdViewCarousel },
+  { tab: 'score', label: 'Score', Icon: MdScoreboard },
+  { tab: 'games', label: 'Games', Icon: MdSportsEsports },
 ]
 
 const ON_AIR_LABEL: Record<Scene, string> = {
   scoreboard: 'Score',
-  slides: 'Slides',
-  slideshow: 'Pre-show',
+  slides: 'Slide',
   black: 'Black',
   moment: 'Moment',
 }
@@ -89,21 +88,27 @@ export function OperatorApp() {
     const sel = s.slides.items.find((i) => i.id === s.slides.selectedId)
     return !!sel && sel !== s.slides.live
   })
-  const slideshowDirty = useAppState((s) => {
-    const slide = s.slideshow.slides.find((sl) => sl.id === s.slideshow.selectedId)
-    return !slide || slide.url !== s.slideshow.liveUrl
-  })
   // A live-type text slide mirrors keystrokes, so its reveal shouldn't animate.
   const selectedSlideIsLiveText = useAppState((s) => {
     const sel = s.slides.items.find((i) => i.id === s.slides.selectedId)
     return sel?.type === 'text' && sel.liveType
   })
+  const allSlides = useAppState((s) => s.slides.items)
+  const selectedSlideId = useAppState((s) => s.slides.selectedId)
 
-  // Fall back to the scoreboard if a persisted scene is no longer a valid tab.
-  const [activeTab, setActiveTab] = useState<Scene>(
-    SCENE_TABS.some((t) => t.scene === programScene) ? programScene : 'scoreboard',
-  )
+  const [activeTab, setActiveTab] = useState<OperatorTab>('score')
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Show/Games share one selection; keep it inside the active deck so Reveal
+  // always pushes a slide from the deck you're looking at.
+  const activeDeck: SlideDeck | null = activeTab === 'score' ? null : activeTab
+  useEffect(() => {
+    if (!activeDeck) return
+    const inDeck = allSlides.filter((s) => s.deck === activeDeck)
+    if (!inDeck.some((s) => s.id === selectedSlideId)) {
+      dispatch({ type: 'slide.select', id: inDeck[0]?.id ?? '' })
+    }
+  }, [activeDeck, allSlides, selectedSlideId, dispatch])
 
   // The deck pushes the ACTIVE tab to the projector. Nothing else changes what's
   // on air. Reveal plays an entrance animation (display.reveal); silent cuts in
@@ -120,22 +125,18 @@ export function OperatorApp() {
   }
 
   function pushActive(withReveal: boolean) {
-    if (activeTab === 'scoreboard') {
+    if (activeTab === 'score') {
       if (withReveal) {
         revealScoreboard()
       } else {
         dispatch({ type: 'display.set', scene: 'scoreboard' })
         dispatch({ type: 'score.commitSilent' })
       }
-    } else if (activeTab === 'slides') {
+    } else {
+      // Show / Games — publish the selected slide from the active deck.
       dispatch({ type: 'slide.commit' })
       const animate = withReveal && !selectedSlideIsLiveText
       dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'slides' })
-    } else if (activeTab === 'slideshow') {
-      dispatch({ type: 'slideshow.commit' })
-      dispatch({ type: 'display.set', scene: 'slideshow' })
-    } else {
-      dispatch({ type: 'display.set', scene: activeTab })
     }
   }
   const reveal = () => pushActive(true)
@@ -162,18 +163,18 @@ export function OperatorApp() {
     return () => clearTimeout(t)
   }, [playing])
   const canStop =
-    playing && stopArmed && activeTab === 'scoreboard' && programScene === 'scoreboard' && !anyDirty
+    playing && stopArmed && activeTab === 'score' && programScene === 'scoreboard' && !anyDirty
 
   // The reveal button's single action: kill a playing reveal, or fire a new one.
   const primaryAction = () => (canStop ? dispatch({ type: 'reveal.stop' }) : reveal())
 
   useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal: primaryAction, black })
 
-  // Latest deck, read at key-press time so "show slide N" always maps to the
-  // current ordering (not a value baked in when the effect first ran).
-  const slideItems = useAppState((s) => s.slides.items)
-  const slidesRef = useRef(slideItems)
-  slidesRef.current = slideItems
+  // Latest SHOW deck, read at key-press time so the pad's "show slide N" maps to
+  // the current run-of-show order (not a value baked in when the effect first ran).
+  const showItems = allSlides.filter((s) => s.deck === 'show')
+  const slidesRef = useRef(showItems)
+  slidesRef.current = showItems
   // Keep the hotkey's reveal in sync with the latest `half` (the onHotkey effect
   // below captures its closure once, so read the current fn from a ref).
   const revealScoreboardRef = useRef(revealScoreboard)
@@ -196,10 +197,10 @@ export function OperatorApp() {
         case 'red.down':
           return dispatch({ type: 'red.decrement' })
         case 'reveal':
-          setActiveTab('scoreboard')
+          setActiveTab('score')
           return revealScoreboardRef.current()
         case 'silent':
-          setActiveTab('scoreboard')
+          setActiveTab('score')
           dispatch({ type: 'display.set', scene: 'scoreboard' })
           return dispatch({ type: 'score.commitSilent' })
         case 'stop':
@@ -213,7 +214,7 @@ export function OperatorApp() {
         case 'slide.show': {
           const slide = slidesRef.current[action.index]
           if (!slide) return
-          setActiveTab('slides')
+          setActiveTab('show')
           dispatch({ type: 'slide.select', id: slide.id })
           dispatch({ type: 'slide.commit' })
           // Live-type text mirrors keystrokes, so it cuts in without an entrance.
@@ -230,13 +231,9 @@ export function OperatorApp() {
 
   // Reveal is "armed" when pressing it would actually change what's on air.
   const armed =
-    activeTab === 'scoreboard'
+    activeTab === 'score'
       ? anyDirty || programScene !== 'scoreboard' || half === 'end'
-      : activeTab === 'slides'
-        ? programScene !== 'slides' || slidesDirty
-        : activeTab === 'slideshow'
-          ? programScene !== 'slideshow' || slideshowDirty
-          : programScene !== activeTab
+      : programScene !== 'slides' || slidesDirty
 
   return (
     <div className="operator">
@@ -260,13 +257,13 @@ export function OperatorApp() {
       </header>
 
       <nav className="scene-tabs">
-        {SCENE_TABS.map(({ scene, label, Icon }) => (
+        {TABS.map(({ tab, label, Icon }) => (
           <button
-            key={scene}
-            className={`scene-tab ${activeTab === scene ? 'scene-tab--active' : ''}`}
-            onClick={() => setActiveTab(scene)}
+            key={tab}
+            className={`scene-tab ${activeTab === tab ? 'scene-tab--active' : ''}`}
+            onClick={() => setActiveTab(tab)}
           >
-            {activeTab === scene && (
+            {activeTab === tab && (
               <motion.span
                 className="scene-tab__pill"
                 layoutId="sceneTabPill"
@@ -281,9 +278,9 @@ export function OperatorApp() {
       </div>
 
       <div className="scene-config">
-        {activeTab === 'scoreboard' && <ScoreboardConfig />}
-        {activeTab === 'slides' && <SlidesConfig />}
-        {activeTab === 'slideshow' && <SlideshowConfig />}
+        {activeTab === 'score' && <ScoreboardConfig />}
+        {activeTab === 'show' && <SlidesConfig deck="show" />}
+        {activeTab === 'games' && <SlidesConfig deck="games" />}
       </div>
 
       <footer className="deck">
@@ -658,11 +655,14 @@ const LOGO_PRESETS = LOGO_LIBRARY.map((l) => ({ name: l.name, src: `logos/${l.fi
 const newSlideId = (p: string) =>
   `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
-// The unified Slides deck: logo and text slides in one selectable/reorderable
-// list, plus an "add slide" menu with presets.
-function SlidesConfig() {
+// One deck (Show or Games): logo/text/image/slideshow slides in a selectable,
+// reorderable list, plus an "add slide" menu. Same machinery for both decks —
+// they differ only in which slides they hold (filtered by `deck`).
+function SlidesConfig({ deck }: { deck: SlideDeck }) {
   const dispatch = useDispatch()
-  const items = useAppState((s) => s.slides.items)
+  // Select the stable array (a filtered selector would break useSyncExternalStore),
+  // then derive this deck's slides in the body.
+  const items = useAppState((s) => s.slides.items).filter((sl) => sl.deck === deck)
   const selectedId = useAppState((s) => s.slides.selectedId)
   const programScene = useAppState((s) => s.scene)
   const liveId = useAppState((s) => s.slides.live?.id ?? null)
@@ -695,7 +695,7 @@ function SlidesConfig() {
     for (const file of Array.from(files ?? [])) {
       try {
         const src = await fileToLogoSrc(file)
-        dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: file.name.replace(/\.[^.]+$/, ''), src })
+        dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: file.name.replace(/\.[^.]+$/, ''), src, deck })
       } catch (err) {
         console.warn('[slide] could not read image; skipping:', err)
       }
@@ -721,6 +721,9 @@ function SlidesConfig() {
               >
                 {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
                 {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
+                {slide.type === 'slideshow' && (
+                  <SlideshowSlideCard slide={slide} selected={slide.id === selectedId} />
+                )}
                 {slide.type === 'text' && (
                   <TextSlideCard
                     slide={slide}
@@ -742,7 +745,7 @@ function SlidesConfig() {
               key={p.name}
               className="slide-add__item"
               onClick={() => {
-                dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: p.name, src: p.src })
+                dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: p.name, src: p.src, deck })
                 setAddOpen(false)
               }}
             >
@@ -755,7 +758,7 @@ function SlidesConfig() {
           <button
             className="slide-add__item"
             onClick={() => {
-              dispatch({ type: 'slide.addImage', id: newSlideId('image') })
+              dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
               setAddOpen(false)
             }}
           >
@@ -764,7 +767,7 @@ function SlidesConfig() {
           <button
             className="slide-add__item"
             onClick={() => {
-              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic' })
+              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
               setAddOpen(false)
             }}
           >
@@ -773,11 +776,20 @@ function SlidesConfig() {
           <button
             className="slide-add__item"
             onClick={() => {
-              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'quadrants' })
+              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'quadrants', deck })
               setAddOpen(false)
             }}
           >
             Text — four quadrants
+          </button>
+          <button
+            className="slide-add__item"
+            onClick={() => {
+              dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
+              setAddOpen(false)
+            }}
+          >
+            Slideshow — Google Slides link
           </button>
           <button className="slide-add__cancel" onClick={() => setAddOpen(false)}>
             Cancel
@@ -1165,60 +1177,57 @@ function TextSlideCard({
   )
 }
 
-function SlideshowConfig() {
+// A slideshow slide: holds one published Google Slides embed link. Reveal plays
+// it; Black stops it. (The old Pre-show tab, folded in as a slide type.)
+function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; selected: boolean }) {
   const dispatch = useDispatch()
-  const slides = useAppState((s) => s.slideshow.slides)
-  const selectedId = useAppState((s) => s.slideshow.selectedId)
-
+  const [confirming, setConfirming] = useState(false)
   return (
-    <div className="cards">
-      {slides.map((slide, i) => (
-        <div
-          key={slide.id}
-          className={`text-card ${slide.id === selectedId ? 'text-card--active' : ''}`}
-          onClick={() => dispatch({ type: 'slideshow.selectSlide', id: slide.id })}
-        >
-          <div className="text-card__head">
-            <span className="slide-card__num">Slide {i + 1}</span>
-            {slides.length > 1 && (
-              <button
-                className="text-card__remove"
-                aria-label="Remove slide"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  dispatch({ type: 'slideshow.removeSlide', id: slide.id })
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-          <input
-            className="slide-card__url"
-            type="url"
-            value={slide.url}
-            placeholder="Published Google Slides link…"
-            aria-label={`Slide ${i + 1} link`}
-            onChange={(e) =>
-              dispatch({ type: 'slideshow.setSlideUrl', id: slide.id, url: e.target.value })
-            }
-          />
-        </div>
-      ))}
+    <div
+      className={`logo-card ${selected ? 'logo-card--active' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+    >
+      <div className="logo-card__preview slideshow-card__preview">
+        <span className="slideshow-card__tag">▶ Slideshow</span>
+      </div>
+      <input
+        className="logo-card__site"
+        type="text"
+        value={slide.url}
+        placeholder="Published Google Slides link (…/pub?start=true&loop=true)"
+        aria-label="Slideshow link"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: e.target.value })}
+      />
       <button
-        className="add-card"
-        onClick={() =>
-          dispatch({
-            type: 'slideshow.addSlide',
-            id: `slide-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-          })
-        }
+        className="logo-card__remove"
+        aria-label="Remove slideshow slide"
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
       >
-        + Add slide
+        ✕
       </button>
-      <span className="music-panel__status">
-        Paste a published (embed) link, pick a slide, then press Reveal to show it.
-      </span>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this slide?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

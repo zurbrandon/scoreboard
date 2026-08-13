@@ -71,7 +71,7 @@ function loadPersisted(): AppState {
       // build (missing a newly-added nested field, e.g. music.library) can never
       // leave the renderer reading `undefined`. Mirrors the Electron loader.
       const fresh = createInitialState()
-      const KNOWN_SCENES = ['scoreboard', 'slides', 'slideshow', 'black']
+      const KNOWN_SCENES = ['scoreboard', 'slides', 'black']
       return {
         ...fresh,
         ...parsed,
@@ -84,12 +84,12 @@ function loadPersisted(): AppState {
         audienceLive: { ...fresh.audienceLive, ...parsed.audienceLive },
         ribbons: { ...fresh.ribbons, ...parsed.ribbons },
         ribbonsLive: { ...fresh.ribbonsLive, ...parsed.ribbonsLive },
-        // Logo + Text merged into one Slides deck (migrateSlides handles old shapes).
+        // Everything folds into one Show/Games deck (migrateSlides handles old
+        // shapes, incl. the retired Pre-show queue).
         slides: migrateSlides(parsed, fresh),
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
         music: { ...fresh.music, ...parsed.music, duck: 1 },
-        slideshow: { ...fresh.slideshow, ...parsed.slideshow },
       }
     }
   } catch {

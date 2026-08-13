@@ -9,7 +9,14 @@ export type TeamId = 'blue' | 'red'
 // Match phase. 'end' is the finale — Reveal triggers the winner celebration.
 export type Half = 'first' | 'second' | 'end'
 
-export type Scene = 'scoreboard' | 'slides' | 'slideshow' | 'black' | 'moment'
+export type Scene = 'scoreboard' | 'slides' | 'black' | 'moment'
+
+// Which operator deck a slide belongs to. Show = the run-of-show beats; Games =
+// per-game template slides. Both are the same slide machinery, just two lists.
+export type SlideDeck = 'show' | 'games'
+
+// The operator's three top-level tabs (editing surfaces, not projector scenes).
+export type OperatorTab = 'show' | 'score' | 'games'
 
 // "Moments" are one-press quick triggers for a team running OUT of / back IN to
 // the room: a random full-screen visual (an animated text card or a GIF) plus a
@@ -44,11 +51,12 @@ export type TextTemplate = 'basic' | 'quadrants'
 
 // A slide in the unified Slides deck. All types share one queue, one selection,
 // and one reveal, so any slide flips the same way.
-export type SlideType = 'logo' | 'text' | 'image'
+export type SlideType = 'logo' | 'text' | 'image' | 'slideshow'
 
 export interface LogoSlide {
   id: string
   type: 'logo'
+  deck: SlideDeck
   name: string
   /** Bundled path like 'logos/comedysportz.png', or a data: URL (uploads). */
   src: string
@@ -61,6 +69,7 @@ export interface LogoSlide {
 export interface ImageSlide {
   id: string
   type: 'image'
+  deck: SlideDeck
   src: string
 }
 
@@ -70,6 +79,7 @@ export interface ImageSlide {
 export interface TextSlide {
   id: string
   type: 'text'
+  deck: SlideDeck
   template: TextTemplate
   liveType: boolean
   headline: string
@@ -78,26 +88,29 @@ export interface TextSlide {
   quads: [string, string, string, string]
 }
 
-export type Slide = LogoSlide | TextSlide | ImageSlide
-
-export function logoSlide(id: string, name: string, src: string, website = ''): LogoSlide {
-  return { id, type: 'logo', name, src, website }
-}
-export function emptyTextSlide(id: string, template: TextTemplate = 'basic'): TextSlide {
-  return { id, type: 'text', template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
-}
-export function emptyImageSlide(id: string, src = ''): ImageSlide {
-  return { id, type: 'image', src }
-}
-
-// One slideshow URL in the Pre-show queue.
-export interface SlideItem {
+// A slideshow slide holds one URL — typically a published Google Slides embed
+// link that auto-plays/loops. Revealing it plays it; Black stops it. This is the
+// old "Pre-show" folded in as just another slide type.
+export interface SlideshowSlide {
   id: string
+  type: 'slideshow'
+  deck: SlideDeck
   url: string
 }
 
-export function emptySlide(id: string): SlideItem {
-  return { id, url: '' }
+export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide
+
+export function logoSlide(id: string, name: string, src: string, website = '', deck: SlideDeck = 'show'): LogoSlide {
+  return { id, type: 'logo', deck, name, src, website }
+}
+export function emptyTextSlide(id: string, template: TextTemplate = 'basic', deck: SlideDeck = 'show'): TextSlide {
+  return { id, type: 'text', deck, template, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
+}
+export function emptyImageSlide(id: string, src = '', deck: SlideDeck = 'show'): ImageSlide {
+  return { id, type: 'image', deck, src }
+}
+export function emptySlideshowSlide(id: string, url = '', deck: SlideDeck = 'show'): SlideshowSlide {
+  return { id, type: 'slideshow', deck, url }
 }
 
 export type Winner = TeamId | 'tie'
@@ -149,22 +162,15 @@ export interface AppState {
   half: Half
   halfLive: Half
   scene: Scene
-  /** The unified Slides deck (logo + text slides). The selected slide is
-   *  published to `live` on Reveal; the projector renders whatever `live` is.
-   *  `live` is the exact committed slide object, so a reference !== check tells
-   *  us when the selected slide has un-published edits. */
+  /** All slides across both decks (Show + Games), each tagged with its `deck`.
+   *  The operator filters by deck; the selected slide is published to `live` on
+   *  Reveal and the projector renders whatever `live` is. `live` is the exact
+   *  committed slide object, so a reference !== check tells us when the selected
+   *  slide has un-published edits. */
   slides: {
     items: Slide[]
     selectedId: string
     live: Slide | null
-  }
-  /** Pre-show scene: a queue of slideshow URLs (e.g. published Google Slides
-   *  embed links). The selected slide is published to `liveUrl` on Reveal, so
-   *  the operator can flip between pre-loaded decks. */
-  slideshow: {
-    slides: SlideItem[]
-    selectedId: string
-    liveUrl: string
   }
   revealPhase: RevealPhase
   /** Which winner-celebration animation the current reveal uses (random each time). */
@@ -231,16 +237,12 @@ export function createInitialState(): AppState {
     scene: 'scoreboard',
     slides: {
       items: [
-        ...LOGO_LIBRARY.map((l) => logoSlide(l.id, l.name, `logos/${l.file}`)),
-        emptyTextSlide('text-1'),
+        ...LOGO_LIBRARY.map((l) => logoSlide(l.id, l.name, `logos/${l.file}`, '', 'show')),
+        emptyTextSlide('text-1', 'basic', 'show'),
+        emptySlideshowSlide('preshow-1', '', 'show'),
       ],
       selectedId: LOGO_LIBRARY[0].id,
       live: null,
-    },
-    slideshow: {
-      slides: [emptySlide('slide-1')],
-      selectedId: 'slide-1',
-      liveUrl: '',
     },
     revealPhase: 'idle',
     revealStyle: 'pop',
@@ -283,6 +285,7 @@ function normQuads(v: unknown): [string, string, string, string] {
   const a = Array.isArray(v) ? v : []
   return [String(a[0] ?? ''), String(a[1] ?? ''), String(a[2] ?? ''), String(a[3] ?? '')]
 }
+const asDeck = (v: unknown): SlideDeck => (v === 'games' ? 'games' : 'show')
 function textSlideFrom(c: Record<string, unknown>): TextSlide {
   // The retired 'live' template becomes a basic slide with liveType on (its old
   // liveText moves into the headline).
@@ -290,6 +293,7 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
   return {
     id: String(c.id ?? rid('text')),
     type: 'text',
+    deck: asDeck(c.deck),
     template: c.template === 'quadrants' ? 'quadrants' : 'basic',
     liveType: wasLive ? true : Boolean(c.liveType),
     headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
@@ -299,11 +303,13 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
 }
 function normSlide(s: Record<string, unknown>): Slide | null {
   if (!s || typeof s !== 'object') return null
+  const deck = asDeck(s.deck)
   if (s.type === 'logo') {
-    return logoSlide(String(s.id ?? rid('logo')), String(s.name ?? 'Logo'), String(s.src ?? ''), String(s.website ?? ''))
+    return logoSlide(String(s.id ?? rid('logo')), String(s.name ?? 'Logo'), String(s.src ?? ''), String(s.website ?? ''), deck)
   }
   if (s.type === 'text') return textSlideFrom(s)
-  if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''))
+  if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''), deck)
+  if (s.type === 'slideshow') return emptySlideshowSlide(String(s.id ?? rid('show')), String(s.url ?? ''), deck)
   return null
 }
 
@@ -312,14 +318,28 @@ export function migrateSlides(parsed: any, fresh: AppState): AppState['slides'] 
   const pick = (id: string, items: Slide[]) =>
     items.some((i) => i.id === id) ? id : (items[0]?.id ?? '')
 
-  // New shape already present.
+  // The old separate Pre-show queue folds into slideshow slides (deck 'show').
+  // Only present in states saved before the Show/Games regroup.
+  const preshow: Slide[] = []
+  if (Array.isArray(parsed?.slideshow?.slides)) {
+    for (const s of parsed.slideshow.slides) {
+      preshow.push(emptySlideshowSlide(String(s?.id ?? rid('show')), String(s?.url ?? ''), 'show'))
+    }
+  }
+
+  // New shape already present (items carry their own type/deck, incl. slideshow).
   const src = parsed?.slides
   if (src && Array.isArray(src.items)) {
     const items = src.items.map(normSlide).filter((s: Slide | null): s is Slide => s !== null)
-    if (items.length) return { items, selectedId: pick(String(src.selectedId ?? ''), items), live: null }
+    // Only fold the retired Pre-show queue if it hasn't been folded already —
+    // else a stale `parsed.slideshow` left over from `...parsed` would re-add
+    // duplicate slideshow slides on every reload.
+    const alreadyFolded = items.some((s) => s.type === 'slideshow')
+    const all = alreadyFolded ? items : [...items, ...preshow]
+    if (all.length) return { items: all, selectedId: pick(String(src.selectedId ?? ''), all), live: null }
   }
 
-  // Migrate the old logos + text.cards into one deck (logos first, then text).
+  // Migrate the old logos + text.cards into the Show deck (logos, then text).
   const items: Slide[] = []
   if (Array.isArray(parsed?.logos)) {
     for (const l of parsed.logos) {
@@ -330,6 +350,7 @@ export function migrateSlides(parsed: any, fresh: AppState): AppState['slides'] 
   if (Array.isArray(parsed?.text?.cards)) {
     for (const c of parsed.text.cards) items.push(textSlideFrom(c))
   }
-  if (!items.length) return fresh.slides
-  return { items, selectedId: items[0].id, live: null }
+  const all = [...items, ...preshow]
+  if (!all.length) return fresh.slides
+  return { items: all, selectedId: all[0].id, live: null }
 }

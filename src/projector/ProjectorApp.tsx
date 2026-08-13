@@ -42,11 +42,11 @@ export function ProjectorApp() {
             {liveSlide?.type === 'logo' && <LogoScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'text' && <TextScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'image' && <ImageScene slide={liveSlide} animate={animate} />}
+            {liveSlide?.type === 'slideshow' && <Slideshow url={liveSlide.url} />}
             {!liveSlide && <div className="scene-logo" />}
           </motion.div>
         </AnimatePresence>
       )}
-      {scene === 'slideshow' && <Slideshow />}
       {scene === 'moment' && moment && <MomentScene key={momentNonce} moment={moment} />}
       {scene === 'black' && <div className="scene-black" />}
       {/* A searched GIF over the scene; effects still fly on top of it. */}
