@@ -117,14 +117,17 @@ export interface SlideshowSlide {
 }
 
 // A cue a slide carries: fire this on Reveal (never on a silent update). `effect`
-// is an overlay effect kind (confetti, a team wash, …); `trackId` starts a
-// specific bumper from the loaded library under the slide. An unset `trackId`
-// means "continue current music" — the reveal leaves the audio alone, so one
-// song rides across a run of beats (welcome players → blue → red). Re-cueing the
-// same `trackId` on the next beat also won't restart it (see the audio controller).
+// is an overlay effect kind (confetti, a team wash, …). Music has three states:
+//   • `trackId` set     → start that bumper under the slide (rides; re-cueing the
+//                          same track on the next beat won't restart it).
+//   • `silence` true    → gracefully fade whatever's playing to nothing.
+//   • neither (default)  → "continue current music": leave the audio alone, so one
+//                          song carries across a run of beats (players → blue → red).
+// trackId and silence are mutually exclusive (the picker enforces it).
 export interface SlideCue {
   effect?: string
   trackId?: string
+  silence?: boolean
 }
 
 // A scripted show-intro beat. `name` feeds the single-name beats (ref, single
@@ -393,8 +396,9 @@ function normCue(v: unknown): SlideCue | undefined {
   const c = v as Record<string, unknown>
   const cue: SlideCue = {}
   if (typeof c.effect === 'string' && c.effect) cue.effect = c.effect
-  if (typeof c.trackId === 'string' && c.trackId) cue.trackId = c.trackId
-  return cue.effect || cue.trackId ? cue : undefined
+  if (c.silence === true) cue.silence = true
+  else if (typeof c.trackId === 'string' && c.trackId) cue.trackId = c.trackId
+  return cue.effect || cue.trackId || cue.silence ? cue : undefined
 }
 const SHOW_BEATS: ShowBeat[] = ['ref', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red']
 const asBeat = (v: unknown): ShowBeat => (SHOW_BEATS.includes(v as ShowBeat) ? (v as ShowBeat) : 'blackout')

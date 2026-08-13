@@ -180,7 +180,8 @@ export function reduce(state: AppState, command: Command): AppState {
       return updateSlide(state, command.id, (s) => {
         if (s.type !== 'show') return s
         // Drop an empty cue entirely so a bare {} never lingers on the slide.
-        const cue = command.cue.effect || command.cue.trackId ? command.cue : undefined
+        const c = command.cue
+        const cue = c.effect || c.trackId || c.silence ? c : undefined
         return { ...s, cue }
       })
     case 'slide.setImage':

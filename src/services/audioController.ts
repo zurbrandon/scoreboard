@@ -36,6 +36,7 @@ const FADE_AFTER_MS = 15000 // start fading this long after a bumper begins
 const FADE_MS = 3000 // slow fade to silence over this long
 const STOP_FADE_MS = 250 // fast fade when the operator hits STOP (no speaker pop)
 const MOMENT_LEAVE_FADE_MS = 6500 // slow, graceful fade when leaving a moment for another scene
+const BLACK_FADE_MS = 7500 // graceful fade when cueing to black or a blackout beat / "No music"
 
 export function createAudioController(store: Store): AudioController {
   let tracks: LoadedTrack[] = []
@@ -278,25 +279,35 @@ export function createAudioController(store: Store): AudioController {
       lastStopNonce = s.stopNonce
       fadeOutOver(STOP_FADE_MS)
     }
-    // A slide was revealed → if it carries a music cue, start that specific
-    // track under it. revealAnimNonce bumps only on Reveal (not silent), so a
-    // quiet update never trips a cue.
+    // A slide was revealed → act on its music cue. revealAnimNonce bumps only on
+    // Reveal (not silent), so a quiet update never trips a cue.
+    //   • a blackout beat, or a "No music" cue → gracefully fade what's playing
+    //   • a track cue → start that track (rides; no-restart if it's already on)
+    //   • otherwise (Continue) → leave the audio alone
     if (s.revealAnimNonce !== lastAnimNonce) {
       lastAnimNonce = s.revealAnimNonce
       const live = s.scene === 'slides' ? s.slides.live : null
-      const trackId = live && 'cue' in live ? live.cue?.trackId : undefined
-      if (trackId) playTrackById(trackId)
+      const isBlackout = live?.type === 'show' && live.beat === 'blackout'
+      const cue = live && 'cue' in live ? live.cue : undefined
+      if (isBlackout || cue?.silence) fadeOutOver(BLACK_FADE_MS)
+      else if (cue?.trackId) playTrackById(cue.trackId)
     }
     // Run-out / run-in moment fired → play a random song from its pool.
     if (s.momentNonce !== lastMomentNonce) {
       lastMomentNonce = s.momentNonce
       playMoment(s.moment?.kind ?? 'out')
     }
+    // Going to Black gracefully fades whatever's playing over ~7.5s, regardless
+    // of what it is — the operator's "cue to black" doubles as "take the music
+    // down." (STOP stays the fast hard-cut; this is the slow, musical one.)
+    if (s.scene === 'black' && lastScene !== 'black') {
+      fadeOutOver(BLACK_FADE_MS)
+    }
     // Leaving a moment for any other scene gracefully fades the moment song out
     // over several seconds — the operator's "let it ride, then cue away" gesture.
     // Skipped if the new scene started its own music (a reveal), which already
     // replaced the track above, so currentIsMoment is no longer true.
-    if (lastScene === 'moment' && s.scene !== 'moment' && currentIsMoment) {
+    else if (lastScene === 'moment' && s.scene !== 'moment' && currentIsMoment) {
       fadeOutOver(MOMENT_LEAVE_FADE_MS)
     }
     lastScene = s.scene

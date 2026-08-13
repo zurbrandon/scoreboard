@@ -408,6 +408,14 @@ describe('scoring details', () => {
     s = reduce(s, { type: 'slide.setCue', id: 'b1', cue: {} })
     expect((s.slides.items.find((i) => i.id === 'b1') as { cue?: unknown }).cue).toBeUndefined()
   })
+
+  it('a silence cue is kept (it is a real instruction, not an empty cue)', () => {
+    const s = run(
+      { type: 'slide.addShow', id: 'b1', beat: 'blackout', deck: 'show' },
+      { type: 'slide.setCue', id: 'b1', cue: { silence: true } },
+    )
+    expect((s.slides.items.find((i) => i.id === 'b1') as { cue?: unknown }).cue).toEqual({ silence: true })
+  })
 })
 
 describe('winner detection', () => {

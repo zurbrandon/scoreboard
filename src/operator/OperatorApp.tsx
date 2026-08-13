@@ -56,6 +56,9 @@ const FX_VERDICTS: { kind: string; icon: string; title: string }[] = [
 // Effects a slide's Reveal cue can auto-fire — every overlay effect, flattened
 // for the cue picker on a show beat.
 const CUE_EFFECT_OPTIONS = [...FX_BURSTS, ...FX_SCREEN, ...FX_VERDICTS]
+// Sentinel value for the music picker's "No music (fade out)" choice — distinct
+// from '' (Continue) and from any real track id.
+const CUE_SILENCE = '__silence__'
 
 // Each random reveal style pairs its winner animation (a CSS class the projector
 // applies) with an accompanying particle effect. null = just the base confetti.
@@ -1291,9 +1294,22 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
   const [confirming, setConfirming] = useState(false)
   const library = useAppState((s) => s.music.library)
   const meta = SHOW_BEAT_META[slide.beat]
-  // Merge one field into the cue (''/none clears it; the reducer drops an empty cue).
-  const setCueField = (field: 'effect' | 'trackId', value: string) =>
-    dispatch({ type: 'slide.setCue', id: slide.id, cue: { ...slide.cue, [field]: value || undefined } })
+  // Merge the effect into the cue (''/none clears it; the reducer drops an empty cue).
+  const setCueEffect = (value: string) =>
+    dispatch({ type: 'slide.setCue', id: slide.id, cue: { ...slide.cue, effect: value || undefined } })
+  // Music is three-way: Continue (''), No music (stop), or a specific track.
+  // Rebuild the cue so trackId and silence stay mutually exclusive.
+  const setCueMusic = (value: string) => {
+    const base: { effect?: string } = { effect: slide.cue?.effect }
+    const cue =
+      value === CUE_SILENCE
+        ? { ...base, silence: true }
+        : value
+          ? { ...base, trackId: value }
+          : base
+    dispatch({ type: 'slide.setCue', id: slide.id, cue })
+  }
+  const musicValue = slide.cue?.silence ? CUE_SILENCE : (slide.cue?.trackId ?? '')
   const teamCls = slide.beat.endsWith('blue') ? 'show-card--blue' : slide.beat.endsWith('red') ? 'show-card--red' : ''
   return (
     <div
@@ -1330,7 +1346,7 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
           className="show-cue__select"
           aria-label="Reveal effect"
           value={slide.cue?.effect ?? ''}
-          onChange={(e) => setCueField('effect', e.target.value)}
+          onChange={(e) => setCueEffect(e.target.value)}
         >
           <option value="">✨ No effect</option>
           {CUE_EFFECT_OPTIONS.map((fx) => (
@@ -1342,17 +1358,22 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
         <select
           className="show-cue__select"
           aria-label="Reveal music"
-          value={slide.cue?.trackId ?? ''}
-          onChange={(e) => setCueField('trackId', e.target.value)}
-          disabled={library.length === 0}
-          title="Pick a song to start on reveal, or leave on Continue to let the current song play on"
+          value={musicValue}
+          onChange={(e) => setCueMusic(e.target.value)}
+          title="Continue the current song, stop it, or start a specific one on reveal"
         >
-          <option value="">{library.length === 0 ? '🎵 No music loaded' : '⏸ Continue current music'}</option>
+          <option value="">⏸ Continue current music</option>
+          <option value={CUE_SILENCE}>🔇 No music (fade out)</option>
           {library.map((t) => (
             <option key={t.id} value={t.id}>
               🎵 {t.name}
             </option>
           ))}
+          {library.length === 0 && (
+            <option value="" disabled>
+              — no tracks loaded —
+            </option>
+          )}
         </select>
       </div>
       <button
