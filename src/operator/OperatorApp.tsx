@@ -15,6 +15,7 @@ import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
 import { GifSearch } from './GifSearch'
+import { WASH_PULSE_MS } from '../projector/WashOverlay'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
 import { useOperatorKeyboard } from './useOperatorKeyboard'
@@ -365,6 +366,7 @@ function EffectsFab() {
   const dispatch = useDispatch()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const washPress = useRef(0) // ids each wash press so a stale release timer can't fire
 
   useEffect(() => {
     if (!open) return
@@ -389,11 +391,14 @@ function EffectsFab() {
             ring.items.map((fx, i) => {
               const { x, y } = fxOrbOffset(ring.radius, i, ring.items.length)
               const order = ri === 0 ? i : FX_RINGS[0].items.length + i
+              // The team-color washes are press-and-hold (pulse while held);
+              // everything else is a one-shot fire on click.
+              const wash = fx.kind === 'wash-blue' ? 'blue' : fx.kind === 'wash-red' ? 'red' : null
               return (
                 <motion.button
                   key={fx.kind}
                   className="fx-orb"
-                  title={fx.title}
+                  title={wash ? `${fx.title} — hold` : fx.title}
                   aria-label={fx.title}
                   initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
                   animate={{ x, y, scale: 1, opacity: 1 }}
@@ -401,7 +406,30 @@ function EffectsFab() {
                   whileHover={{ scale: 1.25 }}
                   whileTap={{ scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 520, damping: 26, delay: order * 0.022 }}
-                  onClick={() => dispatch({ type: 'effect.fire', kind: fx.kind })}
+                  onPointerDown={
+                    wash
+                      ? () => {
+                          const id = ++washPress.current
+                          const start = performance.now()
+                          dispatch({ type: 'wash.hold', kind: wash })
+                          const release = () => {
+                            window.removeEventListener('pointerup', release)
+                            window.removeEventListener('pointercancel', release)
+                            // A tap still gets ONE full pulse: keep it held for at
+                            // least one cycle. A newer press cancels this release.
+                            const remaining = WASH_PULSE_MS - (performance.now() - start)
+                            const fire = () => {
+                              if (washPress.current === id) dispatch({ type: 'wash.release' })
+                            }
+                            if (remaining <= 0) fire()
+                            else setTimeout(fire, remaining)
+                          }
+                          window.addEventListener('pointerup', release)
+                          window.addEventListener('pointercancel', release)
+                        }
+                      : undefined
+                  }
+                  onClick={wash ? undefined : () => dispatch({ type: 'effect.fire', kind: fx.kind })}
                 >
                   {fx.icon}
                 </motion.button>

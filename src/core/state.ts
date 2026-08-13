@@ -15,6 +15,9 @@ export type Scene = 'scoreboard' | 'slides' | 'slideshow' | 'black' | 'moment'
 // the room: a random full-screen visual (an animated text card or a GIF) plus a
 // random song. The random pick happens operator-side (reducer stays pure), so
 // state just carries the chosen visual to show.
+// Team-color screen wash, held down (pulses while held, settles out on release).
+export type WashKind = 'blue' | 'red'
+
 export type MomentKind = 'out' | 'in'
 export type MomentVisual = { type: 'text'; phrase: string } | { type: 'image'; src: string }
 export interface Moment {
@@ -201,6 +204,9 @@ export interface AppState {
   /** A GIF overlaid on top of whatever scene is showing (from the operator's GIF
    *  search), or null for none. Remote Giphy URL. */
   gifOverlay: string | null
+  /** Which team-color wash the operator is HOLDING (pulses while set), or null.
+   *  Press-and-hold on the wash effect; releasing settles it out. */
+  washHold: WashKind | null
   /** The live run-out / run-in moment (what the projector shows while scene ===
    *  'moment'). null before the first trigger. */
   moment: Moment | null
@@ -250,6 +256,7 @@ export function createInitialState(): AppState {
     effect: { kind: '', nonce: 0 },
     audioPlaying: false,
     gifOverlay: null,
+    washHold: null,
     moment: null,
     momentNonce: 0,
     music: {

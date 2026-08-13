@@ -1446,27 +1446,16 @@ button { font-family: inherit; cursor: pointer; }
   z-index: 60;
 }
 /* Full-screen light effects (flash / team color wash). */
-.fx-screen {
+/* Held team-color wash: a radial vignette whose opacity is pulsed by Motion
+   (WashOverlay) while the operator holds the effect, then settles out. */
+.fx-wash {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 62;
-  opacity: 0;
 }
-/* Team color wash: a big vignette that rushes in from every edge, then fades. */
-.fx-screen--wash-blue {
-  background: radial-gradient(circle at 50% 50%, transparent 20%, var(--blue) 92%);
-  animation: fx-wash 950ms ease-out;
-}
-.fx-screen--wash-red {
-  background: radial-gradient(circle at 50% 50%, transparent 20%, var(--red) 92%);
-  animation: fx-wash 950ms ease-out;
-}
-@keyframes fx-wash {
-  0% { opacity: 0; transform: scale(1.2); }
-  35% { opacity: 0.92; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1); }
-}
+.fx-wash--blue { background: radial-gradient(circle at 50% 50%, transparent 20%, var(--blue) 92%); }
+.fx-wash--red { background: radial-gradient(circle at 50% 50%, transparent 20%, var(--red) 92%); }
 
 /* Verdict slam: a big word crashes down over the scene, holds, then fades. */
 .fx-slam {

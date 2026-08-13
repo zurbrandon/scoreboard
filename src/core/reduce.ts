@@ -289,6 +289,11 @@ export function reduce(state: AppState, command: Command): AppState {
     case 'effect.fire':
       return { ...state, effect: { kind: command.kind, nonce: state.effect.nonce + 1 } }
 
+    case 'wash.hold':
+      return { ...state, washHold: command.kind }
+    case 'wash.release':
+      return { ...state, washHold: null }
+
     case 'gif.overlay':
       return { ...state, gifOverlay: command.src }
 

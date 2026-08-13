@@ -87,6 +87,7 @@ function loadPersisted(): AppState {
         // Logo + Text merged into one Slides deck (migrateSlides handles old shapes).
         slides: migrateSlides(parsed, fresh),
         gifOverlay: null, // transient overlay; never restore across launches
+        washHold: null, // transient hold; never restore across launches
         music: { ...fresh.music, ...parsed.music, duck: 1 },
         slideshow: { ...fresh.slideshow, ...parsed.slideshow },
       }

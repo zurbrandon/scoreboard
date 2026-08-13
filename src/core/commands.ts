@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, TeamId, TextTemplate } from './state'
+import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, TeamId, TextTemplate, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -63,6 +63,8 @@ export type Command =
   | { type: 'score.revertPending' } // safety: discard pending edits back to live
   // Fire an overlay effect (e.g. a confetti cannon) on top of the current scene.
   | { type: 'effect.fire'; kind: string }
+  | { type: 'wash.hold'; kind: WashKind } // press-and-hold a team-color wash (pulses while held)
+  | { type: 'wash.release' } // let go — the wash settles out
   | { type: 'moment.play'; kind: MomentKind; visual: MomentVisual } // run-out / run-in quick trigger
   | { type: 'gif.overlay'; src: string | null } // overlay a searched GIF on the projector (null clears)
   // Music.

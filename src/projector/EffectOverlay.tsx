@@ -28,9 +28,9 @@ const CONFETTI_COLORS = ['#2f6bff', '#e23b3b', '#ffd23f', '#39d98a', '#b06bff', 
 const FIREWORK_COLORS = ['#ffd23f', '#ff7ad9', '#5ad1ff', '#7cff8a', '#ff6b6b', '#ffffff']
 const EFFECT_EMOJI: Record<string, string> = { hearts: '❤️', stars: '⭐' }
 
-// Particle effects run on the canvas; screen effects run on the CSS layer.
+// Particle effects run on the canvas. (Team-color washes moved to WashOverlay,
+// which is press-and-hold rather than a one-shot fire.)
 const PARTICLE_KINDS = new Set(['confetti', 'streamers', 'fireworks', 'hearts', 'stars'])
-const SCREEN_KINDS = new Set(['wash-blue', 'wash-red'])
 // Verdict "slams": a big word that slams down over the scene (guessing games).
 // Each fire picks a random phrase from the pool.
 const SLAMS: Record<string, { words: string[]; cls: string }> = {
@@ -179,7 +179,6 @@ export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) 
     <>
       <canvas ref={canvasRef} className="fx-overlay" aria-hidden="true" />
       {/* Screen effects + verdict slams: CSS layers that replay via key. */}
-      {SCREEN_KINDS.has(kind) && <div key={nonce} className={`fx-screen fx-screen--${kind}`} aria-hidden="true" />}
       {SLAMS[kind] && (
         <div key={nonce} className="fx-slam" aria-hidden="true">
           <span className={`fx-slam__word ${SLAMS[kind].cls}`}>{slamWord}</span>
