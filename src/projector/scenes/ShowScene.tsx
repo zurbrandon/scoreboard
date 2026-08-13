@@ -65,6 +65,9 @@ function TeamCard({
   const slam = { type: 'spring' as const, stiffness: 520, damping: 16, mass: 0.9 }
   return (
     <div className={`show show--team show--${side}`}>
+      <div className="show__stars" aria-hidden>
+        <div className="show__stars-grid" />
+      </div>
       <SheenSweep animate={animate} delay={0.18} />
       <motion.div
         className="show__eyebrow"

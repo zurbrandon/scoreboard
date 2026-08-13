@@ -1229,22 +1229,30 @@ button { font-family: inherit; cursor: pointer; }
 .show--team {
   --star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L14.35 8.76L21.51 8.91L15.8 13.24L17.88 20.09L12 16L6.12 20.09L8.2 13.24L2.49 8.91L9.65 8.76Z' fill='%23ffffff'/%3E%3C/svg%3E");
 }
-.show--team::before {
-  content: '';
+/* Static wrapper holds the bottom-left fade mask so it stays anchored; the inner
+   grid is tilted (like the ref stripes) and drifts, so stars rise on the diagonal
+   through the fade. Big + sparse + faint + a touch faster for energy. */
+.show__stars {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
+  opacity: 0.1;
+  -webkit-mask-image: radial-gradient(90% 100% at 12% 92%, #000 6%, transparent 72%);
+  mask-image: radial-gradient(90% 100% at 12% 92%, #000 6%, transparent 72%);
+}
+.show__stars-grid {
+  position: absolute;
+  inset: -60%;
+  transform: rotate(-24deg);
   background-image: var(--star), var(--star);
-  background-size: 6.5vw 6.5vw, 6.5vw 6.5vw;
-  background-position: 0 0, 3.25vw 3.25vw;
-  opacity: 0.16;
-  -webkit-mask-image: radial-gradient(88% 98% at 12% 92%, #000 6%, transparent 70%);
-  mask-image: radial-gradient(88% 98% at 12% 92%, #000 6%, transparent 70%);
-  animation: star-drift 17s linear infinite;
+  background-size: 11vw 11vw, 11vw 11vw;
+  background-position: 0 0, 5.5vw 5.5vw;
+  animation: star-drift 9s linear infinite;
 }
 @keyframes star-drift {
-  from { background-position: 0 0, 3.25vw 3.25vw; }
-  to { background-position: 0 -6.5vw, 3.25vw -3.25vw; }
+  from { background-position: 0 0, 5.5vw 5.5vw; }
+  to { background-position: 0 -11vw, 5.5vw -5.5vw; }
 }
 .show--team::after {
   content: '';
