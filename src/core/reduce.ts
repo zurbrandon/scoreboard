@@ -104,22 +104,18 @@ export function reduce(state: AppState, command: Command): AppState {
         displayWasReveal: false,
         gifOverlay: command.scene === 'black' ? null : state.gifOverlay,
       }
-    case 'display.reveal': {
-      // A slide's cue fires on Reveal (never on a silent update). The effect is
-      // pure state (bump the effect nonce); the bound music is I/O, so the audio
-      // controller starts it when it sees revealAnimNonce move.
-      const live = state.slides.live
-      const cueEffect =
-        command.scene === 'slides' && live && 'cue' in live ? live.cue?.effect : undefined
+    case 'display.reveal':
+      // A slide's cue effect + music fire on Reveal (never on a silent update),
+      // but on a delay so they land AFTER the slide's entrance animation — that's
+      // timed I/O, so the reveal service (effect) and audio controller (music)
+      // drive them off revealAnimNonce rather than the pure reducer.
       return {
         ...state,
         scene: command.scene,
         displayWasReveal: true,
         revealAnimNonce: state.revealAnimNonce + 1,
         music: { ...state.music, duck: 1 }, // revealing something else un-ducks
-        effect: cueEffect ? { kind: cueEffect, nonce: state.effect.nonce + 1 } : state.effect,
       }
-    }
 
     case 'slide.select':
       return { ...state, slides: { ...state.slides, selectedId: command.id } }

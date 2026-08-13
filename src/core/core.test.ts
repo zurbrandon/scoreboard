@@ -382,21 +382,24 @@ describe('scoring details', () => {
     expect(added?.type === 'show' && added.name).toBe('Rowan')
   })
 
-  it('a slide cue fires its effect on Reveal (but not on a silent update)', () => {
+  it('reveal signals a cue effect via revealAnimNonce, without firing it inline', () => {
     let s = run(
       { type: 'slide.addShow', id: 'b1', beat: 'players', deck: 'show' },
       { type: 'slide.setCue', id: 'b1', cue: { effect: 'confetti', trackId: 't-1' } },
       { type: 'slide.select', id: 'b1' },
       { type: 'slide.commit' },
     )
-    const before = s.effect.nonce
-    // A silent display change must NOT fire the cue effect.
+    const beforeEffect = s.effect.nonce
+    const beforeAnim = s.revealAnimNonce
+    // A silent display change moves neither.
     s = reduce(s, { type: 'display.set', scene: 'slides' })
-    expect(s.effect.nonce).toBe(before)
-    // A Reveal fires it: effect nonce bumps and the kind matches the cue.
+    expect(s.effect.nonce).toBe(beforeEffect)
+    expect(s.revealAnimNonce).toBe(beforeAnim)
+    // A Reveal bumps the anim nonce (what the timed cue service keys on) but does
+    // NOT fire the effect inline — the service fires it after a delay.
     s = reduce(s, { type: 'display.reveal', scene: 'slides' })
-    expect(s.effect.nonce).toBe(before + 1)
-    expect(s.effect.kind).toBe('confetti')
+    expect(s.revealAnimNonce).toBe(beforeAnim + 1)
+    expect(s.effect.nonce).toBe(beforeEffect)
   })
 
   it('setCue with an empty cue clears it', () => {
