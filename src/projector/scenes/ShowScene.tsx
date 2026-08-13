@@ -142,13 +142,31 @@ export function ShowScene({
       // Near-black frame with subtle moving stripes peeking from the bottom-left;
       // a black gradient swallows the rest. Just the name — big, bold, white, with
       // a soft billowy shadow — under a quiet label. No plate, no chrome.
+      // On reveal the label drops in from the top and skids to a stop (a springy
+      // overshoot), then the name rises up from the bottom.
       return (
         <div className="show show--ref">
           <div className="show__stripes" aria-hidden />
           <div className="show__ref-fade" aria-hidden />
           <div className="show__ref-copy">
-            <div className="show__eyebrow show__eyebrow--ref">Please welcome your referee</div>
-            {slide.name && <div className="show__name show__name--ref">{slide.name}</div>}
+            <motion.div
+              className="show__eyebrow show__eyebrow--ref"
+              initial={animate ? { opacity: 0, y: -220 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 240, damping: 19, mass: 1 }}
+            >
+              Please welcome your referee
+            </motion.div>
+            {slide.name && (
+              <motion.div
+                className="show__name show__name--ref"
+                initial={animate ? { opacity: 0, y: 220 } : false}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22, delay: animate ? 0.45 : 0 }}
+              >
+                {slide.name}
+              </motion.div>
+            )}
           </div>
         </div>
       )
