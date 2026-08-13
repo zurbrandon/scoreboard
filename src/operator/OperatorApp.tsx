@@ -43,6 +43,7 @@ const FX_BURSTS: { kind: string; icon: string; title: string }[] = [
   { kind: 'fireworks', icon: '🎆', title: 'Fireworks' },
   { kind: 'hearts', icon: '❤️', title: 'Hearts' },
   { kind: 'stars', icon: '⭐', title: 'Stars' },
+  { kind: 'team-emoji', icon: '🙂', title: 'Team emoji' },
 ]
 const FX_SCREEN: { kind: string; icon: string; title: string }[] = [
   { kind: 'wash-blue', icon: '🔵', title: 'Blue wash' },

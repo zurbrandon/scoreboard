@@ -27,6 +27,13 @@ export function ProjectorApp() {
   const moment = useAppState((s) => s.moment)
   const momentNonce = useAppState((s) => s.momentNonce)
   const effect = useAppState((s) => s.effect)
+  // 'team-emoji' effect: which team's scoreboard mood(s) to rain. A blue-side beat
+  // → blue's emoji, a red-side beat → red's, anything else → both mixed. Empty
+  // moods fall back to a colored circle so there's always something to throw.
+  const blueEmoji = useAppState((s) => s.teams.blue.mood).trim() || '🔵'
+  const redEmoji = useAppState((s) => s.teams.red.mood).trim() || '🔴'
+  const liveBeat = liveSlide?.type === 'show' ? liveSlide.beat : null
+  const emojiSide = liveBeat?.endsWith('blue') ? 'blue' : liveBeat?.endsWith('red') ? 'red' : 'both'
 
   return (
     <div className="projector">
@@ -57,7 +64,13 @@ export function ProjectorApp() {
       {/* Held team-color wash (press-and-hold from the operator). */}
       <WashOverlay />
       {/* Overlay effects play on top of every scene. */}
-      <EffectOverlay kind={effect.kind} nonce={effect.nonce} />
+      <EffectOverlay
+        kind={effect.kind}
+        nonce={effect.nonce}
+        emojiSide={emojiSide}
+        blueEmoji={blueEmoji}
+        redEmoji={redEmoji}
+      />
     </div>
   )
 }

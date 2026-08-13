@@ -29,8 +29,9 @@ const FIREWORK_COLORS = ['#ffd23f', '#ff7ad9', '#5ad1ff', '#7cff8a', '#ff6b6b', 
 const EFFECT_EMOJI: Record<string, string> = { hearts: '❤️', stars: '⭐' }
 
 // Particle effects run on the canvas. (Team-color washes moved to WashOverlay,
-// which is press-and-hold rather than a one-shot fire.)
-const PARTICLE_KINDS = new Set(['confetti', 'streamers', 'fireworks', 'hearts', 'stars'])
+// which is press-and-hold rather than a one-shot fire.) 'team-emoji' cannons the
+// teams' scoreboard mood emoji — a dynamic glyph pool resolved by the caller.
+const PARTICLE_KINDS = new Set(['confetti', 'streamers', 'fireworks', 'hearts', 'stars', 'team-emoji'])
 // Verdict "slams": a big word that slams down over the scene (guessing games).
 // Each fire picks a random phrase from the pool.
 const SLAMS: Record<string, { words: string[]; cls: string }> = {
@@ -83,10 +84,13 @@ function glowSprite(color: string): HTMLCanvasElement {
   return c
 }
 
-// Build the starting particles for the cannon / streamer effects.
-function spawnParticles(kind: string, w: number, h: number): Particle[] {
+// Build the starting particles for the cannon / streamer effects. `glyphs` is the
+// emoji pool for a glyph cannon (each particle picks one at random, so a two-team
+// pool rains mixed); falls back to the kind's static emoji if none is given.
+function spawnParticles(kind: string, w: number, h: number, glyphs?: string[]): Particle[] {
   const out: Particle[] = []
-  const glyph = EFFECT_EMOJI[kind]
+  const pool = glyphs && glyphs.length ? glyphs : EFFECT_EMOJI[kind] ? [EFFECT_EMOJI[kind]] : []
+  const useGlyph = pool.length > 0
 
   if (kind === 'streamers') {
     // Long ribbons drifting down from across the top edge.
@@ -112,11 +116,13 @@ function spawnParticles(kind: string, w: number, h: number): Particle[] {
     return out
   }
 
-  // confetti / hearts / stars: two cannons from the bottom corners, up + inward.
+  // confetti / hearts / stars / team-emoji: two cannons from the bottom corners,
+  // up + inward. Each glyph particle draws from the pool, so a two-team pool mixes.
   const cannon = (originX: number, aimSign: number) => {
     for (let i = 0; i < 70; i++) {
       const angle = -Math.PI / 2 + aimSign * rand(0.1, 0.6)
       const speed = rand(1.1, 2.0)
+      const glyph = useGlyph ? pick(pool) : undefined
       const size = glyph ? rand(26, 48) : rand(9, 18)
       out.push({
         x: originX * w + rand(-0.02, 0.02) * w,
@@ -142,7 +148,20 @@ function spawnParticles(kind: string, w: number, h: number): Particle[] {
   return out
 }
 
-export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) {
+export function EffectOverlay({
+  kind,
+  nonce,
+  emojiSide = 'both',
+  blueEmoji = '',
+  redEmoji = '',
+}: {
+  kind: string
+  nonce: number
+  /** For 'team-emoji': whose mood to rain — blue, red, or both mixed. */
+  emojiSide?: 'blue' | 'red' | 'both'
+  blueEmoji?: string
+  redEmoji?: string
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef(0)
   const seenNonce = useRef(nonce) // don't fire on the initial mount
@@ -168,12 +187,22 @@ export function EffectOverlay({ kind, nonce }: { kind: string; nonce: number }) 
     const w = (canvas.width = Math.max(1, Math.round(canvas.clientWidth * scale)))
     const h = (canvas.height = Math.max(1, Math.round(canvas.clientHeight * scale)))
 
+    // 'team-emoji' rains the relevant team's mood(s); other kinds use no pool.
+    const teamGlyphs =
+      kind === 'team-emoji'
+        ? (emojiSide === 'blue' ? [blueEmoji] : emojiSide === 'red' ? [redEmoji] : [blueEmoji, redEmoji])
+            .map((g) => g.trim())
+            .filter(Boolean)
+        : undefined
+
     const tick =
-      kind === 'fireworks' ? makeFireworksTick(ctx, w, h, rafRef) : makeParticleTick(ctx, w, h, kind, rafRef)
+      kind === 'fireworks'
+        ? makeFireworksTick(ctx, w, h, rafRef)
+        : makeParticleTick(ctx, w, h, kind, rafRef, teamGlyphs)
 
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [kind, nonce])
+  }, [kind, nonce, emojiSide, blueEmoji, redEmoji])
 
   return (
     <>
@@ -195,8 +224,9 @@ function makeParticleTick(
   h: number,
   kind: string,
   rafRef: { current: number },
+  glyphs?: string[],
 ) {
-  const particles = spawnParticles(kind, w, h)
+  const particles = spawnParticles(kind, w, h, glyphs)
   let last = performance.now()
   const tick = (now: number) => {
     const dt = Math.min(now - last, 48)
