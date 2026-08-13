@@ -1170,17 +1170,26 @@ button { font-family: inherit; cursor: pointer; }
 }
 .show__title { font-size: 8.5vw; }
 .show__name { font-size: 7vw; }
+/* Roster as a 2×2 grid of frosted name chips. */
 .show__roster {
   position: relative;
   z-index: 1;
   list-style: none;
-  margin: 1vh 0 0;
+  margin: 3vh 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5vh;
-  font-size: 3.4vw;
-  font-weight: 700;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4vh 1.6vw;
+  width: min(66vw, 62rem);
+}
+.show__roster-item {
+  padding: 1.2vh 2vw;
+  border-radius: 1vw;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 3vw;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 /* Team welcome / single captain: solid team color with a soft vignette. */

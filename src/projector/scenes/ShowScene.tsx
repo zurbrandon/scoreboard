@@ -17,34 +17,67 @@ function rosterLines(roster: string): string[] {
 }
 
 // A team welcome / captain card: solid team color, an eyebrow label, the team
-// name, and either a roster or a single captain name.
+// name, and either a roster (2×2 grid) or a single captain name. On reveal the
+// title slams in bold, then each player pops in separately, one after another.
 function TeamCard({
   side,
   eyebrow,
   title,
   roster,
   name,
+  animate,
 }: {
   side: TeamId
   eyebrow: string
   title: string
   roster?: string[]
   name?: string
+  animate: boolean
 }) {
+  const slam = { type: 'spring' as const, stiffness: 520, damping: 16, mass: 0.9 }
   return (
     <div className={`show show--team show--${side}`}>
-      <div className="show__eyebrow">{eyebrow}</div>
-      <div className="show__title">{title}</div>
+      <motion.div
+        className="show__eyebrow"
+        initial={animate ? { opacity: 0, y: '-45%' } : false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
+        {eyebrow}
+      </motion.div>
+      <motion.div
+        className="show__title"
+        initial={animate ? { opacity: 0, scale: 1.4 } : false}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ ...slam, delay: animate ? 0.08 : 0 }}
+      >
+        {title}
+      </motion.div>
       {roster && roster.length > 0 && (
         <ul className="show__roster">
           {roster.map((n, i) => (
-            <li key={i} className="show__roster-item" style={{ ['--i' as string]: i }}>
+            <motion.li
+              key={i}
+              className="show__roster-item"
+              initial={animate ? { opacity: 0, scale: 0.5, y: '30%' } : false}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 480, damping: 20, delay: animate ? 0.45 + i * 0.13 : 0 }}
+            >
               {n}
-            </li>
+            </motion.li>
           ))}
         </ul>
       )}
-      {name && <div className="show__name">{name}</div>}
+      {name && (
+        <motion.div
+          className="show__name"
+          initial={animate ? { opacity: 0, scale: 1.3 } : false}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ ...slam, delay: animate ? 0.12 : 0 }}
+        >
+          {name}
+        </motion.div>
+      )}
     </div>
   )
 }
@@ -124,13 +157,13 @@ export function ShowScene({
     case 'captains':
       return <DualCard title="Team captains" animate={animate} />
     case 'team-blue':
-      return <TeamCard side="blue" eyebrow="Welcome" title={blue} roster={rosterLines(slide.roster)} />
+      return <TeamCard side="blue" eyebrow="Welcome" title={blue} roster={rosterLines(slide.roster)} animate={animate} />
     case 'team-red':
-      return <TeamCard side="red" eyebrow="Welcome" title={red} roster={rosterLines(slide.roster)} />
+      return <TeamCard side="red" eyebrow="Welcome" title={red} roster={rosterLines(slide.roster)} animate={animate} />
     case 'captain-blue':
-      return <TeamCard side="blue" eyebrow={`${blue} captain`} title={slide.name || 'Captain'} />
+      return <TeamCard side="blue" eyebrow={`${blue} captain`} title={slide.name || 'Captain'} animate={animate} />
     case 'captain-red':
-      return <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} />
+      return <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} animate={animate} />
     case 'blackout':
     default:
       return <div className="show show--blackout" />
