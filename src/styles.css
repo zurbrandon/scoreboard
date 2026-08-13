@@ -1223,12 +1223,28 @@ button { font-family: inherit; cursor: pointer; }
    vignette for depth (the "arena floor" feel). */
 .show--blue { background: radial-gradient(120% 120% at 50% 32%, #4f83ff, #0f2358 84%); }
 .show--red { background: radial-gradient(120% 120% at 50% 32%, #ff5f5f, #571212 84%); }
+/* Interlocking star field (two half-offset grids of the same star), faded in
+   from the bottom-left like the ref stripes and drifting slowly upward. The mask
+   stays anchored while background-position scrolls, so stars rise through it. */
+.show--team {
+  --star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L14.35 8.76L21.51 8.91L15.8 13.24L17.88 20.09L12 16L6.12 20.09L8.2 13.24L2.49 8.91L9.65 8.76Z' fill='%23ffffff'/%3E%3C/svg%3E");
+}
 .show--team::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(115deg, transparent 0 7vw, rgba(255, 255, 255, 0.05) 7vw 14vw);
+  background-image: var(--star), var(--star);
+  background-size: 6.5vw 6.5vw, 6.5vw 6.5vw;
+  background-position: 0 0, 3.25vw 3.25vw;
+  opacity: 0.16;
+  -webkit-mask-image: radial-gradient(88% 98% at 12% 92%, #000 6%, transparent 70%);
+  mask-image: radial-gradient(88% 98% at 12% 92%, #000 6%, transparent 70%);
+  animation: star-drift 17s linear infinite;
+}
+@keyframes star-drift {
+  from { background-position: 0 0, 3.25vw 3.25vw; }
+  to { background-position: 0 -6.5vw, 3.25vw -3.25vw; }
 }
 .show--team::after {
   content: '';
