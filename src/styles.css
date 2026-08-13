@@ -643,25 +643,21 @@ button { font-family: inherit; cursor: pointer; }
 }
 .logo-card__site:focus { outline: none; border-color: var(--accent); }
 
-/* Show-beat card (operator): a labeled beat with its one inline field. */
-.show-card { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+/* Show-beat card (operator): a labeled beat with its one inline field. Kept
+   compact to save vertical room — the title and its hint share a line, and the
+   two cue dropdowns sit side by side. */
+.show-card { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.show-card__head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .show-card__label { font-weight: 800; font-size: 14px; letter-spacing: 0.01em; }
 .show-card__hint { color: var(--muted); font-size: 12px; }
-.show-card__roster { resize: vertical; min-height: 64px; line-height: 1.5; }
+.show-card__roster { resize: vertical; min-height: 56px; line-height: 1.45; }
 .show-card--blue { border-left: 3px solid var(--blue); }
 .show-card--red { border-left: 3px solid var(--red); }
 
-/* Reveal cue row: an effect + a music track that auto-fire when the beat airs. */
-.show-cue { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.show-cue__label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
+/* Reveal cue row: effect + music, side by side (each takes half the width). */
+.show-cue { display: flex; align-items: center; gap: 6px; }
 .show-cue__select {
-  flex: 1 1 40%;
+  flex: 1 1 0;
   min-width: 0;
   background: var(--panel-2);
   border: 1px solid #2c3346;

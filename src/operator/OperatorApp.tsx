@@ -1316,7 +1316,10 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
       className={`logo-card show-card ${teamCls} ${selected ? 'logo-card--active' : ''}`}
       onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
     >
-      <div className="show-card__label">{meta.label}</div>
+      <div className="show-card__head">
+        <span className="show-card__label">{meta.label}</span>
+        {!meta.field && <span className="show-card__hint">{meta.hint}</span>}
+      </div>
       {meta.field === 'name' && (
         <input
           className="logo-card__site"
@@ -1339,9 +1342,7 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
           onChange={(e) => dispatch({ type: 'slide.setShowField', id: slide.id, field: 'roster', value: e.target.value })}
         />
       )}
-      {!meta.field && <div className="show-card__hint">{meta.hint}</div>}
       <div className="show-cue" onClick={(e) => e.stopPropagation()}>
-        <span className="show-cue__label">On reveal</span>
         <select
           className="show-cue__select"
           aria-label="Reveal effect"
