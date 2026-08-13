@@ -117,9 +117,11 @@ export interface SlideshowSlide {
 }
 
 // A cue a slide carries: fire this on Reveal (never on a silent update). `effect`
-// is an overlay effect kind (confetti, a team wash, …); `trackId` is a specific
-// bumper from the loaded music library to start under the slide. Either may be
-// unset. This is what lets the ref beat play "ref music" the moment it goes live.
+// is an overlay effect kind (confetti, a team wash, …); `trackId` starts a
+// specific bumper from the loaded library under the slide. An unset `trackId`
+// means "continue current music" — the reveal leaves the audio alone, so one
+// song rides across a run of beats (welcome players → blue → red). Re-cueing the
+// same `trackId` on the next beat also won't restart it (see the audio controller).
 export interface SlideCue {
   effect?: string
   trackId?: string

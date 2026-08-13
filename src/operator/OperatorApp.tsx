@@ -1345,8 +1345,9 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
           value={slide.cue?.trackId ?? ''}
           onChange={(e) => setCueField('trackId', e.target.value)}
           disabled={library.length === 0}
+          title="Pick a song to start on reveal, or leave on Continue to let the current song play on"
         >
-          <option value="">{library.length === 0 ? '🎵 No music loaded' : '🎵 No music'}</option>
+          <option value="">{library.length === 0 ? '🎵 No music loaded' : '⏸ Continue current music'}</option>
           {library.map((t) => (
             <option key={t.id} value={t.id}>
               🎵 {t.name}

@@ -49,6 +49,10 @@ export function createAudioController(store: Store): AudioController {
   let lastAnimNonce = store.getState().revealAnimNonce
   let lastScene = store.getState().scene
   let currentIsMoment = false // is the track now playing a run-out / run-in song?
+  // The slide-cue track currently sounding (null = none). Lets a reveal that asks
+  // for the SAME track keep it playing instead of restarting — so one song rides
+  // continuously across a run of beats (welcome players → blue → red).
+  let currentCueTrackId: string | null = null
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -92,6 +96,7 @@ export function createAudioController(store: Store): AudioController {
     audio.load()
     audio = null
     currentIsMoment = false
+    currentCueTrackId = null
     setPlaying(false)
   }
 
@@ -173,11 +178,18 @@ export function createAudioController(store: Store): AudioController {
   }
 
   // Play a specific bumper by id — a slide's music cue. Starts under the slide
-  // the moment it's revealed and fades like a normal bumper. No-op (leaving any
-  // current track alone) if music is off or that track isn't loaded.
+  // the moment it's revealed. Two behaviors make it work as a continuous bed:
+  //   • No restart: if this exact track is already sounding, leave it playing —
+  //     so revealing the next beat in the run doesn't cut the song.
+  //   • It rides: unlike a bumper, a cued track has no 15s auto-fade. It plays
+  //     out (or until STOP, a different track, or the operator moves on), so the
+  //     bed carries across welcome players → blue team → red team.
+  // No-op if music is off or that track isn't loaded.
   function playTrackById(id: string): void {
     const { music } = store.getState()
     if (!music.enabled) return
+    // Already sounding this exact track → let it keep playing (the bed continues).
+    if (currentCueTrackId === id && audio && !audio.ended) return
     const track = tracks.find((t) => t.id === id)
     if (!track) return
     try {
@@ -185,12 +197,14 @@ export function createAudioController(store: Store): AudioController {
       releaseAudio()
       fadeGain = 1
       audio = new Audio(track.url)
+      currentCueTrackId = id
       applyVolume()
+      // Free the element when the song finishes on its own (no auto-fade to do it).
+      audio.addEventListener('ended', () => releaseAudio(), { once: true })
       void audio.play().catch((err) => {
         console.warn('[audio] slide cue playback failed; continuing show:', err)
       })
       setPlaying(true)
-      scheduleFade()
       store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
     } catch (err) {
       console.warn('[audio] could not start slide cue; continuing show:', err)
