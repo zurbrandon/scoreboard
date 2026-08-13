@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, ShowBeat, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, ShowBeat, SlideCue, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -44,6 +44,7 @@ export type Command =
   | { type: 'slide.addSlideshow'; id: string; deck?: SlideDeck } // add an empty slideshow (Google Slides) slide
   | { type: 'slide.addShow'; id: string; beat: ShowBeat; deck?: SlideDeck } // add a scripted show-intro beat
   | { type: 'slide.setShowField'; id: string; field: 'name' | 'roster'; value: string } // show beat's name / roster
+  | { type: 'slide.setCue'; id: string; cue: SlideCue } // bind a reveal cue (effect / music) to a slide
   | { type: 'slide.setImage'; id: string; src: string } // set an image slide's picture (data URL)
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
   | { type: 'slide.setSlideshowUrl'; id: string; url: string } // slideshow slide's embed URL

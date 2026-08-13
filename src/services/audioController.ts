@@ -46,6 +46,7 @@ export function createAudioController(store: Store): AudioController {
   let lastFinaleNonce = store.getState().finaleNonce
   let lastStopNonce = store.getState().stopNonce
   let lastMomentNonce = store.getState().momentNonce
+  let lastAnimNonce = store.getState().revealAnimNonce
   let lastScene = store.getState().scene
   let currentIsMoment = false // is the track now playing a run-out / run-in song?
 
@@ -171,6 +172,31 @@ export function createAudioController(store: Store): AudioController {
     }
   }
 
+  // Play a specific bumper by id — a slide's music cue. Starts under the slide
+  // the moment it's revealed and fades like a normal bumper. No-op (leaving any
+  // current track alone) if music is off or that track isn't loaded.
+  function playTrackById(id: string): void {
+    const { music } = store.getState()
+    if (!music.enabled) return
+    const track = tracks.find((t) => t.id === id)
+    if (!track) return
+    try {
+      clearFade()
+      releaseAudio()
+      fadeGain = 1
+      audio = new Audio(track.url)
+      applyVolume()
+      void audio.play().catch((err) => {
+        console.warn('[audio] slide cue playback failed; continuing show:', err)
+      })
+      setPlaying(true)
+      scheduleFade()
+      store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
+    } catch (err) {
+      console.warn('[audio] could not start slide cue; continuing show:', err)
+    }
+  }
+
   // The Final-score drum roll — the custom upload, or any bumper as a stand-in.
   function playDrumroll(): void {
     const { music } = store.getState()
@@ -237,6 +263,15 @@ export function createAudioController(store: Store): AudioController {
     if (s.stopNonce !== lastStopNonce) {
       lastStopNonce = s.stopNonce
       fadeOutOver(STOP_FADE_MS)
+    }
+    // A slide was revealed → if it carries a music cue, start that specific
+    // track under it. revealAnimNonce bumps only on Reveal (not silent), so a
+    // quiet update never trips a cue.
+    if (s.revealAnimNonce !== lastAnimNonce) {
+      lastAnimNonce = s.revealAnimNonce
+      const live = s.scene === 'slides' ? s.slides.live : null
+      const trackId = live && 'cue' in live ? live.cue?.trackId : undefined
+      if (trackId) playTrackById(trackId)
     }
     // Run-out / run-in moment fired → play a random song from its pool.
     if (s.momentNonce !== lastMomentNonce) {

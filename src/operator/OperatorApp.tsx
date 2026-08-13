@@ -53,6 +53,10 @@ const FX_VERDICTS: { kind: string; icon: string; title: string }[] = [
   { kind: 'nope', icon: '❌', title: 'Nope!' },
 ]
 
+// Effects a slide's Reveal cue can auto-fire — every overlay effect, flattened
+// for the cue picker on a show beat.
+const CUE_EFFECT_OPTIONS = [...FX_BURSTS, ...FX_SCREEN, ...FX_VERDICTS]
+
 // Each random reveal style pairs its winner animation (a CSS class the projector
 // applies) with an accompanying particle effect. null = just the base confetti.
 const REVEAL_STYLE_FX: Record<RevealStyle, string | null> = {
@@ -1285,7 +1289,11 @@ function TextSlideCard({
 function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolean }) {
   const dispatch = useDispatch()
   const [confirming, setConfirming] = useState(false)
+  const library = useAppState((s) => s.music.library)
   const meta = SHOW_BEAT_META[slide.beat]
+  // Merge one field into the cue (''/none clears it; the reducer drops an empty cue).
+  const setCueField = (field: 'effect' | 'trackId', value: string) =>
+    dispatch({ type: 'slide.setCue', id: slide.id, cue: { ...slide.cue, [field]: value || undefined } })
   const teamCls = slide.beat.endsWith('blue') ? 'show-card--blue' : slide.beat.endsWith('red') ? 'show-card--red' : ''
   return (
     <div
@@ -1316,6 +1324,36 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
         />
       )}
       {!meta.field && <div className="show-card__hint">{meta.hint}</div>}
+      <div className="show-cue" onClick={(e) => e.stopPropagation()}>
+        <span className="show-cue__label">On reveal</span>
+        <select
+          className="show-cue__select"
+          aria-label="Reveal effect"
+          value={slide.cue?.effect ?? ''}
+          onChange={(e) => setCueField('effect', e.target.value)}
+        >
+          <option value="">✨ No effect</option>
+          {CUE_EFFECT_OPTIONS.map((fx) => (
+            <option key={fx.kind} value={fx.kind}>
+              {fx.icon} {fx.title}
+            </option>
+          ))}
+        </select>
+        <select
+          className="show-cue__select"
+          aria-label="Reveal music"
+          value={slide.cue?.trackId ?? ''}
+          onChange={(e) => setCueField('trackId', e.target.value)}
+          disabled={library.length === 0}
+        >
+          <option value="">{library.length === 0 ? '🎵 No music loaded' : '🎵 No music'}</option>
+          {library.map((t) => (
+            <option key={t.id} value={t.id}>
+              🎵 {t.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <button
         className="logo-card__remove"
         aria-label="Remove show beat"

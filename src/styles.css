@@ -650,6 +650,29 @@ button { font-family: inherit; cursor: pointer; }
 .show-card__roster { resize: vertical; min-height: 64px; line-height: 1.5; }
 .show-card--blue { border-left: 3px solid var(--blue); }
 .show-card--red { border-left: 3px solid var(--red); }
+
+/* Reveal cue row: an effect + a music track that auto-fire when the beat airs. */
+.show-cue { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.show-cue__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.show-cue__select {
+  flex: 1 1 40%;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 5px 6px;
+}
+.show-cue__select:focus { outline: none; border-color: var(--accent); }
+.show-cue__select:disabled { opacity: 0.55; }
 .logo-card__remove {
   position: absolute;
   top: 6px;

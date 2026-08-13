@@ -116,9 +116,18 @@ export interface SlideshowSlide {
   url: string
 }
 
+// A cue a slide carries: fire this on Reveal (never on a silent update). `effect`
+// is an overlay effect kind (confetti, a team wash, …); `trackId` is a specific
+// bumper from the loaded music library to start under the slide. Either may be
+// unset. This is what lets the ref beat play "ref music" the moment it goes live.
+export interface SlideCue {
+  effect?: string
+  trackId?: string
+}
+
 // A scripted show-intro beat. `name` feeds the single-name beats (ref, single
 // captain); `roster` is one player per line for the team beats. Unused fields
-// stay empty — the beat decides what it renders.
+// stay empty — the beat decides what it renders. `cue` fires on Reveal.
 export interface ShowSlide {
   id: string
   type: 'show'
@@ -126,6 +135,7 @@ export interface ShowSlide {
   beat: ShowBeat
   name: string
   roster: string
+  cue?: SlideCue
 }
 
 export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide | ShowSlide
@@ -368,9 +378,21 @@ function normSlide(s: Record<string, unknown>): Slide | null {
   if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''), deck)
   if (s.type === 'slideshow') return emptySlideshowSlide(String(s.id ?? rid('show')), String(s.url ?? ''), deck)
   if (s.type === 'show') {
-    return showSlide(String(s.id ?? rid('show')), asBeat(s.beat), deck, String(s.name ?? ''), String(s.roster ?? ''))
+    const slide = showSlide(String(s.id ?? rid('show')), asBeat(s.beat), deck, String(s.name ?? ''), String(s.roster ?? ''))
+    const cue = normCue(s.cue)
+    return cue ? { ...slide, cue } : slide
   }
   return null
+}
+// A persisted cue, cleaned back to {effect?, trackId?}. Returns undefined when
+// there's nothing worth keeping, so a slide without a cue stays cueless.
+function normCue(v: unknown): SlideCue | undefined {
+  if (!v || typeof v !== 'object') return undefined
+  const c = v as Record<string, unknown>
+  const cue: SlideCue = {}
+  if (typeof c.effect === 'string' && c.effect) cue.effect = c.effect
+  if (typeof c.trackId === 'string' && c.trackId) cue.trackId = c.trackId
+  return cue.effect || cue.trackId ? cue : undefined
 }
 const SHOW_BEATS: ShowBeat[] = ['ref', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red']
 const asBeat = (v: unknown): ShowBeat => (SHOW_BEATS.includes(v as ShowBeat) ? (v as ShowBeat) : 'blackout')

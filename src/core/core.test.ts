@@ -381,6 +381,33 @@ describe('scoring details', () => {
     const added = s.slides.items.find((i) => i.id === 'b-ref')
     expect(added?.type === 'show' && added.name).toBe('Rowan')
   })
+
+  it('a slide cue fires its effect on Reveal (but not on a silent update)', () => {
+    let s = run(
+      { type: 'slide.addShow', id: 'b1', beat: 'players', deck: 'show' },
+      { type: 'slide.setCue', id: 'b1', cue: { effect: 'confetti', trackId: 't-1' } },
+      { type: 'slide.select', id: 'b1' },
+      { type: 'slide.commit' },
+    )
+    const before = s.effect.nonce
+    // A silent display change must NOT fire the cue effect.
+    s = reduce(s, { type: 'display.set', scene: 'slides' })
+    expect(s.effect.nonce).toBe(before)
+    // A Reveal fires it: effect nonce bumps and the kind matches the cue.
+    s = reduce(s, { type: 'display.reveal', scene: 'slides' })
+    expect(s.effect.nonce).toBe(before + 1)
+    expect(s.effect.kind).toBe('confetti')
+  })
+
+  it('setCue with an empty cue clears it', () => {
+    let s = run(
+      { type: 'slide.addShow', id: 'b1', beat: 'ref', deck: 'show' },
+      { type: 'slide.setCue', id: 'b1', cue: { effect: 'stars' } },
+    )
+    expect((s.slides.items.find((i) => i.id === 'b1') as { cue?: unknown }).cue).toEqual({ effect: 'stars' })
+    s = reduce(s, { type: 'slide.setCue', id: 'b1', cue: {} })
+    expect((s.slides.items.find((i) => i.id === 'b1') as { cue?: unknown }).cue).toBeUndefined()
+  })
 })
 
 describe('winner detection', () => {
