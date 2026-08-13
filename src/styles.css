@@ -650,7 +650,7 @@ button { font-family: inherit; cursor: pointer; }
 .show-card__head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .show-card__label { font-weight: 800; font-size: 14px; letter-spacing: 0.01em; }
 .show-card__hint { color: var(--muted); font-size: 12px; }
-.show-card__roster { resize: vertical; min-height: 56px; line-height: 1.45; }
+.show-card__roster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .show-card--blue { border-left: 3px solid var(--blue); }
 .show-card--red { border-left: 3px solid var(--red); }
 

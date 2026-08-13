@@ -1311,6 +1311,14 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
   }
   const musicValue = slide.cue?.silence ? CUE_SILENCE : (slide.cue?.trackId ?? '')
   const teamCls = slide.beat.endsWith('blue') ? 'show-card--blue' : slide.beat.endsWith('red') ? 'show-card--red' : ''
+  // The roster is stored as newline-joined names; the team beats edit it as four
+  // positional slots (a 2×2 grid). Empty slots stay as blank lines so positions
+  // are preserved; the projector filters empties out.
+  const rosterSlots = [0, 1, 2, 3].map((i) => slide.roster.split('\n')[i] ?? '')
+  const setRosterSlot = (i: number, value: string) => {
+    const next = rosterSlots.map((v, j) => (j === i ? value : v)).join('\n')
+    dispatch({ type: 'slide.setShowField', id: slide.id, field: 'roster', value: next })
+  }
   return (
     <div
       className={`logo-card show-card ${teamCls} ${selected ? 'logo-card--active' : ''}`}
@@ -1332,15 +1340,19 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
         />
       )}
       {meta.field === 'roster' && (
-        <textarea
-          className="logo-card__site show-card__roster"
-          rows={4}
-          value={slide.roster}
-          placeholder={meta.hint}
-          aria-label={meta.hint}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => dispatch({ type: 'slide.setShowField', id: slide.id, field: 'roster', value: e.target.value })}
-        />
+        <div className="show-card__roster-grid" onClick={(e) => e.stopPropagation()}>
+          {rosterSlots.map((v, i) => (
+            <input
+              key={i}
+              className="logo-card__site"
+              type="text"
+              value={v}
+              placeholder={`Player ${i + 1}`}
+              aria-label={`Player ${i + 1}`}
+              onChange={(e) => setRosterSlot(i, e.target.value)}
+            />
+          ))}
+        </div>
       )}
       <div className="show-cue" onClick={(e) => e.stopPropagation()}>
         <select
