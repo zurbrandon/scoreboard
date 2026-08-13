@@ -21,15 +21,15 @@ interface Bit {
   decay: number
 }
 
-const COLORS = ['#2f6bff', '#e23b3b', '#ffd23f', '#39d98a', '#b06bff', '#ffffff']
-const GRAVITY = 0.0011 // px per ms^2
+const COLORS = ['#2f6bff', '#e23b3b'] // just the two team colors — blue and red
+const GRAVITY = 0.0009 // px per ms^2 — a touch gentler so the burst hangs longer
 const DRAG = 0.9996
 const MAX_RENDER_WIDTH = 1920 // cap backing resolution; canvas is CSS-stretched
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
 const pick = <T,>(arr: T[]): T => arr[(Math.random() * arr.length) | 0]
 
-export function CenterConfetti({ animate, delayMs = 1800 }: { animate: boolean; delayMs?: number }) {
+export function CenterConfetti({ animate, delayMs = 4000 }: { animate: boolean; delayMs?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef(0)
 
@@ -51,7 +51,7 @@ export function CenterConfetti({ animate, delayMs = 1800 }: { animate: boolean; 
       // A big, dense burst: many bits, all directions, varied speed.
       const bits: Bit[] = Array.from({ length: 260 }, () => {
         const angle = Math.random() * Math.PI * 2
-        const speed = rand(1.0, 3.6)
+        const speed = rand(0.6, 2.4) // gentler launch so the burst reads slower
         const size = rand(12, 30)
         return {
           x: cx,
@@ -66,7 +66,7 @@ export function CenterConfetti({ animate, delayMs = 1800 }: { animate: boolean; 
           wobble: rand(0, Math.PI * 2),
           wobbleSpeed: rand(0.002, 0.006),
           life: 1,
-          decay: 1 / rand(2800, 4800),
+          decay: 1 / rand(3600, 6000), // longer-lived so it drifts down slowly
         }
       })
 

@@ -217,8 +217,9 @@ export function ShowScene({
           <div className="show__stars" aria-hidden>
             <div className="show__stars-grid" />
           </div>
-          {/* Fires ~as the logo lands, bursting out from behind it on all sides. */}
-          <CenterConfetti animate={animate} delayMs={1850} />
+          {/* Logo lands (~1.6s), holds a couple seconds, then the burst pops out
+              from behind it on all sides. */}
+          <CenterConfetti animate={animate} delayMs={4000} />
           <motion.img
             className="show__logo-img"
             src={logoSrc('logos/comedysportz.png')}
