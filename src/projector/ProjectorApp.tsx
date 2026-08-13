@@ -8,6 +8,7 @@ import { LogoScene } from './scenes/LogoScene'
 import { TextScene } from './scenes/TextScene'
 import { ImageScene } from './scenes/ImageScene'
 import { Slideshow } from './scenes/Slideshow'
+import { ShowScene } from './scenes/ShowScene'
 import { MomentScene } from './scenes/MomentScene'
 import { GifOverlay } from './GifOverlay'
 import { WashOverlay } from './WashOverlay'
@@ -22,6 +23,7 @@ export function ProjectorApp() {
   const animNonce = useAppState((s) => s.revealAnimNonce)
   const animate = useAppState((s) => s.displayWasReveal)
   const liveSlide = useAppState((s) => s.slides.live)
+  const teams = useAppState((s) => s.teams)
   const moment = useAppState((s) => s.moment)
   const momentNonce = useAppState((s) => s.momentNonce)
   const effect = useAppState((s) => s.effect)
@@ -43,6 +45,7 @@ export function ProjectorApp() {
             {liveSlide?.type === 'text' && <TextScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'image' && <ImageScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'slideshow' && <Slideshow url={liveSlide.url} />}
+            {liveSlide?.type === 'show' && <ShowScene slide={liveSlide} teams={teams} />}
             {!liveSlide && <div className="scene-logo" />}
           </motion.div>
         </AnimatePresence>

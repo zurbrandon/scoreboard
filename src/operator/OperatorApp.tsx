@@ -10,7 +10,7 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { ImageSlide, LogoSlide, OperatorTab, Scene, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, Scene, ShowBeat, ShowSlide, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
 import type { Command } from '../core/commands'
 import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
@@ -676,6 +676,30 @@ const GAMES: { id: string; label: string; build: (mk: () => string) => Command[]
   },
 ]
 
+// The scripted show-intro beats: the label shown on the card / add-menu, and
+// which editable field (if any) the operator fills in. Order here is the order
+// they're offered in the "add slide" menu — the same as the default sequence.
+const SHOW_BEAT_META: Record<ShowBeat, { label: string; field?: 'name' | 'roster'; hint: string }> = {
+  ref: { label: 'Welcome your ref', field: 'name', hint: "Referee's name" },
+  players: { label: 'Welcome your players', hint: 'Dual red / blue' },
+  'team-blue': { label: 'Welcome the Blue team', field: 'roster', hint: 'One player per line' },
+  'team-red': { label: 'Welcome the Red team', field: 'roster', hint: 'One player per line' },
+  blackout: { label: 'Blackout', hint: 'A beat of black' },
+  captains: { label: 'Captains on the field', hint: 'Dual red / blue' },
+  'captain-blue': { label: 'Blue captain', field: 'name', hint: "Captain's name" },
+  'captain-red': { label: 'Red captain', field: 'name', hint: "Captain's name" },
+}
+const SHOW_BEAT_ORDER: ShowBeat[] = [
+  'ref',
+  'players',
+  'team-blue',
+  'team-red',
+  'blackout',
+  'captains',
+  'captain-blue',
+  'captain-red',
+]
+
 const newSlideId = (p: string) =>
   `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
@@ -782,6 +806,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                 {slide.type === 'slideshow' && (
                   <SlideshowSlideCard slide={slide} selected={slide.id === selectedId} />
                 )}
+                {slide.type === 'show' && <ShowSlideCard slide={slide} selected={slide.id === selectedId} />}
                 {slide.type === 'text' && (
                   <TextSlideCard
                     slide={slide}
@@ -797,7 +822,25 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
       {addOpen ? (
         <div className="slide-add">
-          <span className="slide-add__label">Add a slide</span>
+          {deck === 'show' && (
+            <>
+              <span className="slide-add__label">Show beats</span>
+              {SHOW_BEAT_ORDER.map((beat) => (
+                <button
+                  key={beat}
+                  className="slide-add__item"
+                  onClick={() => {
+                    dispatch({ type: 'slide.addShow', id: newSlideId('show'), beat, deck })
+                    setAddOpen(false)
+                  }}
+                >
+                  {SHOW_BEAT_META[beat].label}
+                </button>
+              ))}
+              <span className="slide-add__label">Other slides</span>
+            </>
+          )}
+          {deck !== 'show' && <span className="slide-add__label">Add a slide</span>}
           {LOGO_PRESETS.map((p) => (
             <button
               key={p.name}
@@ -1237,6 +1280,75 @@ function TextSlideCard({
 
 // A slideshow slide: holds one published Google Slides embed link. Reveal plays
 // it; Black stops it. (The old Pre-show tab, folded in as a slide type.)
+// A scripted show-intro beat in the deck: a labeled card with the beat's name,
+// plus its one editable field (a name, a roster, or nothing) inline.
+function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolean }) {
+  const dispatch = useDispatch()
+  const [confirming, setConfirming] = useState(false)
+  const meta = SHOW_BEAT_META[slide.beat]
+  const teamCls = slide.beat.endsWith('blue') ? 'show-card--blue' : slide.beat.endsWith('red') ? 'show-card--red' : ''
+  return (
+    <div
+      className={`logo-card show-card ${teamCls} ${selected ? 'logo-card--active' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+    >
+      <div className="show-card__label">{meta.label}</div>
+      {meta.field === 'name' && (
+        <input
+          className="logo-card__site"
+          type="text"
+          value={slide.name}
+          placeholder={meta.hint}
+          aria-label={meta.hint}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => dispatch({ type: 'slide.setShowField', id: slide.id, field: 'name', value: e.target.value })}
+        />
+      )}
+      {meta.field === 'roster' && (
+        <textarea
+          className="logo-card__site show-card__roster"
+          rows={4}
+          value={slide.roster}
+          placeholder={meta.hint}
+          aria-label={meta.hint}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => dispatch({ type: 'slide.setShowField', id: slide.id, field: 'roster', value: e.target.value })}
+        />
+      )}
+      {!meta.field && <div className="show-card__hint">{meta.hint}</div>}
+      <button
+        className="logo-card__remove"
+        aria-label="Remove show beat"
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
+      >
+        ✕
+      </button>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this beat?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; selected: boolean }) {
   const dispatch = useDispatch()
   const [confirming, setConfirming] = useState(false)

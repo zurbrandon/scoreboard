@@ -366,7 +366,20 @@ describe('scoring details', () => {
     expect(s.slides.items.find((i) => i.id === 'show1')).toBeDefined() // show deck untouched
     s = reduce(s, { type: 'slide.addText', id: 'new1', template: 'basic', deck: 'games', theme: 'spellingbee' })
     expect(s.slides.items.filter((i) => i.deck === 'games')).toHaveLength(1)
-    expect(s.slides.items.find((i) => i.id === 'new1')?.theme).toBe('spellingbee')
+    const added = s.slides.items.find((i) => i.id === 'new1')
+    expect(added?.type === 'text' && added.theme).toBe('spellingbee')
+  })
+
+  it('show beats: default sequence is seeded, and addShow / setShowField edit a beat', () => {
+    // A fresh state carries the scripted Show run-of-show, ref first.
+    const beats = createInitialState().slides.items.filter((i) => i.type === 'show')
+    expect(beats.length).toBeGreaterThanOrEqual(8)
+    expect(beats[0]).toMatchObject({ type: 'show', beat: 'ref', deck: 'show' })
+    // Add a beat and fill its fields.
+    let s = run({ type: 'slide.addShow', id: 'b-ref', beat: 'ref', deck: 'show' })
+    s = reduce(s, { type: 'slide.setShowField', id: 'b-ref', field: 'name', value: 'Rowan' })
+    const added = s.slides.items.find((i) => i.id === 'b-ref')
+    expect(added?.type === 'show' && added.name).toBe('Rowan')
   })
 })
 

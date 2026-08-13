@@ -642,6 +642,14 @@ button { font-family: inherit; cursor: pointer; }
   padding: 6px 8px;
 }
 .logo-card__site:focus { outline: none; border-color: var(--accent); }
+
+/* Show-beat card (operator): a labeled beat with its one inline field. */
+.show-card { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.show-card__label { font-weight: 800; font-size: 14px; letter-spacing: 0.01em; }
+.show-card__hint { color: var(--muted); font-size: 12px; }
+.show-card__roster { resize: vertical; min-height: 64px; line-height: 1.5; }
+.show-card--blue { border-left: 3px solid var(--blue); }
+.show-card--red { border-left: 3px solid var(--red); }
 .logo-card__remove {
   position: absolute;
   top: 6px;
@@ -1109,6 +1117,99 @@ button { font-family: inherit; cursor: pointer; }
   text-shadow: 0 0.15vw 0.3vw rgba(0, 0, 0, 0.35);
 }
 .scene-text--spellingbee .scene-text__body { opacity: 0.82; }
+
+/* ---- Show-intro beats (projector) ---- */
+.show {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2vh;
+  text-align: center;
+  color: #fff;
+}
+.show__eyebrow {
+  position: relative;
+  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 2.1vw;
+  font-weight: 800;
+  opacity: 0.85;
+}
+.show__title {
+  position: relative;
+  z-index: 1;
+  font-size: 8.5vw;
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0.3vw 1.2vw rgba(0, 0, 0, 0.35);
+}
+.show__name { position: relative; z-index: 1; font-size: 7vw; font-weight: 900; }
+.show__roster {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 1vh 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5vh;
+  font-size: 3.4vw;
+  font-weight: 700;
+}
+
+/* Team welcome / single captain: solid team color with a soft vignette. */
+.show--blue { background: radial-gradient(120% 120% at 50% 32%, #4f83ff, #0f2358 84%); }
+.show--red { background: radial-gradient(120% 120% at 50% 32%, #ff5f5f, #571212 84%); }
+
+/* Dual split (players / captains): blue on one half, red on the other. */
+.show--dual { display: block; }
+.show__half { position: absolute; top: 0; bottom: 0; width: 50%; }
+.show__half--blue { left: 0; background: linear-gradient(160deg, #4f83ff, #0f2358); }
+.show__half--red { right: 0; background: linear-gradient(200deg, #ff5f5f, #571212); }
+.show__dual-copy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 1.5vh;
+  text-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.5);
+}
+
+/* Referee: black/white stripes sliding behind the name (transform-only loop). */
+.show--ref { background: #111; }
+.show__stripes {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -50%;
+  width: 200%;
+  background: repeating-linear-gradient(115deg, #141414 0 6vw, #f2f2f2 6vw 12vw);
+  opacity: 0.9;
+  animation: ref-stripes 2.6s linear infinite;
+  will-change: transform;
+}
+.show__ref-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 2.5vh;
+  padding: 4vh 6vw;
+  background: rgba(10, 10, 10, 0.62);
+  border-radius: 2vw;
+  backdrop-filter: none;
+}
+.show__name--ref { color: #ffd23f; }
+@keyframes ref-stripes {
+  from { transform: translateX(0); }
+  to { transform: translateX(13.25vw); }
+}
+
+.show--blackout { background: #000; }
 
 .scene-slideshow { width: 100%; height: 100%; border: 0; background: #000; display: block; }
 .scene-slideshow--empty {

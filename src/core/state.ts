@@ -53,7 +53,21 @@ export type TextTheme = 'spellingbee'
 
 // A slide in the unified Slides deck. All types share one queue, one selection,
 // and one reveal, so any slide flips the same way.
-export type SlideType = 'logo' | 'text' | 'image' | 'slideshow'
+export type SlideType = 'logo' | 'text' | 'image' | 'slideshow' | 'show'
+
+// The custom "show beats" — the scripted run-of-show intros the operator flips
+// through at the top of a match. Each is a full-screen themed card; some carry a
+// name (ref, single captain) or a roster (a team's players), some are just a
+// title (the dual welcomes) or a plain blackout.
+export type ShowBeat =
+  | 'ref' // welcome your ref — name + animated referee stripes
+  | 'players' // welcome your players — dual red/blue split
+  | 'team-blue' // welcome the Blue team — roster
+  | 'team-red' // welcome the Red team — roster
+  | 'blackout' // a beat of pure black (settle the room)
+  | 'captains' // captains on the field — dual red/blue split
+  | 'captain-blue' // the Blue captain — single name
+  | 'captain-red' // the Red captain — single name
 
 export interface LogoSlide {
   id: string
@@ -102,7 +116,19 @@ export interface SlideshowSlide {
   url: string
 }
 
-export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide
+// A scripted show-intro beat. `name` feeds the single-name beats (ref, single
+// captain); `roster` is one player per line for the team beats. Unused fields
+// stay empty — the beat decides what it renders.
+export interface ShowSlide {
+  id: string
+  type: 'show'
+  deck: SlideDeck
+  beat: ShowBeat
+  name: string
+  roster: string
+}
+
+export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide | ShowSlide
 
 export function logoSlide(id: string, name: string, src: string, website = '', deck: SlideDeck = 'show'): LogoSlide {
   return { id, type: 'logo', deck, name, src, website }
@@ -120,6 +146,26 @@ export function emptyImageSlide(id: string, src = '', deck: SlideDeck = 'show'):
 }
 export function emptySlideshowSlide(id: string, url = '', deck: SlideDeck = 'show'): SlideshowSlide {
   return { id, type: 'slideshow', deck, url }
+}
+export function showSlide(id: string, beat: ShowBeat, deck: SlideDeck = 'show', name = '', roster = ''): ShowSlide {
+  return { id, type: 'show', deck, beat, name, roster }
+}
+
+// The default Show run-of-show: the scripted intro beats in playing order. Seeded
+// into a fresh state and back-filled into older states that predate show beats.
+// Reorderable and editable like any slide once it's in the deck.
+export function defaultShowBeats(): ShowSlide[] {
+  const beats: ShowBeat[] = [
+    'ref',
+    'players',
+    'team-blue',
+    'team-red',
+    'blackout',
+    'captains',
+    'captain-blue',
+    'captain-red',
+  ]
+  return beats.map((beat) => showSlide(`show-${beat}`, beat, 'show'))
 }
 
 export type Winner = TeamId | 'tie'
@@ -246,11 +292,12 @@ export function createInitialState(): AppState {
     scene: 'scoreboard',
     slides: {
       items: [
+        ...defaultShowBeats(),
         ...LOGO_LIBRARY.map((l) => logoSlide(l.id, l.name, `logos/${l.file}`, '', 'show')),
         emptyTextSlide('text-1', 'basic', 'show'),
         emptySlideshowSlide('preshow-1', '', 'show'),
       ],
-      selectedId: LOGO_LIBRARY[0].id,
+      selectedId: 'show-ref',
       live: null,
     },
     revealPhase: 'idle',
@@ -320,8 +367,13 @@ function normSlide(s: Record<string, unknown>): Slide | null {
   if (s.type === 'text') return textSlideFrom(s)
   if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''), deck)
   if (s.type === 'slideshow') return emptySlideshowSlide(String(s.id ?? rid('show')), String(s.url ?? ''), deck)
+  if (s.type === 'show') {
+    return showSlide(String(s.id ?? rid('show')), asBeat(s.beat), deck, String(s.name ?? ''), String(s.roster ?? ''))
+  }
   return null
 }
+const SHOW_BEATS: ShowBeat[] = ['ref', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red']
+const asBeat = (v: unknown): ShowBeat => (SHOW_BEATS.includes(v as ShowBeat) ? (v as ShowBeat) : 'blackout')
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function migrateSlides(parsed: any, fresh: AppState): AppState['slides'] {
@@ -345,7 +397,11 @@ export function migrateSlides(parsed: any, fresh: AppState): AppState['slides'] 
     // else a stale `parsed.slideshow` left over from `...parsed` would re-add
     // duplicate slideshow slides on every reload.
     const alreadyFolded = items.some((s) => s.type === 'slideshow')
-    const all = alreadyFolded ? items : [...items, ...preshow]
+    const folded = alreadyFolded ? items : [...items, ...preshow]
+    // Back-fill the scripted Show beats into states saved before they existed, so
+    // upgrading users pick up the default run-of-show without a reset.
+    const hasBeats = folded.some((s) => s.type === 'show')
+    const all = hasBeats ? folded : [...defaultShowBeats(), ...folded]
     if (all.length) return { items: all, selectedId: pick(String(src.selectedId ?? ''), all), live: null }
   }
 
