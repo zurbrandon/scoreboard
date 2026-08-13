@@ -1334,10 +1334,14 @@ button { font-family: inherit; cursor: pointer; }
 /* Brand card: black + stars, with the ComedySportz logo popping in big. */
 .show--logo { background: #050505; }
 .show--logo .show__stars { opacity: 0.08; }
-/* Confetti burst sits BEHIND the logo so it pops out from behind it. */
+/* Confetti burst sits BEHIND the logo so it pops out from behind it. The
+   width/height are required — a <canvas> is a replaced element, so inset:0 alone
+   leaves it at its intrinsic 300x150 in the top-left instead of filling. */
 .show__confetti {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   pointer-events: none;
 }
