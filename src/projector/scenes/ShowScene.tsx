@@ -8,6 +8,7 @@
 
 import { motion } from 'motion/react'
 import type { ShowSlide, TeamId } from '../../core/state'
+import { logoSrc } from './LogoScene'
 
 function rosterLines(roster: string): string[] {
   return roster
@@ -31,14 +32,14 @@ function AccentBar({ animate, delay = 0.28 }: { animate: boolean; delay?: number
 
 // A single diagonal light sweep across the whole card on reveal — the glossy
 // "shine" pass sports graphics do. Purely decorative; only plays on a reveal.
-function SheenSweep({ animate, delay = 0.12 }: { animate: boolean; delay?: number }) {
+function SheenSweep({ animate, delay = 0.12, reverse = false }: { animate: boolean; delay?: number; reverse?: boolean }) {
   if (!animate) return null
   return (
     <motion.div
       className="show__sheen"
       aria-hidden
-      initial={{ x: '-130%' }}
-      animate={{ x: '130%' }}
+      initial={{ x: reverse ? '130%' : '-130%' }}
+      animate={{ x: reverse ? '-130%' : '130%' }}
       transition={{ delay, duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
     />
   )
@@ -205,6 +206,26 @@ export function ShowScene({
             )}
             <AccentBar animate={animate} delay={0.7} />
           </div>
+        </div>
+      )
+    case 'logo':
+      // The brand card: black + drifting stars, then the ComedySportz logo pops
+      // in big after a couple of seconds, followed by a couple of sheen passes.
+      return (
+        <div className="show show--logo">
+          <div className="show__stars" aria-hidden>
+            <div className="show__stars-grid" />
+          </div>
+          <motion.img
+            className="show__logo-img"
+            src={logoSrc('logos/comedysportz.png')}
+            alt=""
+            initial={animate ? { opacity: 0, scale: 0.2 } : false}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: animate ? 1.6 : 0, type: 'spring', stiffness: 240, damping: 13, mass: 1.2 }}
+          />
+          <SheenSweep animate={animate} delay={2.5} />
+          <SheenSweep animate={animate} delay={3.05} reverse />
         </div>
       )
     case 'players':

@@ -689,6 +689,7 @@ const GAMES: { id: string; label: string; build: (mk: () => string) => Command[]
 // they're offered in the "add slide" menu — the same as the default sequence.
 const SHOW_BEAT_META: Record<ShowBeat, { label: string; field?: 'name' | 'roster'; hint: string }> = {
   ref: { label: 'Welcome your ref', field: 'name', hint: "Referee's name" },
+  logo: { label: 'ComedySportz logo', hint: 'Big logo reveal' },
   players: { label: 'Welcome your players', hint: 'Dual red / blue' },
   'team-blue': { label: 'Welcome the Blue team', field: 'roster', hint: 'One player per line' },
   'team-red': { label: 'Welcome the Red team', field: 'roster', hint: 'One player per line' },
@@ -699,6 +700,7 @@ const SHOW_BEAT_META: Record<ShowBeat, { label: string; field?: 'name' | 'roster
 }
 const SHOW_BEAT_ORDER: ShowBeat[] = [
   'ref',
+  'logo',
   'players',
   'team-blue',
   'team-red',

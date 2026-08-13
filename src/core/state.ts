@@ -61,6 +61,7 @@ export type SlideType = 'logo' | 'text' | 'image' | 'slideshow' | 'show'
 // title (the dual welcomes) or a plain blackout.
 export type ShowBeat =
   | 'ref' // welcome your ref — name + animated referee stripes
+  | 'logo' // the ComedySportz logo, big reveal on black + stars
   | 'players' // welcome your players — dual red/blue split
   | 'team-blue' // welcome the Blue team — roster
   | 'team-red' // welcome the Red team — roster
@@ -172,6 +173,7 @@ export function showSlide(id: string, beat: ShowBeat, deck: SlideDeck = 'show', 
 export function defaultShowBeats(): ShowSlide[] {
   const beats: ShowBeat[] = [
     'ref',
+    'logo',
     'players',
     'team-blue',
     'team-red',
@@ -400,7 +402,7 @@ function normCue(v: unknown): SlideCue | undefined {
   else if (typeof c.trackId === 'string' && c.trackId) cue.trackId = c.trackId
   return cue.effect || cue.trackId || cue.silence ? cue : undefined
 }
-const SHOW_BEATS: ShowBeat[] = ['ref', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red']
+const SHOW_BEATS: ShowBeat[] = ['ref', 'logo', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red']
 const asBeat = (v: unknown): ShowBeat => (SHOW_BEATS.includes(v as ShowBeat) ? (v as ShowBeat) : 'blackout')
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
