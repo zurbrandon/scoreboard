@@ -1333,10 +1333,17 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Brand card: black + stars, with the ComedySportz logo popping in big. */
 .show--logo { background: #050505; }
-.show--logo .show__stars { opacity: 0.14; }
+.show--logo .show__stars { opacity: 0.08; }
+/* Confetti burst sits BEHIND the logo so it pops out from behind it. */
+.show__confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
 .show__logo-img {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: auto;
   height: auto;
   max-width: 64vw;
