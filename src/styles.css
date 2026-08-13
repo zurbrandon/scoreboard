@@ -1162,16 +1162,18 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 800;
   opacity: 0.85;
 }
-.show__title {
+/* Big, bold, white — with a soft billowy shadow (the look that reads best). */
+.show__title,
+.show__name {
   position: relative;
   z-index: 1;
-  font-size: 8.5vw;
   font-weight: 900;
   line-height: 1.02;
   letter-spacing: -0.01em;
-  text-shadow: 0 0.3vw 1.2vw rgba(0, 0, 0, 0.35);
+  text-shadow: 0 0.5vw 2.4vw rgba(0, 0, 0, 0.55), 0 0.1vw 0.5vw rgba(0, 0, 0, 0.5);
 }
-.show__name { position: relative; z-index: 1; font-size: 7vw; font-weight: 900; }
+.show__title { font-size: 8.5vw; }
+.show__name { font-size: 7vw; }
 .show__roster {
   position: relative;
   z-index: 1;
@@ -1189,44 +1191,57 @@ button { font-family: inherit; cursor: pointer; }
 .show--blue { background: radial-gradient(120% 120% at 50% 32%, #4f83ff, #0f2358 84%); }
 .show--red { background: radial-gradient(120% 120% at 50% 32%, #ff5f5f, #571212 84%); }
 
-/* Dual split (players / captains): blue on one half, red on the other. */
-.show--dual { display: block; }
-.show__half { position: absolute; top: 0; bottom: 0; width: 50%; }
-.show__half--blue { left: 0; background: linear-gradient(160deg, #4f83ff, #0f2358); }
-.show__half--red { right: 0; background: linear-gradient(200deg, #ff5f5f, #571212); }
+/* Dual split (players / captains): a diagonal seam, blue one side, red the other.
+   Each half is full-frame and clipped to its slanted triangle, so it can slide in
+   from off-screen and meet its partner on the seam. */
+.show--dual { display: block; background: #0a0a0a; }
+.show__half { position: absolute; inset: 0; width: 100%; height: 100%; }
+.show__half--blue {
+  background: linear-gradient(155deg, #5a8bff, #0f2358 92%);
+  clip-path: polygon(0 0, 60% 0, 40% 100%, 0 100%);
+}
+.show__half--red {
+  background: linear-gradient(205deg, #ff6a6a, #571212 92%);
+  clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%);
+}
 .show__dual-copy {
   position: absolute;
   inset: 0;
   display: grid;
   place-content: center;
   gap: 1.5vh;
-  text-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.5);
 }
 
-/* Referee: black/white stripes sliding behind the name (transform-only loop). */
-.show--ref { background: #111; }
+/* Referee: near-black frame. Subtle grey stripes slide behind everything, but a
+   black radial gradient swallows all but the bottom-left corner, so the stripes
+   read as a quiet moving texture there rather than a full-screen barricode. */
+.show--ref { background: #050505; }
 .show__stripes {
   position: absolute;
   top: 0;
   bottom: 0;
   left: -50%;
   width: 200%;
-  background: repeating-linear-gradient(115deg, #141414 0 6vw, #f2f2f2 6vw 12vw);
+  background: repeating-linear-gradient(115deg, #0d0d0d 0 6vw, #262626 6vw 12vw);
   opacity: 0.9;
-  animation: ref-stripes 2.6s linear infinite;
+  animation: ref-stripes 3s linear infinite;
   will-change: transform;
+}
+.show__ref-fade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 92% at 12% 94%, transparent 0%, rgba(5, 5, 5, 0.45) 32%, #050505 66%);
 }
 .show__ref-copy {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 2.5vh;
-  padding: 4vh 6vw;
-  background: rgba(10, 10, 10, 0.62);
-  border-radius: 2vw;
-  backdrop-filter: none;
+  gap: 2vh;
+  justify-items: center;
+  padding: 0 6vw;
 }
-.show__name--ref { color: #ffd23f; }
+.show__eyebrow--ref { opacity: 0.55; font-weight: 700; }
+.show__name--ref { color: #fff; }
 @keyframes ref-stripes {
   from { transform: translateX(0); }
   to { transform: translateX(13.25vw); }

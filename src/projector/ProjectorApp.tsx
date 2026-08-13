@@ -45,7 +45,7 @@ export function ProjectorApp() {
             {liveSlide?.type === 'text' && <TextScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'image' && <ImageScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'slideshow' && <Slideshow url={liveSlide.url} />}
-            {liveSlide?.type === 'show' && <ShowScene slide={liveSlide} teams={teams} />}
+            {liveSlide?.type === 'show' && <ShowScene slide={liveSlide} teams={teams} animate={animate} />}
             {!liveSlide && <div className="scene-logo" />}
           </motion.div>
         </AnimatePresence>
