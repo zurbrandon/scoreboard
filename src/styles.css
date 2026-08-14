@@ -823,63 +823,44 @@ button { font-family: inherit; cursor: pointer; }
 .black-box--active { border-color: #fff; color: #fff; box-shadow: 0 0 22px rgba(255, 255, 255, 0.28), inset 0 0 2vh rgba(0, 0, 0, 0.6); }
 .black-box--active .black-box__label { opacity: 0.85; }
 
-/* Run out / Run in fused into one split control (two actions, one rectangle). */
-.run-stack {
+/* Quick-trigger row under the reveal: two compact segmented ("split") buttons —
+   run Out/In and the three captains (blue / red / both) — kept just under the
+   corner orbs in height so they read as secondary chrome. */
+.deck__triggers { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.split {
   display: flex;
-  flex-direction: column;
-  width: 132px;
-  height: 90px;
-  border-radius: 12px;
+  height: 44px;
+  border-radius: 11px;
   overflow: hidden;
   border: 1px solid #2c3346;
 }
-.run-stack__btn {
-  flex: 1;
+.split__seg {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  border: none; /* kill the native button border; the container + divider draw the lines */
-  background: var(--panel);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-}
-.run-stack__btn--in { border-top: 1px solid #2c3346; } /* the dividing line */
-.run-stack__btn--out:hover { background: color-mix(in srgb, #ff5a5f 16%, var(--panel)); }
-.run-stack__btn--in:hover { background: color-mix(in srgb, #46d98a 16%, var(--panel)); }
-.run-stack__btn:active { filter: brightness(0.92); }
-
-/* Quick-trigger row under the reveal: the run out/in split beside the three
-   captain buttons (blue / red / both), all one tap. */
-.deck__triggers { display: flex; justify-content: center; align-items: stretch; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
-.cap-row { display: flex; gap: 6px; }
-.cap-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-width: 66px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid #2c3346;
+  gap: 6px;
+  padding: 0 14px;
+  border: none; /* the container + dividers draw the lines */
   background: var(--panel);
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
-.cap-btn > span { font-size: 21px; line-height: 1; }
-.cap-btn:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
-.cap-btn:active:not(:disabled) { transform: translateY(0) scale(0.97); }
-.cap-btn:disabled { opacity: 0.38; cursor: default; }
-.cap-btn--blue { border-color: var(--blue-dim); }
-.cap-btn--blue:hover:not(:disabled) { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 16%, var(--panel)); }
-.cap-btn--red { border-color: var(--red-dim); }
-.cap-btn--red:hover:not(:disabled) { border-color: var(--red); background: color-mix(in srgb, var(--red) 16%, var(--panel)); }
-.cap-btn--both { border-color: #5b5580; }
-.cap-btn--both:hover:not(:disabled) { border-color: #a08fe0; background: color-mix(in srgb, #7a6bc0 16%, var(--panel)); }
+.split__seg + .split__seg { border-left: 1px solid #2c3346; } /* the dividers */
+.split__seg > span { font-size: 16px; line-height: 1; }
+.split__seg:active { filter: brightness(0.92); }
+/* Per-segment hover tint (and a resting color hint for the team captains, so the
+   blue / red / both read at a glance without hovering). */
+.split__seg--out:hover { background: color-mix(in srgb, #ff5a5f 16%, var(--panel)); }
+.split__seg--in:hover { background: color-mix(in srgb, #46d98a 16%, var(--panel)); }
+.split__seg--blue { box-shadow: inset 0 -2px 0 var(--blue-dim); }
+.split__seg--blue:hover { background: color-mix(in srgb, var(--blue) 16%, var(--panel)); box-shadow: inset 0 -2px 0 var(--blue); }
+.split__seg--red { box-shadow: inset 0 -2px 0 var(--red-dim); }
+.split__seg--red:hover { background: color-mix(in srgb, var(--red) 16%, var(--panel)); box-shadow: inset 0 -2px 0 var(--red); }
+.split__seg--both { box-shadow: inset 0 -2px 0 #5b5580; }
+.split__seg--both:hover { background: color-mix(in srgb, #7a6bc0 16%, var(--panel)); box-shadow: inset 0 -2px 0 #a08fe0; }
 
 /* The corner FABs' icon. When a popover is open the icon becomes a white ✕; the
    spin in/out is driven by Motion (AnimatePresence) so it animates both ways. */

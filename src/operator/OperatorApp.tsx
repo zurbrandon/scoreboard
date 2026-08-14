@@ -437,45 +437,47 @@ export function OperatorApp() {
         </div>
 
         {/* Quick triggers: run out / in (random visual + song), and the three
-            captain beats — flipped to several times a show, so one tap each. */}
+            captain beats — flipped to several times a show, so one tap each.
+            Two compact segmented buttons; the emoji carries the meaning (runner,
+            team-color heart), the short word confirms it. */}
         <div className="deck__triggers">
-          <div className="run-stack">
+          <div className="split split--run">
             <button
-              className="run-stack__btn run-stack__btn--out"
+              className="split__seg split__seg--out"
               title="Team runs out: random goodbye visual + song"
               onClick={runOut}
             >
-              <span aria-hidden="true">🏃</span> out
+              <span aria-hidden="true">🏃</span> Out
             </button>
             <button
-              className="run-stack__btn run-stack__btn--in"
+              className="split__seg split__seg--in"
               title="Team runs back in: random welcome visual + song"
               onClick={runIn}
             >
-              <span aria-hidden="true">🏃</span> in
+              <span aria-hidden="true">🏃</span> In
             </button>
           </div>
-          <div className="cap-row">
+          <div className="split split--cap">
             <button
-              className="cap-btn cap-btn--blue"
+              className="split__seg split__seg--blue"
               title="Blue captain on the field (generic intro)"
               onClick={() => captain('blue')}
             >
-              <span aria-hidden="true">🧢</span> Blue
+              <span aria-hidden="true">💙</span> CAP
             </button>
             <button
-              className="cap-btn cap-btn--red"
+              className="split__seg split__seg--red"
               title="Red captain on the field (generic intro)"
               onClick={() => captain('red')}
             >
-              <span aria-hidden="true">🧢</span> Red
+              <span aria-hidden="true">❤️</span> CAP
             </button>
             <button
-              className="cap-btn cap-btn--both"
+              className="split__seg split__seg--both"
               title="Both captains on the field"
               onClick={() => captain('both')}
             >
-              <span aria-hidden="true">🧢</span> Both
+              <span aria-hidden="true">💜</span> CAPS
             </button>
           </div>
         </div>
