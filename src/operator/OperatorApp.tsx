@@ -199,15 +199,35 @@ export function OperatorApp() {
   }
   const runOut = () => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })
   const runIn = () => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })
-  // Keep the hotkey's reveal in sync with the latest `half` (the onHotkey effect
-  // below captures its closure once, so read the current fn from a ref).
-  const revealScoreboardRef = useRef(revealScoreboard)
-  revealScoreboardRef.current = revealScoreboard
+  // The pad's Reveal / Silent act on the ACTIVE folder (like the on-screen deck),
+  // and the third dial scrubs that folder's slides + presses to cycle folders. The
+  // onHotkey effect closes over its scope once, so these read live values via a ref.
+  const padRef = useRef({
+    reveal: () => {},
+    silent: () => {},
+    nav: (_dir: 1 | -1) => {},
+    cycleTab: () => {},
+  })
+  padRef.current = {
+    reveal: () => pushActive(true),
+    silent: () => pushActive(false),
+    // Move the selection within the active deck (preview only; clamps at the ends).
+    nav: (dir) => {
+      if (!activeDeck) return
+      const deckItems = allSlides.filter((s) => s.deck === activeDeck)
+      const at = deckItems.findIndex((s) => s.id === selectedSlideId)
+      const target = deckItems[Math.min(deckItems.length - 1, Math.max(0, (at < 0 ? 0 : at) + dir))]
+      if (target) dispatch({ type: 'slide.select', id: target.id })
+    },
+    cycleTab: () => {
+      const order: OperatorTab[] = ['show', 'score', 'games']
+      setActiveTab(order[(order.indexOf(activeTab) + 1) % order.length])
+    },
+  }
 
   // Macro-pad / keyboard global shortcuts (Electron only). Main registers them
-  // OS-wide and forwards each press here. We run the EXPLICIT action — not the
-  // tab-dependent button logic — and sync the on-screen tab so the operator UI
-  // follows whichever folder the pad is on.
+  // OS-wide and forwards each press here. Reveal / Silent act on the active folder
+  // (like the on-screen deck); the number keys jump straight to a Show slide.
   useEffect(() => {
     if (!window.showboard) return
     return window.showboard.onHotkey((action) => {
@@ -221,12 +241,17 @@ export function OperatorApp() {
         case 'red.down':
           return dispatch({ type: 'red.decrement' })
         case 'reveal':
-          setActiveTab('score')
-          return revealScoreboardRef.current()
+          // Plays the active folder: the score on Score, the selected slide on
+          // Show / Games (mirrors the on-screen REVEAL button).
+          return padRef.current.reveal()
         case 'silent':
-          setActiveTab('score')
-          dispatch({ type: 'display.set', scene: 'scoreboard' })
-          return dispatch({ type: 'score.commitSilent' })
+          return padRef.current.silent()
+        case 'slide.prev':
+          return padRef.current.nav(-1)
+        case 'slide.next':
+          return padRef.current.nav(1)
+        case 'tab.cycle':
+          return padRef.current.cycleTab()
         case 'stop':
           return dispatch({ type: 'reveal.stop' })
         case 'black':

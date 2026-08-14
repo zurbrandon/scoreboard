@@ -22,6 +22,9 @@ export type HotkeyAction =
   | { type: 'slide.show'; index: number } // show the Nth slide in the deck (0-based)
   | { type: 'duck.down' } // dial: dip Showboard's music under an external cue
   | { type: 'duck.up' } // dial: bring it back up
+  | { type: 'slide.prev' } // dial: move the selection to the previous slide in the active folder
+  | { type: 'slide.next' } // dial: move the selection to the next slide
+  | { type: 'tab.cycle' } // dial press: cycle folders (Show → Score → Games)
 
 export interface HotkeyBinding {
   accelerator: string // an Electron accelerator string
@@ -57,6 +60,10 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   // Sound dial: temporary music duck (any reveal snaps it back to full).
   { accelerator: `${MOD}+[`, action: { type: 'duck.down' }, label: 'Music duck down' },
   { accelerator: `${MOD}+]`, action: { type: 'duck.up' }, label: 'Music duck up' },
+  // Slide dial: scrub the active folder's slides (rotate) + cycle folders (press).
+  { accelerator: `${MOD}+,`, action: { type: 'slide.prev' }, label: 'Previous slide' },
+  { accelerator: `${MOD}+.`, action: { type: 'slide.next' }, label: 'Next slide' },
+  { accelerator: `${MOD}+T`, action: { type: 'tab.cycle' }, label: 'Cycle folder (Show/Score/Games)' },
 ]
 
 // How much one dial tick / keypress moves the duck (fraction of full volume).
