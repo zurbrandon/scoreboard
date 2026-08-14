@@ -184,6 +184,21 @@ export function OperatorApp() {
   const showItems = allSlides.filter((s) => s.deck === 'show')
   const slidesRef = useRef(showItems)
   slidesRef.current = showItems
+
+  // Quick-trigger a show beat straight from the deck (captains get their own
+  // buttons since they come out several times a show). Reveals the first beat of
+  // that kind in the Show deck; the button is disabled when it isn't there.
+  const hasBeat = (beat: ShowBeat) => showItems.some((s) => s.type === 'show' && s.beat === beat)
+  const revealBeat = (beat: ShowBeat) => {
+    const slide = showItems.find((s) => s.type === 'show' && s.beat === beat)
+    if (!slide) return
+    setActiveTab('show')
+    dispatch({ type: 'slide.select', id: slide.id })
+    dispatch({ type: 'slide.commit' })
+    dispatch({ type: 'display.reveal', scene: 'slides' })
+  }
+  const runOut = () => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })
+  const runIn = () => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })
   // Keep the hotkey's reveal in sync with the latest `half` (the onHotkey effect
   // below captures its closure once, so read the current fn from a ref).
   const revealScoreboardRef = useRef(revealScoreboard)
@@ -312,9 +327,9 @@ export function OperatorApp() {
             <span className="black-box__label">Black</span>
           </button>
 
-          {/* REVEAL is the anchor; the flanking boxes center on the CIRCLE, so
-              `update silently` sits below the row (not inside this column) — else
-              it would pull the row's center down past the circle. */}
+          {/* REVEAL is the anchor; `update silently` flanks it on the right (it's
+              about the same width as the Black box on the left, so the circle stays
+              centered). The moment / captain quick-triggers sit in a row below. */}
           <motion.button
             className={`reveal ${canStop ? 'reveal--stop' : armed ? 'reveal--armed' : ''}`}
             onClick={primaryAction}
@@ -324,27 +339,57 @@ export function OperatorApp() {
             {canStop ? 'STOP' : 'REVEAL'}
           </motion.button>
 
-          {/* Run out / Run in as one split button — two actions, one control. */}
+          <button className="silent-btn" onClick={silent}>
+            update silently
+          </button>
+        </div>
+
+        {/* Quick triggers: run out / in (random visual + song), and the three
+            captain beats — flipped to several times a show, so one tap each. */}
+        <div className="deck__triggers">
           <div className="run-stack">
             <button
               className="run-stack__btn run-stack__btn--out"
               title="Team runs out: random goodbye visual + song"
-              onClick={() => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })}
+              onClick={runOut}
             >
-              <span aria-hidden="true">👋</span> Run out
+              <span aria-hidden="true">🏃</span> out
             </button>
             <button
               className="run-stack__btn run-stack__btn--in"
               title="Team runs back in: random welcome visual + song"
-              onClick={() => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })}
+              onClick={runIn}
             >
-              <span aria-hidden="true">🙌</span> Run in
+              <span aria-hidden="true">🏃</span> in
+            </button>
+          </div>
+          <div className="cap-row">
+            <button
+              className="cap-btn cap-btn--blue"
+              title="Blue captain on the field"
+              disabled={!hasBeat('captain-blue')}
+              onClick={() => revealBeat('captain-blue')}
+            >
+              <span aria-hidden="true">🧢</span> Blue
+            </button>
+            <button
+              className="cap-btn cap-btn--red"
+              title="Red captain on the field"
+              disabled={!hasBeat('captain-red')}
+              onClick={() => revealBeat('captain-red')}
+            >
+              <span aria-hidden="true">🧢</span> Red
+            </button>
+            <button
+              className="cap-btn cap-btn--both"
+              title="Both captains on the field"
+              disabled={!hasBeat('captains')}
+              onClick={() => revealBeat('captains')}
+            >
+              <span aria-hidden="true">🧢</span> Both
             </button>
           </div>
         </div>
-        <button className="silent-btn" onClick={silent}>
-          update silently
-        </button>
 
         <GifSearch />
         <EffectsFab />

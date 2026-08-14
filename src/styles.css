@@ -843,6 +843,37 @@ button { font-family: inherit; cursor: pointer; }
 .run-stack__btn--in:hover { background: color-mix(in srgb, #46d98a 16%, var(--panel)); }
 .run-stack__btn:active { filter: brightness(0.92); }
 
+/* Quick-trigger row under the reveal: the run out/in split beside the three
+   captain buttons (blue / red / both), all one tap. */
+.deck__triggers { display: flex; justify-content: center; align-items: stretch; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.cap-row { display: flex; gap: 6px; }
+.cap-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 66px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #2c3346;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cap-btn > span { font-size: 21px; line-height: 1; }
+.cap-btn:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+.cap-btn:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+.cap-btn:disabled { opacity: 0.38; cursor: default; }
+.cap-btn--blue { border-color: var(--blue-dim); }
+.cap-btn--blue:hover:not(:disabled) { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 16%, var(--panel)); }
+.cap-btn--red { border-color: var(--red-dim); }
+.cap-btn--red:hover:not(:disabled) { border-color: var(--red); background: color-mix(in srgb, var(--red) 16%, var(--panel)); }
+.cap-btn--both { border-color: #5b5580; }
+.cap-btn--both:hover:not(:disabled) { border-color: #a08fe0; background: color-mix(in srgb, #7a6bc0 16%, var(--panel)); }
+
 /* The corner FABs' icon. When a popover is open the icon becomes a white ✕; the
    spin in/out is driven by Motion (AnimatePresence) so it animates both ways. */
 /* Absolutely centered so the outgoing + incoming glyphs overlap in the same spot
