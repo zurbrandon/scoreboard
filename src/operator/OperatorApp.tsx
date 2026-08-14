@@ -180,11 +180,7 @@ export function OperatorApp() {
 
   useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal: primaryAction, black })
 
-  // Latest SHOW deck, read at key-press time so the pad's "show slide N" maps to
-  // the current run-of-show order (not a value baked in when the effect first ran).
   const showItems = allSlides.filter((s) => s.deck === 'show')
-  const slidesRef = useRef(showItems)
-  slidesRef.current = showItems
 
   // Quick-trigger a show beat straight from the deck (captains get their own
   // buttons since they come out several times a show). Reveals the first beat of
@@ -211,12 +207,24 @@ export function OperatorApp() {
     nav: (_dir: 1 | -1) => {},
     cycleTab: () => {},
     captain: (_which: 'blue' | 'red' | 'both') => {},
+    jump: (_index: number) => {},
   })
   padRef.current = {
     reveal: () => pushActive(true),
     silent: () => pushActive(false),
     captain: (which) =>
       revealBeat(which === 'both' ? 'captains' : which === 'blue' ? 'captain-blue' : 'captain-red'),
+    // Jump to slide N of the ACTIVE folder (Show or Games) and play it. No-op on
+    // Score; doesn't switch folders, so it follows whichever scene you're on.
+    jump: (index) => {
+      if (!activeDeck) return
+      const slide = allSlides.filter((s) => s.deck === activeDeck)[index]
+      if (!slide) return
+      dispatch({ type: 'slide.select', id: slide.id })
+      dispatch({ type: 'slide.commit' })
+      const animate = !(slide.type === 'text' && slide.liveType)
+      dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'slides' })
+    },
     // Step through the active deck's slides (clamps at the ends). If the current
     // slide is LIVE on the projector (you're "running" the show), advancing also
     // reveals the next one so it plays straight through as you turn the knob.
@@ -297,16 +305,8 @@ export function OperatorApp() {
           return dispatch({ type: 'music.nudgeDuck', delta: -DUCK_STEP })
         case 'duck.up':
           return dispatch({ type: 'music.nudgeDuck', delta: +DUCK_STEP })
-        case 'slide.show': {
-          const slide = slidesRef.current[action.index]
-          if (!slide) return
-          setActiveTab('show')
-          dispatch({ type: 'slide.select', id: slide.id })
-          dispatch({ type: 'slide.commit' })
-          // Live-type text mirrors keystrokes, so it cuts in without an entrance.
-          const animate = !(slide.type === 'text' && slide.liveType)
-          return dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'slides' })
-        }
+        case 'slide.jump':
+          return padRef.current.jump(action.index)
       }
     })
   }, [dispatch])

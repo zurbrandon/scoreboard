@@ -19,7 +19,7 @@ export type HotkeyAction =
   | { type: 'black' }
   | { type: 'moment.out' } // run-out: team leaves (random visual + song)
   | { type: 'moment.in' } // run-in: team enters (random visual + song)
-  | { type: 'slide.show'; index: number } // show the Nth slide in the deck (0-based)
+  | { type: 'slide.jump'; index: number } // jump to + play the Nth slide (0-based) of the ACTIVE folder (Show or Games)
   | { type: 'duck.down' } // dial: dip Showboard's music under an external cue
   | { type: 'duck.up' } // dial: bring it back up
   | { type: 'slide.prev' } // dial: move the selection to the previous slide in the active folder
@@ -54,12 +54,12 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   // Moments: run-out / run-in (each fires a random visual + song).
   { accelerator: `${MOD}+O`, action: { type: 'moment.out' }, label: 'Run out (team leaves)' },
   { accelerator: `${MOD}+I`, action: { type: 'moment.in' }, label: 'Run in (team enters)' },
-  // Slides folder: 1–9 then 0 → slides 1–10 (indices 0–9).
+  // 1–9 then 0 → slide 1–10 of whichever folder is active (Show or Games).
   ...['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map(
     (key, i): HotkeyBinding => ({
       accelerator: `${MOD}+${key}`,
-      action: { type: 'slide.show', index: i },
-      label: `Show slide ${i + 1}`,
+      action: { type: 'slide.jump', index: i },
+      label: `Slide ${i + 1}`,
     }),
   ),
   // Sound dial: temporary music duck (any reveal snaps it back to full).
