@@ -320,6 +320,8 @@ export function reduce(state: AppState, command: Command): AppState {
 
     case 'audio.setPlaying':
       return { ...state, audioPlaying: command.value }
+    case 'audio.fadeOut':
+      return { ...state, audioFadeNonce: state.audioFadeNonce + 1 }
 
     case 'score.commitSilent':
       // Publish the board with no ceremony — no revealNonce/revealPhase change,

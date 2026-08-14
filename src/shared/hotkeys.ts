@@ -22,6 +22,7 @@ export type HotkeyAction =
   | { type: 'slide.jump'; index: number } // jump to + play the Nth slide (0-based) of the ACTIVE folder (Show or Games)
   | { type: 'duck.down' } // dial: dip Showboard's music under an external cue
   | { type: 'duck.up' } // dial: bring it back up
+  | { type: 'audio.fadeOut' } // kill switch: slow fade the music to silence, scene untouched
   | { type: 'slide.prev' } // dial: move the selection to the previous slide in the active folder
   | { type: 'slide.next' } // dial: move the selection to the next slide
   | { type: 'tab.cycle' } // dial press: cycle folders (Show → Score → Games)
@@ -65,6 +66,7 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   // Sound dial: temporary music duck (any reveal snaps it back to full).
   { accelerator: `${MOD}+[`, action: { type: 'duck.down' }, label: 'Music duck down' },
   { accelerator: `${MOD}+]`, action: { type: 'duck.up' }, label: 'Music duck up' },
+  { accelerator: `${MOD}+M`, action: { type: 'audio.fadeOut' }, label: 'Fade music out (mute)' },
   // Slide dial: scrub the active folder's slides (rotate) + cycle folders (press).
   { accelerator: `${MOD}+,`, action: { type: 'slide.prev' }, label: 'Previous slide' },
   { accelerator: `${MOD}+.`, action: { type: 'slide.next' }, label: 'Next slide' },

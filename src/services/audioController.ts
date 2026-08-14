@@ -37,6 +37,7 @@ const FADE_MS = 3000 // slow fade to silence over this long
 const STOP_FADE_MS = 250 // fast fade when the operator hits STOP (no speaker pop)
 const MOMENT_LEAVE_FADE_MS = 6500 // slow, graceful fade when leaving a moment for another scene
 const BLACK_FADE_MS = 7500 // graceful fade when cueing to black or a blackout beat / "No music"
+const KILL_FADE_MS = 5000 // graceful fade for the "fade music out" kill switch (leaves the scene up)
 
 export function createAudioController(store: Store): AudioController {
   let tracks: LoadedTrack[] = []
@@ -46,6 +47,7 @@ export function createAudioController(store: Store): AudioController {
   let lastNonce = store.getState().revealNonce
   let lastFinaleNonce = store.getState().finaleNonce
   let lastStopNonce = store.getState().stopNonce
+  let lastAudioFadeNonce = store.getState().audioFadeNonce
   let lastMomentNonce = store.getState().momentNonce
   let lastAnimNonce = store.getState().revealAnimNonce
   let lastScene = store.getState().scene
@@ -280,6 +282,12 @@ export function createAudioController(store: Store): AudioController {
     if (s.stopNonce !== lastStopNonce) {
       lastStopNonce = s.stopNonce
       fadeOutOver(STOP_FADE_MS)
+    }
+    // "Fade music out" kill switch: a slow, graceful ramp to silence. Unlike STOP
+    // it isn't tied to the reveal, and unlike Black it leaves the scene/slide up.
+    if (s.audioFadeNonce !== lastAudioFadeNonce) {
+      lastAudioFadeNonce = s.audioFadeNonce
+      fadeOutOver(KILL_FADE_MS)
     }
     // A slide was revealed → act on its music cue. revealAnimNonce bumps only on
     // Reveal (not silent), so a quiet update never trips a cue.

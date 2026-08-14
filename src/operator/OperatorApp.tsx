@@ -305,6 +305,8 @@ export function OperatorApp() {
           return dispatch({ type: 'music.nudgeDuck', delta: -DUCK_STEP })
         case 'duck.up':
           return dispatch({ type: 'music.nudgeDuck', delta: +DUCK_STEP })
+        case 'audio.fadeOut':
+          return dispatch({ type: 'audio.fadeOut' })
         case 'slide.jump':
           return padRef.current.jump(action.index)
       }

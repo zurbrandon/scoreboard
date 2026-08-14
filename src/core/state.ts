@@ -267,6 +267,9 @@ export interface AppState {
   /** Bumped when a reveal is STOPPED (the kill switch). The reveal service cancels
    *  its pending timers on it, and the audio controller fades the sound out fast. */
   stopNonce: number
+  /** Bumped by the "fade music out" kill switch — the audio controller ramps the
+   *  current sound gracefully to silence, leaving the scene/slide untouched. */
+  audioFadeNonce: number
   /** Fire-and-forget overlay effects (confetti cannon, etc.) that play on top of
    *  whatever scene is showing. `kind` selects the effect; `nonce` bumps on each
    *  press so the projector replays it. */
@@ -324,6 +327,7 @@ export function createInitialState(): AppState {
     revealNonce: 0,
     finaleNonce: 0,
     stopNonce: 0,
+    audioFadeNonce: 0,
     effect: { kind: '', nonce: 0 },
     audioPlaying: false,
     gifOverlay: null,
