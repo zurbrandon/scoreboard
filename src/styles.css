@@ -198,7 +198,9 @@ button { font-family: inherit; cursor: pointer; }
   gap: 12px;
   min-width: 220px;
 }
-.reveal {
+/* LIVE — the big center toggle. Off: calm dark orb. On: red fill with a gentle
+   glow pulse (deliberately not garish; we can escalate later if needed). */
+.live-btn {
   width: 118px;
   height: 118px;
   border-radius: 50%;
@@ -207,24 +209,54 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--muted);
   font-size: 19px;
   font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.live-btn:hover { border-color: #3a4560; color: var(--text); }
+.live-btn:active { transform: scale(0.96); }
+.live-btn--on {
+  border-color: #ff6166;
+  color: #fff;
+  background: radial-gradient(circle at 50% 35%, #ff5a5f, #b81e24);
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 22px rgba(255, 70, 80, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(255, 70, 80, 0.7); }
+}
+
+/* REVEAL — now the secondary one-shot on the right. Gold when armed, red when it
+   becomes STOP. Dims while LIVE, since selecting already reveals. */
+.reveal {
+  min-width: 104px;
+  height: 66px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 2px solid #2c3346;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 800;
   letter-spacing: 0.04em;
-  transition: transform 0.08s ease, box-shadow 0.2s ease;
+  transition: transform 0.08s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 .reveal--armed {
   border-color: var(--accent);
   color: #1a1300;
-  background: radial-gradient(circle at 50% 35%, #ffe071, #f2b800);
-  box-shadow: 0 0 40px rgba(255, 210, 63, 0.5);
+  background: linear-gradient(160deg, #ffe071, #f2b800);
+  box-shadow: 0 0 24px rgba(255, 210, 63, 0.45);
 }
 /* Kill-switch state: the same button, now a clear red STOP so it can't be
    mistaken for GO. Distinct hue is the whole point — one control, two actions. */
 .reveal--stop {
   border-color: #ff5a5f;
   color: #fff;
-  background: radial-gradient(circle at 50% 35%, #ff5a5f, #c02329);
-  box-shadow: 0 0 40px rgba(255, 70, 80, 0.55);
+  background: linear-gradient(160deg, #ff5a5f, #c02329);
+  box-shadow: 0 0 24px rgba(255, 70, 80, 0.5);
 }
-.reveal:active { transform: scale(0.96); }
+.reveal--dim { opacity: 0.4; }
+.reveal:active { transform: scale(0.97); }
 .silent-btn {
   background: var(--panel-2);
   border: 1px solid #2c3346;

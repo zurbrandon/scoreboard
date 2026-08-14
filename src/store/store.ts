@@ -89,6 +89,7 @@ function loadPersisted(): AppState {
         slides: migrateSlides(parsed, fresh),
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
+        liveMode: false, // always launch in staged mode, never mid-live
         music: { ...fresh.music, ...parsed.music, duck: 1 },
       }
     }

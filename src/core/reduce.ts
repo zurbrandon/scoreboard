@@ -53,8 +53,10 @@ function publishBoard(state: AppState): AppState {
   }
 }
 
-export function reduce(state: AppState, command: Command): AppState {
+function baseReduce(state: AppState, command: Command): AppState {
   switch (command.type) {
+    case 'live.toggle':
+      return { ...state, liveMode: !state.liveMode }
     case 'blue.increment':
       return bumpPending(state, 'blue', +1)
     case 'blue.decrement':
@@ -377,4 +379,64 @@ export function reduce(state: AppState, command: Command): AppState {
     default:
       return state
   }
+}
+
+// Board commands whose change should hit the projector immediately in LIVE mode
+// (publish pending → live, no celebration). Score / half / audience / ribbons.
+const LIVE_BOARD_CMDS = new Set<Command['type']>([
+  'blue.increment',
+  'blue.decrement',
+  'red.increment',
+  'red.decrement',
+  'team.bumpScore',
+  'team.setScore',
+  'half.toggle',
+  'half.set',
+  'audience.increment',
+  'audience.decrement',
+  'audience.setLabel',
+  'audience.setVisible',
+  'ribbons.setHome',
+  'ribbons.setAway',
+  'ribbons.setVisible',
+])
+// Slide-content edits that should mirror to the on-air slide in LIVE mode.
+const LIVE_EDIT_CMDS = new Set<Command['type']>([
+  'slide.setField',
+  'slide.setQuad',
+  'slide.setShowField',
+  'slide.setImage',
+  'slide.setSlideshowUrl',
+])
+
+// LIVE mode wraps the pure reducer: after the normal update, reflect the change
+// on the projector at once. Selecting a slide auto-reveals it (animation + cues,
+// via the revealAnimNonce the reveal service / audio controller watch); board
+// edits publish silently; edits to the on-air slide mirror through. When live is
+// off this is a no-op passthrough, so the staged Preview/Program flow is intact.
+export function reduce(state: AppState, command: Command): AppState {
+  const next = baseReduce(state, command)
+  if (!next.liveMode) return next
+
+  if (command.type === 'slide.select') {
+    const slide = next.slides.items.find((s) => s.id === next.slides.selectedId)
+    if (!slide) return next
+    return {
+      ...next,
+      slides: { ...next.slides, live: slide },
+      scene: 'slides',
+      displayWasReveal: true,
+      revealAnimNonce: next.revealAnimNonce + 1,
+      music: { ...next.music, duck: 1 },
+    }
+  }
+  if (LIVE_BOARD_CMDS.has(command.type)) return publishBoard(next)
+  if (LIVE_EDIT_CMDS.has(command.type) && 'id' in command) {
+    const live = next.slides.live
+    if (live && command.id === live.id) {
+      const updated = next.slides.items.find((s) => s.id === live.id)
+      if (updated) return { ...next, slides: { ...next.slides, live: updated } }
+    }
+  }
+  return next
 }

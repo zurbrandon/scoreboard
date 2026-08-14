@@ -230,6 +230,12 @@ export interface AppState {
   half: Half
   halfLive: Half
   scene: Scene
+  /** LIVE mode: when on, what you touch goes to air immediately — selecting a
+   *  slide auto-reveals it (animation + cues), and board edits publish at once.
+   *  When off, the normal Preview/Program flow (stage, then Reveal). Transient:
+   *  never restored across launches. Named `liveMode` to avoid confusion with
+   *  `slides.live` (the currently-on-air slide object). */
+  liveMode: boolean
   /** All slides across both decks (Show + Games), each tagged with its `deck`.
    *  The operator filters by deck; the selected slide is published to `live` on
    *  Reveal and the projector renders whatever `live` is. `live` is the exact
@@ -328,6 +334,7 @@ export function createInitialState(): AppState {
     finaleNonce: 0,
     stopNonce: 0,
     audioFadeNonce: 0,
+    liveMode: false,
     effect: { kind: '', nonce: 0 },
     audioPlaying: false,
     gifOverlay: null,

@@ -93,6 +93,7 @@ function loadState(): AppState {
         audioPlaying: false,
         gifOverlay: null,
         washHold: null,
+        liveMode: false,
         countdown: 0,
         music: {
           ...fresh.music,

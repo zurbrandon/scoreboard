@@ -105,6 +105,7 @@ export function OperatorApp() {
   const allSlides = useAppState((s) => s.slides.items)
   const selectedSlideId = useAppState((s) => s.slides.selectedId)
   const liveSlideId = useAppState((s) => s.slides.live?.id ?? null)
+  const liveMode = useAppState((s) => s.liveMode)
 
   const [activeTab, setActiveTab] = useState<OperatorTab>('score')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -150,7 +151,6 @@ export function OperatorApp() {
     }
   }
   const reveal = () => pushActive(true)
-  const silent = () => pushActive(false)
   const black = () => dispatch({ type: 'display.set', scene: 'black' })
 
   // Kill switch: while a scoreboard reveal/finale is actually playing (and nothing
@@ -307,6 +307,8 @@ export function OperatorApp() {
           return dispatch({ type: 'music.nudgeDuck', delta: +DUCK_STEP })
         case 'audio.fadeOut':
           return dispatch({ type: 'audio.fadeOut' })
+        case 'live.toggle':
+          return dispatch({ type: 'live.toggle' })
         case 'slide.jump':
           return padRef.current.jump(action.index)
       }
@@ -387,21 +389,26 @@ export function OperatorApp() {
             <span className="black-box__label">Black</span>
           </button>
 
-          {/* REVEAL is the anchor; `update silently` flanks it on the right (it's
-              about the same width as the Black box on the left, so the circle stays
-              centered). The moment / captain quick-triggers sit in a row below. */}
+          {/* LIVE is the anchor now — a mode toggle. When on, what you touch goes
+              to air immediately (slides auto-reveal, board edits publish). REVEAL
+              flanks it on the right for the staged one-shot; it dims while live
+              since selecting already reveals. */}
+          <button
+            className={`live-btn ${liveMode ? 'live-btn--on' : ''}`}
+            onClick={() => dispatch({ type: 'live.toggle' })}
+            title={liveMode ? 'LIVE — click to go back to staged' : 'Go LIVE (selections play instantly)'}
+          >
+            {liveMode ? '● LIVE' : 'LIVE'}
+          </button>
+
           <motion.button
-            className={`reveal ${canStop ? 'reveal--stop' : armed ? 'reveal--armed' : ''}`}
+            className={`reveal ${canStop ? 'reveal--stop' : armed ? 'reveal--armed' : ''} ${liveMode ? 'reveal--dim' : ''}`}
             onClick={primaryAction}
             whileTap={{ scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
           >
             {canStop ? 'STOP' : 'REVEAL'}
           </motion.button>
-
-          <button className="silent-btn" onClick={silent}>
-            update silently
-          </button>
         </div>
 
         {/* Quick triggers: run out / in (random visual + song), and the three
@@ -831,8 +838,6 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
   // then derive this deck's slides in the body.
   const items = useAppState((s) => s.slides.items).filter((sl) => sl.deck === deck)
   const selectedId = useAppState((s) => s.slides.selectedId)
-  const programScene = useAppState((s) => s.scene)
-  const liveId = useAppState((s) => s.slides.live?.id ?? null)
   const [addOpen, setAddOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -927,11 +932,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                 )}
                 {slide.type === 'show' && <ShowSlideCard slide={slide} selected={slide.id === selectedId} />}
                 {slide.type === 'text' && (
-                  <TextSlideCard
-                    slide={slide}
-                    selected={slide.id === selectedId}
-                    isOnAir={programScene === 'slides' && liveId === slide.id}
-                  />
+                  <TextSlideCard slide={slide} selected={slide.id === selectedId} />
                 )}
               </SlideRow>
             )
@@ -1279,49 +1280,23 @@ function ImageSlideCard({ slide, selected }: { slide: ImageSlide; selected: bool
 function TextSlideCard({
   slide,
   selected,
-  isOnAir,
 }: {
   slide: TextSlide
   selected: boolean
-  isOnAir: boolean
 }) {
   const dispatch = useDispatch()
-  // When live-type is on and this slide is on air, republish on every edit so
-  // keystrokes mirror to the projector.
-  const commitIfLive = () => {
-    if (slide.liveType && isOnAir) dispatch({ type: 'slide.commit' })
-  }
-  const setField = (field: 'headline' | 'body', value: string) => {
+  // Edits mirror to the projector automatically when LIVE mode is on and this is
+  // the on-air slide (handled centrally in the reducer), so no per-card toggle.
+  const setField = (field: 'headline' | 'body', value: string) =>
     dispatch({ type: 'slide.setField', id: slide.id, field, value })
-    commitIfLive()
-  }
-  const setQuad = (index: number, value: string) => {
+  const setQuad = (index: number, value: string) =>
     dispatch({ type: 'slide.setQuad', id: slide.id, index, value })
-    commitIfLive()
-  }
   return (
     <div
       className={`text-card ${selected ? 'text-card--active' : ''}`}
       onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
     >
       <div className="text-card__head">
-        <label
-          className="text-card__livetoggle switch"
-          title="Live type: mirror keystrokes to the screen while this slide is on air"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className={`text-card__livelabel ${slide.liveType ? 'is-on' : ''}`}>
-            {slide.liveType && isOnAir ? '● LIVE' : 'Live'}
-          </span>
-          <input
-            type="checkbox"
-            checked={slide.liveType}
-            onChange={(e) => dispatch({ type: 'slide.setLiveType', id: slide.id, value: e.target.checked })}
-          />
-          <span className="switch__track">
-            <span className="switch__thumb" />
-          </span>
-        </label>
         <button
           className="text-card__remove"
           aria-label="Remove slide"
@@ -1384,14 +1359,6 @@ function TextSlideCard({
             />
           ))}
         </div>
-      )}
-
-      {slide.liveType && (
-        <span className="text-card__hint">
-          {isOnAir
-            ? 'Live — every keystroke shows on the projector.'
-            : 'Reveal to put this on air, then it types live.'}
-        </span>
       )}
     </div>
   )

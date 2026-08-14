@@ -421,6 +421,55 @@ describe('scoring details', () => {
   })
 })
 
+describe('live mode', () => {
+  it('off: selecting a slide only previews — nothing goes on air', () => {
+    let s = run({ type: 'slide.addText', id: 't1', template: 'basic', deck: 'show' })
+    const beforeAnim = s.revealAnimNonce
+    s = reduce(s, { type: 'slide.select', id: 't1' })
+    expect(s.slides.selectedId).toBe('t1')
+    expect(s.slides.live).toBeNull()
+    expect(s.revealAnimNonce).toBe(beforeAnim)
+  })
+
+  it('on: selecting a slide auto-reveals it (animated + cue trigger)', () => {
+    let s = run({ type: 'slide.addText', id: 't1', template: 'basic', deck: 'show' }, { type: 'live.toggle' })
+    const beforeAnim = s.revealAnimNonce
+    s = reduce(s, { type: 'slide.select', id: 't1' })
+    expect(s.slides.live?.id).toBe('t1')
+    expect(s.scene).toBe('slides')
+    expect(s.displayWasReveal).toBe(true)
+    expect(s.revealAnimNonce).toBe(beforeAnim + 1)
+  })
+
+  it('on: a score bump publishes to the live score immediately (no reveal)', () => {
+    const s = run({ type: 'live.toggle' }, { type: 'blue.increment' })
+    expect(s.teams.blue.pendingScore).toBe(1)
+    expect(s.teams.blue.liveScore).toBe(1)
+    expect(s.revealNonce).toBe(0) // no celebration
+  })
+
+  it('off: a score bump stays pending until a reveal', () => {
+    const s = run({ type: 'blue.increment' })
+    expect(s.teams.blue.pendingScore).toBe(1)
+    expect(s.teams.blue.liveScore).toBe(0)
+  })
+
+  it('on: editing the on-air slide mirrors to the live copy', () => {
+    let s = run(
+      { type: 'slide.addText', id: 't1', template: 'basic', deck: 'show' },
+      { type: 'live.toggle' },
+      { type: 'slide.select', id: 't1' },
+    )
+    s = reduce(s, { type: 'slide.setField', id: 't1', field: 'headline', value: 'HI' })
+    expect(s.slides.live?.type === 'text' && s.slides.live.headline).toBe('HI')
+  })
+
+  it('live.toggle flips the mode', () => {
+    expect(run({ type: 'live.toggle' }).liveMode).toBe(true)
+    expect(run({ type: 'live.toggle' }, { type: 'live.toggle' }).liveMode).toBe(false)
+  })
+})
+
 describe('winner detection', () => {
   it('picks the higher score, or tie', () => {
     expect(determineWinner(5, 3)).toBe('blue')

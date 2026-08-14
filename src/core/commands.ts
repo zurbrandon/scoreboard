@@ -31,6 +31,7 @@ export type Command =
   | { type: 'half.set'; half: Half }
   | { type: 'display.set'; scene: Scene } // switch scene with no entrance animation (silent/black)
   | { type: 'display.reveal'; scene: Scene } // switch scene AND play its entrance animation
+  | { type: 'live.toggle' } // flip LIVE mode: selections auto-reveal + board edits publish immediately
   // Unified Slides deck (logo + text slides share one queue/selection/reveal).
   | { type: 'slide.select'; id: string } // preview a slide (draft)
   | { type: 'slide.commit' } // publish the selected slide to `live`
