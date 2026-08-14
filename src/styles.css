@@ -850,6 +850,9 @@ button { font-family: inherit; cursor: pointer; }
 }
 .split__seg + .split__seg { border-left: 1px solid #2c3346; } /* the dividers */
 .split__seg > span { font-size: 16px; line-height: 1; }
+/* The captain labels are all-caps (CAP / CAPS), which reads chunkier than the
+   mixed-case Out/In at the same size — nudge them down so they match visually. */
+.split--cap .split__seg { font-size: 11px; letter-spacing: 0.04em; }
 .split__seg:active { filter: brightness(0.92); }
 /* Per-segment hover tint (and a resting color hint for the team captains, so the
    blue / red / both read at a glance without hovering). */
