@@ -17,6 +17,8 @@ export type HotkeyAction =
   | { type: 'silent' } // publish the scoreboard silently (no animation/sound)
   | { type: 'stop' } // kill switch
   | { type: 'black' }
+  | { type: 'moment.out' } // run-out: team leaves (random visual + song)
+  | { type: 'moment.in' } // run-in: team enters (random visual + song)
   | { type: 'slide.show'; index: number } // show the Nth slide in the deck (0-based)
   | { type: 'duck.down' } // dial: dip Showboard's music under an external cue
   | { type: 'duck.up' } // dial: bring it back up
@@ -41,6 +43,9 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   { accelerator: `${MOD}+X`, action: { type: 'stop' }, label: 'Stop' },
   // Shared.
   { accelerator: `${MOD}+B`, action: { type: 'black' }, label: 'Black screen' },
+  // Moments: run-out / run-in (each fires a random visual + song).
+  { accelerator: `${MOD}+O`, action: { type: 'moment.out' }, label: 'Run out (team leaves)' },
+  { accelerator: `${MOD}+I`, action: { type: 'moment.in' }, label: 'Run in (team enters)' },
   // Slides folder: 1–9 then 0 → slides 1–10 (indices 0–9).
   ...['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map(
     (key, i): HotkeyBinding => ({

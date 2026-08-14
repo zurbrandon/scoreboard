@@ -216,6 +216,10 @@ export function OperatorApp() {
           return dispatch({ type: 'reveal.stop' })
         case 'black':
           return dispatch({ type: 'display.set', scene: 'black' })
+        case 'moment.out':
+          return dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })
+        case 'moment.in':
+          return dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })
         case 'duck.down':
           return dispatch({ type: 'music.nudgeDuck', delta: -DUCK_STEP })
         case 'duck.up':
