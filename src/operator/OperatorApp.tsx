@@ -232,13 +232,20 @@ export function OperatorApp() {
     if (!window.showboard) return
     return window.showboard.onHotkey((action) => {
       switch (action.type) {
+        // Bumping a score jumps to the Score folder — so you see the value you're
+        // changing, and REVEAL (now folder-aware) plays the score. Same idea as the
+        // number keys switching to Show.
         case 'blue.up':
+          setActiveTab('score')
           return dispatch({ type: 'blue.increment' })
         case 'blue.down':
+          setActiveTab('score')
           return dispatch({ type: 'blue.decrement' })
         case 'red.up':
+          setActiveTab('score')
           return dispatch({ type: 'red.increment' })
         case 'red.down':
+          setActiveTab('score')
           return dispatch({ type: 'red.decrement' })
         case 'reveal':
           // Plays the active folder: the score on Score, the selected slide on
