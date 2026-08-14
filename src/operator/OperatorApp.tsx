@@ -270,6 +270,12 @@ export function OperatorApp() {
           return padRef.current.nav(1)
         case 'tab.cycle':
           return padRef.current.cycleTab()
+        case 'tab.show':
+          return setActiveTab('show')
+        case 'tab.score':
+          return setActiveTab('score')
+        case 'tab.games':
+          return setActiveTab('games')
         case 'stop':
           return dispatch({ type: 'reveal.stop' })
         case 'black':

@@ -25,6 +25,9 @@ export type HotkeyAction =
   | { type: 'slide.prev' } // dial: move the selection to the previous slide in the active folder
   | { type: 'slide.next' } // dial: move the selection to the next slide
   | { type: 'tab.cycle' } // dial press: cycle folders (Show → Score → Games)
+  | { type: 'tab.show' } // jump straight to the Show folder
+  | { type: 'tab.score' } // jump straight to the Score folder
+  | { type: 'tab.games' } // jump straight to the Games folder
 
 export interface HotkeyBinding {
   accelerator: string // an Electron accelerator string
@@ -64,6 +67,10 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   { accelerator: `${MOD}+,`, action: { type: 'slide.prev' }, label: 'Previous slide' },
   { accelerator: `${MOD}+.`, action: { type: 'slide.next' }, label: 'Next slide' },
   { accelerator: `${MOD}+T`, action: { type: 'tab.cycle' }, label: 'Cycle folder (Show/Score/Games)' },
+  // Jump straight to a folder — pair each with a device page switch (Multi Action).
+  { accelerator: `${MOD}+H`, action: { type: 'tab.show' }, label: 'Go to Show' },
+  { accelerator: `${MOD}+C`, action: { type: 'tab.score' }, label: 'Go to Score' },
+  { accelerator: `${MOD}+G`, action: { type: 'tab.games' }, label: 'Go to Games' },
 ]
 
 // How much one dial tick / keypress moves the duck (fraction of full volume).
