@@ -248,6 +248,8 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       applyVolume()
+      // Free the element if the song finishes on its own (no auto-fade to do it).
+      audio.addEventListener('ended', () => releaseAudio(), { once: true })
       void audio.play().catch((err) => {
         console.warn('[audio] moment playback failed; continuing show:', err)
       })
@@ -346,8 +348,16 @@ export function createAudioController(store: Store): AudioController {
       clearFade()
       unsubscribe()
       releaseAudio()
+      // Revoke every object URL we hold, not just the bumpers (no-op for
+      // sbmedia:// URLs), so teardown doesn't leak the drum roll / moment songs.
       for (const t of tracks) URL.revokeObjectURL(t.url)
+      if (drumroll) URL.revokeObjectURL(drumroll.url)
+      for (const t of momentTracks.out) URL.revokeObjectURL(t.url)
+      for (const t of momentTracks.in) URL.revokeObjectURL(t.url)
       tracks = []
+      drumroll = null
+      momentTracks.out = []
+      momentTracks.in = []
     },
   }
 }

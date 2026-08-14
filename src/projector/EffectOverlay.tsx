@@ -165,6 +165,16 @@ export function EffectOverlay({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef(0)
   const seenNonce = useRef(nonce) // don't fire on the initial mount
+  // The team-emoji inputs matter only at fire time, so hold them in refs kept
+  // current each render. Keeping them OUT of the effect's deps means changing a
+  // team's mood (or revealing another beat) mid-burst can't cancel the running
+  // animation — the effect only re-runs when `nonce` (a fresh fire) changes.
+  const emojiSideRef = useRef(emojiSide)
+  emojiSideRef.current = emojiSide
+  const blueEmojiRef = useRef(blueEmoji)
+  blueEmojiRef.current = blueEmoji
+  const redEmojiRef = useRef(redEmoji)
+  redEmojiRef.current = redEmoji
 
   // Pick a random verdict phrase per fire (stable across unrelated re-renders).
   const slamWord = useMemo(() => {
@@ -188,11 +198,12 @@ export function EffectOverlay({
     const h = (canvas.height = Math.max(1, Math.round(canvas.clientHeight * scale)))
 
     // 'team-emoji' rains the relevant team's mood(s); other kinds use no pool.
+    const side = emojiSideRef.current
+    const blue = blueEmojiRef.current
+    const red = redEmojiRef.current
     const teamGlyphs =
       kind === 'team-emoji'
-        ? (emojiSide === 'blue' ? [blueEmoji] : emojiSide === 'red' ? [redEmoji] : [blueEmoji, redEmoji])
-            .map((g) => g.trim())
-            .filter(Boolean)
+        ? (side === 'blue' ? [blue] : side === 'red' ? [red] : [blue, red]).map((g) => g.trim()).filter(Boolean)
         : undefined
 
     const tick =
@@ -202,7 +213,7 @@ export function EffectOverlay({
 
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [kind, nonce, emojiSide, blueEmoji, redEmoji])
+  }, [kind, nonce])
 
   return (
     <>
