@@ -138,6 +138,10 @@ export interface ShowSlide {
   name: string
   roster: string
   cue?: SlideCue
+  // Set on the transient captain card fired from the deck's quick buttons: a
+  // generic "{team} captain" intro that ignores any scripted captain name, so
+  // the deck triggers don't depend on a Show slide existing. Never persisted.
+  generic?: boolean
 }
 
 export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide | ShowSlide

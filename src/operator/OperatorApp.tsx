@@ -206,22 +206,13 @@ export function OperatorApp() {
 
   useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal: primaryAction, black })
 
-  const showItems = allSlides.filter((s) => s.deck === 'show')
-
-  // Quick-trigger a show beat straight from the deck (captains get their own
-  // buttons since they come out several times a show). Reveals the first beat of
-  // that kind in the Show deck; the button is disabled when it isn't there.
-  // Deliberately does NOT switch the active folder — you can fire a captain while
-  // "living" in Score and stay there, so folder-aware Reveal still means the score
-  // and the device stays in sync.
-  const hasBeat = (beat: ShowBeat) => showItems.some((s) => s.type === 'show' && s.beat === beat)
-  const revealBeat = (beat: ShowBeat) => {
-    const slide = showItems.find((s) => s.type === 'show' && s.beat === beat)
-    if (!slide) return
-    dispatch({ type: 'slide.select', id: slide.id })
-    dispatch({ type: 'slide.commit' })
-    dispatch({ type: 'display.reveal', scene: 'slides' })
-  }
+  // The deck's captain quick buttons fire a GENERIC captain intro (team name, no
+  // scripted person's name) via one command — independent of the Show sequence,
+  // so they work whether or not a captain slide exists. Deliberately does NOT
+  // switch the active folder or move the selection: you can fire a captain while
+  // "living" in Score and stay there, so folder-aware Reveal still means the
+  // score and the device stays in sync.
+  const captain = (which: 'blue' | 'red' | 'both') => dispatch({ type: 'show.captain', which })
   const runOut = () => dispatch({ type: 'moment.play', kind: 'out', visual: pickMomentVisual('out') })
   const runIn = () => dispatch({ type: 'moment.play', kind: 'in', visual: pickMomentVisual('in') })
   // The pad's Reveal / Silent act on the ACTIVE folder (like the on-screen deck),
@@ -238,8 +229,7 @@ export function OperatorApp() {
   padRef.current = {
     reveal: () => pushActive(true),
     silent: () => pushActive(false),
-    captain: (which) =>
-      revealBeat(which === 'both' ? 'captains' : which === 'blue' ? 'captain-blue' : 'captain-red'),
+    captain: (which) => captain(which),
     // Jump to slide N of the ACTIVE folder (Show or Games) and play it. No-op on
     // Score; doesn't switch folders, so it follows whichever scene you're on.
     jump: (index) => {
@@ -468,25 +458,22 @@ export function OperatorApp() {
           <div className="cap-row">
             <button
               className="cap-btn cap-btn--blue"
-              title="Blue captain on the field"
-              disabled={!hasBeat('captain-blue')}
-              onClick={() => revealBeat('captain-blue')}
+              title="Blue captain on the field (generic intro)"
+              onClick={() => captain('blue')}
             >
               <span aria-hidden="true">🧢</span> Blue
             </button>
             <button
               className="cap-btn cap-btn--red"
-              title="Red captain on the field"
-              disabled={!hasBeat('captain-red')}
-              onClick={() => revealBeat('captain-red')}
+              title="Red captain on the field (generic intro)"
+              onClick={() => captain('red')}
             >
               <span aria-hidden="true">🧢</span> Red
             </button>
             <button
               className="cap-btn cap-btn--both"
               title="Both captains on the field"
-              disabled={!hasBeat('captains')}
-              onClick={() => revealBeat('captains')}
+              onClick={() => captain('both')}
             >
               <span aria-hidden="true">🧢</span> Both
             </button>

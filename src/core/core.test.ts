@@ -470,6 +470,40 @@ describe('live mode', () => {
   })
 })
 
+describe('generic captain (deck quick buttons)', () => {
+  it('reveals a generic captain with no scripted name, no deck slide needed', () => {
+    const s = run({ type: 'show.captain', which: 'blue' })
+    expect(s.scene).toBe('slides')
+    expect(s.displayWasReveal).toBe(true)
+    expect(s.revealAnimNonce).toBe(1)
+    expect(s.slides.live?.type).toBe('show')
+    expect(s.slides.live?.type === 'show' && s.slides.live.beat).toBe('captain-blue')
+    expect(s.slides.live?.type === 'show' && s.slides.live.generic).toBe(true)
+    expect(s.slides.live?.type === 'show' && s.slides.live.name).toBe('') // ignores any scripted name
+  })
+
+  it('is independent of the scripted captain slide (does not select or alter the deck)', () => {
+    let s = run(
+      { type: 'slide.addShow', id: 'cap', beat: 'captain-blue', deck: 'show' },
+      { type: 'slide.setShowField', id: 'cap', field: 'name', value: 'Dana' },
+      { type: 'slide.select', id: 'cap' },
+    )
+    const itemsBefore = s.slides.items
+    s = reduce(s, { type: 'show.captain', which: 'blue' })
+    // The scripted slide is untouched and still selected; the live card is the
+    // transient generic one, not the named deck slide.
+    expect(s.slides.items).toBe(itemsBefore)
+    expect(s.slides.selectedId).toBe('cap')
+    expect(s.slides.live?.id).not.toBe('cap')
+    expect(s.slides.live?.type === 'show' && s.slides.live.name).toBe('')
+  })
+
+  it('both captains maps to the dual captains beat', () => {
+    const s = run({ type: 'show.captain', which: 'both' })
+    expect(s.slides.live?.type === 'show' && s.slides.live.beat).toBe('captains')
+  })
+})
+
 describe('winner detection', () => {
   it('picks the higher score, or tie', () => {
     expect(determineWinner(5, 3)).toBe('blue')

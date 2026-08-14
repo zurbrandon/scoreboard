@@ -52,6 +52,7 @@ export type Command =
   | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3
+  | { type: 'show.captain'; which: 'blue' | 'red' | 'both' } // reveal a GENERIC captain intro (deck quick button), independent of any scripted captain slide
   // The main event.
   | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

@@ -240,10 +240,21 @@ export function ShowScene({
       return <TeamCard side="blue" eyebrow="Welcome" title={blue} roster={rosterLines(slide.roster)} animate={animate} />
     case 'team-red':
       return <TeamCard side="red" eyebrow="Welcome" title={red} roster={rosterLines(slide.roster)} animate={animate} />
+    // Generic captain (deck quick button): team name big under a plain "Captain"
+    // eyebrow — no scripted person's name. Scripted captain slides keep the
+    // named treatment: the person's name big under a "{team} captain" eyebrow.
     case 'captain-blue':
-      return <TeamCard side="blue" eyebrow={`${blue} captain`} title={slide.name || 'Captain'} animate={animate} />
+      return slide.generic ? (
+        <TeamCard side="blue" eyebrow="Captain" title={blue} animate={animate} />
+      ) : (
+        <TeamCard side="blue" eyebrow={`${blue} captain`} title={slide.name || 'Captain'} animate={animate} />
+      )
     case 'captain-red':
-      return <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} animate={animate} />
+      return slide.generic ? (
+        <TeamCard side="red" eyebrow="Captain" title={red} animate={animate} />
+      ) : (
+        <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} animate={animate} />
+      )
     case 'blackout':
     default:
       return <div className="show show--blackout" />

@@ -125,6 +125,24 @@ function baseReduce(state: AppState, command: Command): AppState {
       const sel = state.slides.items.find((s) => s.id === state.slides.selectedId) ?? null
       return { ...state, slides: { ...state.slides, live: sel } }
     }
+    case 'show.captain': {
+      // The deck's quick captain buttons fire a GENERIC captain intro — a
+      // transient card (never added to a deck, never persisted) that shows the
+      // live team name, ignoring any scripted captain slide's name. This keeps
+      // the buttons working regardless of what's in the Show sequence. Reveals
+      // in one step (sets live + plays the entrance), leaving the selection put.
+      const beat =
+        command.which === 'blue' ? 'captain-blue' : command.which === 'red' ? 'captain-red' : 'captains'
+      const live: Slide = { ...showSlide(`__captain-${command.which}`, beat, 'show'), generic: true }
+      return {
+        ...state,
+        slides: { ...state.slides, live },
+        scene: 'slides',
+        displayWasReveal: true,
+        revealAnimNonce: state.revealAnimNonce + 1,
+        music: { ...state.music, duck: 1 },
+      }
+    }
     case 'slide.addLogo':
       return {
         ...state,
