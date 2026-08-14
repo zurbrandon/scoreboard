@@ -1320,45 +1320,25 @@ function TextSlideCard({
   selected: boolean
 }) {
   const dispatch = useDispatch()
+  const [confirming, setConfirming] = useState(false)
   // Edits mirror to the projector automatically when LIVE mode is on and this is
   // the on-air slide (handled centrally in the reducer), so no per-card toggle.
   const setField = (field: 'headline' | 'body', value: string) =>
     dispatch({ type: 'slide.setField', id: slide.id, field, value })
   const setQuad = (index: number, value: string) =>
     dispatch({ type: 'slide.setQuad', id: slide.id, index, value })
+  // The layout is fixed at creation — to change it, delete and add a new slide.
+  // So the type just reads as a quiet header (matching the show-beat cards)
+  // rather than a select that adds clutter.
+  const templateLabel = TEMPLATE_OPTIONS.find((o) => o.value === slide.template)?.label ?? slide.template
   return (
     <div
       className={`text-card ${selected ? 'text-card--active' : ''}`}
       onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
     >
       <div className="text-card__head">
-        <button
-          className="text-card__remove"
-          aria-label="Remove slide"
-          onClick={(e) => {
-            e.stopPropagation()
-            dispatch({ type: 'slide.remove', id: slide.id })
-          }}
-        >
-          ✕
-        </button>
+        <span className="text-card__label">{templateLabel}</span>
       </div>
-
-      <select
-        className="text-card__template"
-        value={slide.template}
-        aria-label="Slide layout"
-        onClick={(e) => e.stopPropagation()}
-        onChange={(e) =>
-          dispatch({ type: 'slide.setTemplate', id: slide.id, template: e.target.value as TextTemplate })
-        }
-      >
-        {TEMPLATE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
 
       {slide.template === 'basic' && (
         <>
@@ -1393,6 +1373,36 @@ function TextSlideCard({
               onChange={(e) => setQuad(i, e.target.value)}
             />
           ))}
+        </div>
+      )}
+
+      <button
+        className="logo-card__remove"
+        aria-label="Remove slide"
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
+      >
+        ✕
+      </button>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this slide?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>

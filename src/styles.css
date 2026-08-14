@@ -426,49 +426,24 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--panel);
   border: 1.5px solid #2c3346;
   border-radius: 14px;
-  /* Generous padding so there's plenty of card surface to click for
-     selecting. Extra top room clears the corner-pinned Live toggle / ✕. */
-  padding: 46px 22px 24px;
+  /* Compact, like the show-beat cards: the layout name reads as a quiet header
+     up top (aligned with the corner ✕), content sits right below. */
+  padding: 12px 14px 14px;
   cursor: pointer;
 }
 .text-card--active { border-color: var(--accent); }
 
-/* Live toggle and remove ✕ pinned to the top corners, outside the content
-   padding, so they read as card chrome rather than a content row. */
-.text-card__head {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  right: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.text-card__template {
-  width: 100%;
-  background: var(--panel-2);
-  border: 1px solid #2c3346;
-  border-radius: 8px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 6px 8px;
-  cursor: pointer;
-}
-.text-card__template:focus { outline: none; border-color: var(--accent); }
-/* Per-card live-type toggle: a small label + the shared switch. */
-.text-card__livetoggle { display: inline-flex; align-items: center; gap: 6px; flex: none; cursor: pointer; }
-.text-card__livelabel {
+/* The layout name: a quiet eyebrow header — smaller and lighter than the
+   content it labels, matching the show-beat cards. Right padding keeps a long
+   label clear of the corner-pinned ✕. */
+.text-card__head { display: flex; align-items: baseline; gap: 8px; padding-right: 20px; }
+.text-card__label {
+  color: var(--muted);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  min-width: 3.2em;
-  text-align: right;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.text-card__livelabel.is-on { color: var(--red); }
 
 .text-card textarea,
 .text-card__quad,
