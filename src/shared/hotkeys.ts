@@ -28,6 +28,8 @@ export type HotkeyAction =
   | { type: 'tab.show' } // jump straight to the Show folder
   | { type: 'tab.score' } // jump straight to the Score folder
   | { type: 'tab.games' } // jump straight to the Games folder
+  | { type: 'captain'; which: 'blue' | 'red' | 'both' } // reveal the blue / red / both-captain beat
+  | { type: 'effect'; kind: string } // fire an overlay effect (confetti, fireworks, …)
 
 export interface HotkeyBinding {
   accelerator: string // an Electron accelerator string
@@ -71,6 +73,13 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   { accelerator: `${MOD}+H`, action: { type: 'tab.show' }, label: 'Go to Show' },
   { accelerator: `${MOD}+C`, action: { type: 'tab.score' }, label: 'Go to Score' },
   { accelerator: `${MOD}+G`, action: { type: 'tab.games' }, label: 'Go to Games' },
+  // Captains on the field — reveal the beat without leaving the current folder.
+  { accelerator: `${MOD}+J`, action: { type: 'captain', which: 'blue' }, label: 'Blue captain' },
+  { accelerator: `${MOD}+K`, action: { type: 'captain', which: 'red' }, label: 'Red captain' },
+  { accelerator: `${MOD}+L`, action: { type: 'captain', which: 'both' }, label: 'Both captains' },
+  // Overlay effects, on top of whatever's showing.
+  { accelerator: `${MOD}+F`, action: { type: 'effect', kind: 'confetti' }, label: 'Confetti' },
+  { accelerator: `${MOD}+D`, action: { type: 'effect', kind: 'fireworks' }, label: 'Fireworks' },
 ]
 
 // How much one dial tick / keypress moves the duck (fraction of full volume).

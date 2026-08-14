@@ -189,11 +189,13 @@ export function OperatorApp() {
   // Quick-trigger a show beat straight from the deck (captains get their own
   // buttons since they come out several times a show). Reveals the first beat of
   // that kind in the Show deck; the button is disabled when it isn't there.
+  // Deliberately does NOT switch the active folder — you can fire a captain while
+  // "living" in Score and stay there, so folder-aware Reveal still means the score
+  // and the device stays in sync.
   const hasBeat = (beat: ShowBeat) => showItems.some((s) => s.type === 'show' && s.beat === beat)
   const revealBeat = (beat: ShowBeat) => {
     const slide = showItems.find((s) => s.type === 'show' && s.beat === beat)
     if (!slide) return
-    setActiveTab('show')
     dispatch({ type: 'slide.select', id: slide.id })
     dispatch({ type: 'slide.commit' })
     dispatch({ type: 'display.reveal', scene: 'slides' })
@@ -208,10 +210,13 @@ export function OperatorApp() {
     silent: () => {},
     nav: (_dir: 1 | -1) => {},
     cycleTab: () => {},
+    captain: (_which: 'blue' | 'red' | 'both') => {},
   })
   padRef.current = {
     reveal: () => pushActive(true),
     silent: () => pushActive(false),
+    captain: (which) =>
+      revealBeat(which === 'both' ? 'captains' : which === 'blue' ? 'captain-blue' : 'captain-red'),
     // Step through the active deck's slides (clamps at the ends). If the current
     // slide is LIVE on the projector (you're "running" the show), advancing also
     // reveals the next one so it plays straight through as you turn the knob.
@@ -276,6 +281,10 @@ export function OperatorApp() {
           return setActiveTab('score')
         case 'tab.games':
           return setActiveTab('games')
+        case 'captain':
+          return padRef.current.captain(action.which)
+        case 'effect':
+          return dispatch({ type: 'effect.fire', kind: action.kind })
         case 'stop':
           return dispatch({ type: 'reveal.stop' })
         case 'black':
