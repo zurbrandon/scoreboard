@@ -20,7 +20,6 @@ export type Command =
   // Audience tally (immediate, no reveal).
   | { type: 'audience.increment' }
   | { type: 'audience.decrement' }
-  | { type: 'audience.setScore'; value: number }
   | { type: 'audience.setLabel'; label: string }
   | { type: 'audience.setVisible'; visible: boolean }
   // HOME/AWAY corner labels (home = Blue, away = Red). Staged like the audience.
@@ -75,5 +74,3 @@ export type Command =
   | { type: 'music.setLibrary'; tracks: BumperTrack[] } // {id,name} of every loaded bumper
   | { type: 'music.setNextTrack'; id: string | null } // pick the next reveal's bumper (null = random)
   | { type: 'music.trackPlayed'; id: string; name: string } // records the bumper that just started
-
-export type CommandType = Command['type']

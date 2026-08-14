@@ -77,8 +77,6 @@ export function reduce(state: AppState, command: Command): AppState {
       return { ...state, audience: { ...state.audience, score: state.audience.score + 1 } }
     case 'audience.decrement':
       return { ...state, audience: { ...state.audience, score: state.audience.score - 1 } }
-    case 'audience.setScore':
-      return { ...state, audience: { ...state.audience, score: command.value } }
     case 'audience.setLabel':
       return { ...state, audience: { ...state.audience, label: command.label } }
     case 'audience.setVisible':

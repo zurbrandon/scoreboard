@@ -51,10 +51,6 @@ export type TextTemplate = 'basic' | 'quadrants'
 // Optional visual theme for a text slide (e.g. a game's look). Undefined = plain.
 export type TextTheme = 'spellingbee'
 
-// A slide in the unified Slides deck. All types share one queue, one selection,
-// and one reveal, so any slide flips the same way.
-export type SlideType = 'logo' | 'text' | 'image' | 'slideshow' | 'show'
-
 // The custom "show beats" — the scripted run-of-show intros the operator flips
 // through at the top of a match. Each is a full-screen themed card; some carry a
 // name (ref, single captain) or a roster (a team's players), some are just a
