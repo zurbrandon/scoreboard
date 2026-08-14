@@ -104,6 +104,7 @@ export function OperatorApp() {
   })
   const allSlides = useAppState((s) => s.slides.items)
   const selectedSlideId = useAppState((s) => s.slides.selectedId)
+  const liveSlideId = useAppState((s) => s.slides.live?.id ?? null)
 
   const [activeTab, setActiveTab] = useState<OperatorTab>('score')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -211,13 +212,23 @@ export function OperatorApp() {
   padRef.current = {
     reveal: () => pushActive(true),
     silent: () => pushActive(false),
-    // Move the selection within the active deck (preview only; clamps at the ends).
+    // Step through the active deck's slides (clamps at the ends). If the current
+    // slide is LIVE on the projector (you're "running" the show), advancing also
+    // reveals the next one so it plays straight through as you turn the knob.
+    // Otherwise it just moves the selection (preview) — nothing hits the screen.
     nav: (dir) => {
       if (!activeDeck) return
       const deckItems = allSlides.filter((s) => s.deck === activeDeck)
       const at = deckItems.findIndex((s) => s.id === selectedSlideId)
       const target = deckItems[Math.min(deckItems.length - 1, Math.max(0, (at < 0 ? 0 : at) + dir))]
-      if (target) dispatch({ type: 'slide.select', id: target.id })
+      if (!target || target.id === selectedSlideId) return
+      dispatch({ type: 'slide.select', id: target.id })
+      const runningLive = programScene === 'slides' && liveSlideId === selectedSlideId
+      if (runningLive) {
+        dispatch({ type: 'slide.commit' })
+        const animate = !(target.type === 'text' && target.liveType)
+        dispatch({ type: animate ? 'display.reveal' : 'display.set', scene: 'slides' })
+      }
     },
     cycleTab: () => {
       const order: OperatorTab[] = ['show', 'score', 'games']
