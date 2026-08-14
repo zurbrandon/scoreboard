@@ -1025,8 +1025,16 @@ button { font-family: inherit; cursor: pointer; }
 }
 /* Motion owns the transform (the grow); CSS just adds the accent ring/glow. */
 .fx-orb:hover { border-color: var(--accent); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), 0 0 14px rgba(255, 210, 63, 0.35); }
-.deck__onair { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+/* On-air readout: names what the audience is actually seeing (program). When it
+   drifts from the operator's current selection it goes gold — same language as
+   the armed Reveal button — so a mismatch reads at a glance. */
+.deck__onair { display: flex; align-items: baseline; justify-content: center; gap: 7px; font-size: 12px; letter-spacing: 0.04em; max-width: 460px; }
+.deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); align-self: center; flex: none; }
+.deck__onair-lead { color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.deck__onair-sep { color: #3a4258; }
+.deck__onair-item { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck__onair--drift .deck__onair-dot { background: var(--accent); box-shadow: 0 0 8px rgba(255, 210, 63, 0.6); }
+.deck__onair--drift .deck__onair-item { color: var(--accent); }
 /* Overlay-effect buttons — a little strip below the reveal deck for fun. */
 /* Secondary deck row: the always-visible Run-out / Run-in pair plus the Effects
    drawer trigger, tucked to the right. */

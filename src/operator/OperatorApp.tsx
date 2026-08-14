@@ -10,7 +10,7 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { ImageSlide, LogoSlide, OperatorTab, Scene, ShowBeat, ShowSlide, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
 import type { Command } from '../core/commands'
 import { REVEAL_STYLES, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
@@ -27,11 +27,22 @@ const TABS: { tab: OperatorTab; label: string; Icon: IconType }[] = [
   { tab: 'games', label: 'Games', Icon: MdSportsEsports },
 ]
 
-const ON_AIR_LABEL: Record<Scene, string> = {
-  scoreboard: 'Score',
-  slides: 'Slide',
-  black: 'Black',
-  moment: 'Moment',
+// A short, human name for whatever slide is on air — so the deck's on-air
+// readout says *which* slide (not just "Slide"). Show beats reuse their menu
+// labels; text slides show their headline.
+function describeSlide(slide: Slide): string {
+  switch (slide.type) {
+    case 'show':
+      return SHOW_BEAT_META[slide.beat]?.label ?? 'Show slide'
+    case 'text':
+      return slide.headline.trim() || 'Text slide'
+    case 'logo':
+      return slide.name.trim() || 'Logo'
+    case 'image':
+      return 'Image'
+    case 'slideshow':
+      return 'Slideshow'
+  }
 }
 
 // Overlay effects — fire on top of whatever scene is showing. Two groups:
@@ -106,6 +117,21 @@ export function OperatorApp() {
   const selectedSlideId = useAppState((s) => s.slides.selectedId)
   const liveSlideId = useAppState((s) => s.slides.live?.id ?? null)
   const liveMode = useAppState((s) => s.liveMode)
+
+  // What the audience is *actually* seeing right now (program), named specifically.
+  // Selector returns a primitive string so its ref stays stable.
+  const onAirLabel = useAppState((s) => {
+    switch (s.scene) {
+      case 'black':
+        return 'Black'
+      case 'moment':
+        return 'Moment'
+      case 'scoreboard':
+        return `Scoreboard · ${s.teams.blue.name} ${s.teams.blue.liveScore}, ${s.teams.red.name} ${s.teams.red.liveScore}`
+      case 'slides':
+        return s.slides.live ? describeSlide(s.slides.live) : 'Slide'
+    }
+  })
 
   const [activeTab, setActiveTab] = useState<OperatorTab>('score')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -374,9 +400,18 @@ export function OperatorApp() {
       </div>
 
       <footer className="deck">
-        <div className="deck__onair">
+        <div
+          className={`deck__onair ${armed ? 'deck__onair--drift' : ''}`}
+          title={
+            armed
+              ? "The audience is seeing this — it's not what you have selected"
+              : 'The audience is seeing this'
+          }
+        >
           <span className="deck__onair-dot" />
-          on air · {ON_AIR_LABEL[programScene]}
+          <span className="deck__onair-lead">On air</span>
+          <span className="deck__onair-sep">·</span>
+          <span className="deck__onair-item">{onAirLabel}</span>
         </div>
         <div className="deck__main">
           {/* Black screen, styled as a little "screen": a dark box with a light
