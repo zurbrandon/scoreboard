@@ -80,6 +80,9 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   // Overlay effects, on top of whatever's showing.
   { accelerator: `${MOD}+F`, action: { type: 'effect', kind: 'confetti' }, label: 'Confetti' },
   { accelerator: `${MOD}+D`, action: { type: 'effect', kind: 'fireworks' }, label: 'Fireworks' },
+  // Verdict slams — great for games (right/wrong answers).
+  { accelerator: `${MOD}+Y`, action: { type: 'effect', kind: 'success' }, label: 'Yes / correct' },
+  { accelerator: `${MOD}+N`, action: { type: 'effect', kind: 'nope' }, label: 'No / wrong' },
 ]
 
 // How much one dial tick / keypress moves the duck (fraction of full volume).
