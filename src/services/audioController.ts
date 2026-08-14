@@ -293,14 +293,18 @@ export function createAudioController(store: Store): AudioController {
     // Reveal (not silent), so a quiet update never trips a cue.
     //   • a blackout beat, or a "No music" cue → gracefully fade what's playing
     //   • a track cue → start that track (rides; no-restart if it's already on)
+    //   • a generic captain (deck quick button, no cue) → a random bumper from
+    //     the score-music folder, so the captain intro has some hype behind it
     //   • otherwise (Continue) → leave the audio alone
     if (s.revealAnimNonce !== lastAnimNonce) {
       lastAnimNonce = s.revealAnimNonce
       const live = s.scene === 'slides' ? s.slides.live : null
       const isBlackout = live?.type === 'show' && live.beat === 'blackout'
+      const isGenericCaptain = live?.type === 'show' && !!live.generic
       const cue = live && 'cue' in live ? live.cue : undefined
       if (isBlackout || cue?.silence) fadeOutOver(BLACK_FADE_MS)
       else if (cue?.trackId) playTrackById(cue.trackId)
+      else if (isGenericCaptain) playBumper(false) // random score-folder track
     }
     // Run-out / run-in moment fired → play a random song from its pool.
     if (s.momentNonce !== lastMomentNonce) {
