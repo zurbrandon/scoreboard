@@ -68,7 +68,15 @@ export function createAudioController(store: Store): AudioController {
     // macro-pad dial's temporary duck (music.duck). Runs on every state change,
     // so turning the dial adjusts a playing track live.
     const { volume, duck } = store.getState().music
-    audio.volume = Math.max(0, Math.min(1, volume * fadeGain * (duck ?? 1)))
+    // The duck (macro-pad dial) is a linear 0–1 position, but audio.volume is
+    // linear while hearing is logarithmic — so a straight 10%→0 dip at the bottom
+    // sounds like a cliff. Square it: equal dial steps then sound even, and by the
+    // time the dial reads ~10% the gain is already ~1% (near silent), so the final
+    // step to zero is inaudible instead of an abrupt cut. Duck = 1 (not ducking)
+    // stays 1, so normal playback and the volume slider are untouched.
+    const d = duck ?? 1
+    const duckGain = d * d
+    audio.volume = Math.max(0, Math.min(1, volume * fadeGain * duckGain))
   }
 
   // Mirror "is reveal sound playing" into the store (deduped) so the operator's

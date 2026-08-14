@@ -59,5 +59,7 @@ export const DEFAULT_HOTKEYS: HotkeyBinding[] = [
   { accelerator: `${MOD}+]`, action: { type: 'duck.up' }, label: 'Music duck up' },
 ]
 
-// How much one dial tick / keypress moves the duck (fraction of full volume).
-export const DUCK_STEP = 0.1
+// How much one dial tick / keypress moves the duck position (0–1). Kept small so
+// the knob is fine-grained; the perceptual squaring in the audio controller does
+// the heavy lifting for a smooth fade (see applyVolume).
+export const DUCK_STEP = 0.05
