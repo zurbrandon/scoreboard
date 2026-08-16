@@ -1235,7 +1235,10 @@ button { font-family: inherit; cursor: pointer; }
   margin: 3vh 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr) — NOT a bare 1fr, whose `auto` minimum lets a long unbreakable
+     name (e.g. "Reallylonglastnam") widen its column and throw the two out of
+     alignment. This pins both columns to exactly equal halves regardless of name. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.4vh 1.6vw;
   width: min(66vw, 62rem);
 }
@@ -1246,9 +1249,10 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 3vw;
   font-weight: 800;
   line-height: 1.15;
-  /* Wrap only at spaces (first name / last name) — never mid-word. `anywhere`
-     used to break names like "Gree / nfield". */
-  overflow-wrap: normal;
+  /* Prefer breaking at spaces (first / last on two lines); break inside a word
+     only when it can't fit the tile. `break-word` (not `anywhere`) keeps normal
+     names like "Greenfield" whole instead of chopping them mid-word. */
+  overflow-wrap: break-word;
   word-break: normal;
   hyphens: none;
 }
