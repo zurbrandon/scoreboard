@@ -1245,8 +1245,12 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(255, 255, 255, 0.14);
   font-size: 3vw;
   font-weight: 800;
-  line-height: 1.1;
-  overflow-wrap: anywhere;
+  line-height: 1.15;
+  /* Wrap only at spaces (first name / last name) — never mid-word. `anywhere`
+     used to break names like "Gree / nfield". */
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 /* Team welcome / single captain: solid team color, angled band texture, and a
