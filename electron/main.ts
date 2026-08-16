@@ -207,7 +207,7 @@ function createOperatorWindow() {
     y: bounds?.y,
     title: 'Showboard — Operator',
     backgroundColor: '#0c0e14',
-    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false },
+    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   })
   loadRoute(operatorWin, 'operator')
 
@@ -232,7 +232,7 @@ function createProjectorWindow() {
     title: 'Showboard — Projector',
     backgroundColor: '#000000',
     autoHideMenuBar: true,
-    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false },
+    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   })
   loadRoute(projectorWin, 'projector')
   projectorWin.on('closed', () => {
@@ -442,6 +442,15 @@ function registerGlobalShortcuts() {
   }
   console.log('[main] registered %d global shortcuts', DEFAULT_HOTKEYS.length)
 }
+
+// Keep both renderers running at full speed even when they're not focused or are
+// occluded by the sound program. Without this, Chromium throttles background
+// windows — timers slow and requestAnimationFrame pauses — so a reveal fired from
+// the macro-pad (while the operator window is in the background) wouldn't animate,
+// even though clicking REVEAL in-app would. A live-show display must never sleep.
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
 
 app.whenReady().then(() => {
   protocol.handle('sbmedia', (request) => {
