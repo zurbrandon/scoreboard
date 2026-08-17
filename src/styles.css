@@ -1961,10 +1961,12 @@ button { font-family: inherit; cursor: pointer; }
   max-width: 92vw;
   padding: 0 4vw;
   text-align: center;
-  font-family: 'Geist Pixel', 'Arial Black', system-ui, sans-serif;
+  /* Inherit the body sans (the bold font the show slides use), not the pixel
+     scoreboard font. */
   font-weight: 900;
   font-size: 15vh;
   line-height: 0.98;
+  letter-spacing: -0.015em;
   text-transform: uppercase;
   color: #fff;
   text-shadow: 0 0 2vw rgba(0, 0, 0, 0.55);
