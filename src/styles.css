@@ -1228,30 +1228,27 @@ button { font-family: inherit; cursor: pointer; }
   background: linear-gradient(105deg, transparent 22%, rgba(255, 255, 255, 0.14) 50%, transparent 78%);
 }
 /* Roster as a 2×2 grid of frosted name chips. */
+/* Roster: a simple centered stack — each name on its own line, no tile behind
+   it. Full card width per name, so realistic names sit on one line and only wrap
+   (at spaces) if truly enormous — no tiles to force awkward halves. */
 .show__roster {
   position: relative;
   z-index: 1;
   list-style: none;
   margin: 3vh 0 0;
   padding: 0;
-  display: grid;
-  /* minmax(0, 1fr) — NOT a bare 1fr, whose `auto` minimum lets a long unbreakable
-     name (e.g. "Reallylonglastnam") widen its column and throw the two out of
-     alignment. This pins both columns to exactly equal halves regardless of name. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.4vh 1.6vw;
-  width: min(66vw, 62rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2vh;
+  width: min(88vw, 74rem);
 }
 .show__roster-item {
-  padding: 1.2vh 2vw;
-  border-radius: 1vw;
-  background: rgba(255, 255, 255, 0.14);
-  /* 3vw is the starting size; useFitRoster shrinks it (uniformly) as needed so
-     long names fit. Wrap only at spaces — never mid-word — so the fit logic can
-     see a too-wide word as overflow and scale it down instead of chopping it. */
-  font-size: 3vw;
+  font-size: 3.4vw;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.1;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
