@@ -6,6 +6,7 @@
 // Animation follows the projector rule: transform/opacity only, never per-frame
 // blur — the ref stripes are one wide striped element sliding on translateX.
 
+import { useLayoutEffect, useRef } from 'react'
 import { motion } from 'motion/react'
 import type { ShowSlide, TeamId } from '../../core/state'
 import { logoSrc } from './LogoScene'
@@ -16,6 +17,42 @@ function rosterLines(roster: string): string[] {
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
+}
+
+// Auto-fit the roster names: shrink the whole grid's font (uniformly, so every
+// tile matches) until no name overflows its equal-width tile — names then wrap
+// only at spaces (first / last on two lines) and never break mid-word, at any
+// projector size or name length. Re-runs when the names or the grid width change.
+// Measures scrollWidth/clientWidth, which ignore the entrance scale transform.
+function useFitRoster(rosterKey: string) {
+  const ref = useRef<HTMLUListElement>(null)
+  useLayoutEffect(() => {
+    const ul = ref.current
+    if (!ul) return
+    let lastWidth = -1
+    const fit = () => {
+      // Skip re-runs triggered by our own height changes (width is what matters).
+      if (ul.clientWidth === lastWidth) return
+      lastWidth = ul.clientWidth
+      const items = Array.from(ul.children) as HTMLElement[]
+      if (!items.length) return
+      const max = window.innerWidth * 0.03 // the 3vw design size…
+      const min = window.innerWidth * 0.012 // …shrinking no further than 1.2vw
+      let size = max
+      const apply = (px: number) => items.forEach((el) => (el.style.fontSize = `${px}px`))
+      apply(size)
+      let guard = 0
+      while (size > min && items.some((el) => el.scrollWidth > el.clientWidth + 0.5) && guard++ < 80) {
+        size = Math.max(min, size - 1)
+        apply(size)
+      }
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(ul)
+    return () => ro.disconnect()
+  }, [rosterKey])
+  return ref
 }
 
 // A bright gold bar that wipes in under the title — the broadcast "accent rule".
@@ -65,6 +102,7 @@ function TeamCard({
   animate: boolean
 }) {
   const slam = { type: 'spring' as const, stiffness: 520, damping: 16, mass: 0.9 }
+  const rosterRef = useFitRoster((roster ?? []).join('\n'))
   return (
     <div className={`show show--team show--${side}`}>
       <div className="show__stars" aria-hidden>
@@ -89,7 +127,7 @@ function TeamCard({
       </motion.div>
       <AccentBar animate={animate} delay={0.3} />
       {roster && roster.length > 0 && (
-        <ul className="show__roster">
+        <ul className="show__roster" ref={rosterRef}>
           {roster.map((n, i) => (
             <motion.li
               key={i}

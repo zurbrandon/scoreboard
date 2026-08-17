@@ -1246,13 +1246,13 @@ button { font-family: inherit; cursor: pointer; }
   padding: 1.2vh 2vw;
   border-radius: 1vw;
   background: rgba(255, 255, 255, 0.14);
+  /* 3vw is the starting size; useFitRoster shrinks it (uniformly) as needed so
+     long names fit. Wrap only at spaces — never mid-word — so the fit logic can
+     see a too-wide word as overflow and scale it down instead of chopping it. */
   font-size: 3vw;
   font-weight: 800;
   line-height: 1.15;
-  /* Prefer breaking at spaces (first / last on two lines); break inside a word
-     only when it can't fit the tile. `break-word` (not `anywhere`) keeps normal
-     names like "Greenfield" whole instead of chopping them mid-word. */
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
 }
