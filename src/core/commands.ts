@@ -61,6 +61,10 @@ export type Command =
   | { type: 'template.rename'; id: string; name: string }
   | { type: 'template.remove'; id: string }
   | { type: 'template.setActive'; deck: SlideDeck; id: string | null } // mark which template a deck is currently loaded from
+  // Curated named slideshows (managed in Settings; picked on a slideshow slide).
+  | { type: 'slideshow.save'; id: string; name: string; url: string }
+  | { type: 'slideshow.update'; id: string; name: string; url: string }
+  | { type: 'slideshow.remove'; id: string }
   // The main event.
   | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

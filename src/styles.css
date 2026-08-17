@@ -747,6 +747,38 @@ button { font-family: inherit; cursor: pointer; }
 /* Slideshow slide: no image, just a labeled tag in the preview area. */
 .slideshow-card__preview { background: radial-gradient(120% 100% at 50% 0%, #10233a, #0b0e16); }
 .slideshow-card__tag { color: var(--accent); font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
+.slideshow-card__pick { cursor: pointer; margin-bottom: 6px; }
+
+/* Slideshow library (Settings): rows of name + published URL, plus an add row. */
+.ss-lib { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.ss-lib__row { display: flex; align-items: center; gap: 8px; }
+.ss-lib__name { flex: 0 0 34%; }
+.ss-lib__url { flex: 1; }
+.ss-lib__name,
+.ss-lib__url {
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid #2c3346;
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+}
+.ss-lib__name:focus,
+.ss-lib__url:focus { outline: none; border-color: var(--accent); }
+.ss-lib__del {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #2c3346;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.ss-lib__del:hover { border-color: var(--red); color: var(--red); }
 .logo-card__site {
   width: 100%;
   background: var(--panel-2);

@@ -250,6 +250,30 @@ export function normSavedTemplates(v: unknown): SavedTemplate[] {
   return out
 }
 
+// --- Saved slideshows (a curated, named library) ----------------------------
+// The owner defines the "approved" slideshows once (each a published embed URL —
+// Google Slides …/pub?start=true&loop=true, or Canva …/watch?embed) in Settings.
+// When building a slideshow slide the operator picks one by name (or pastes a
+// custom URL), so mid-show you find "ComedySportz" without hunting for a link.
+// Picking copies the URL onto the slide (a later library edit won't retro-change
+// existing slides). Persisted.
+export interface SavedSlideshow {
+  id: string
+  name: string
+  url: string
+}
+export function normSavedSlideshows(v: unknown): SavedSlideshow[] {
+  if (!Array.isArray(v)) return []
+  const out: SavedSlideshow[] = []
+  for (const s of v) {
+    if (!s || typeof s !== 'object') continue
+    const r = s as Record<string, unknown>
+    if (typeof r.id !== 'string' || typeof r.name !== 'string') continue
+    out.push({ id: r.id, name: r.name, url: typeof r.url === 'string' ? r.url : '' })
+  }
+  return out
+}
+
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {
@@ -322,6 +346,9 @@ export interface AppState {
    *  built from a code built-in / hand-built. Lets the picker show "you're on X"
    *  and offer Update when the deck has diverged. Persisted. */
   activeTemplate: Record<SlideDeck, string | null>
+  /** Curated, named slideshows the operator picks from when building a slideshow
+   *  slide (managed in Settings). Persisted. See SavedSlideshow. */
+  savedSlideshows: SavedSlideshow[]
   revealPhase: RevealPhase
   /** Which winner-celebration animation the current reveal uses (random each time). */
   revealStyle: RevealStyle
@@ -400,6 +427,7 @@ export function createInitialState(): AppState {
     },
     savedTemplates: defaultSavedTemplates(),
     activeTemplate: { show: null, games: null },
+    savedSlideshows: [],
     revealPhase: 'idle',
     revealStyle: 'pop',
     revealAnimNonce: 0,

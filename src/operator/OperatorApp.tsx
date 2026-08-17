@@ -1747,6 +1747,10 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
 function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; selected: boolean }) {
   const dispatch = useDispatch()
   const [confirming, setConfirming] = useState(false)
+  // Curated slideshows (defined in Settings). Pick one by name — copies its URL
+  // onto the slide — or paste a custom link below.
+  const slideshows = useAppState((s) => s.savedSlideshows)
+  const matched = slideshows.find((s) => s.url && s.url === slide.url)
   return (
     <div
       className={`logo-card ${selected ? 'logo-card--active' : ''}`}
@@ -1755,11 +1759,30 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
       <div className="logo-card__preview slideshow-card__preview">
         <span className="slideshow-card__tag">▶ Slideshow</span>
       </div>
+      {slideshows.length > 0 && (
+        <select
+          className="logo-card__site slideshow-card__pick"
+          value={matched?.id ?? ''}
+          aria-label="Choose a saved slideshow"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            const ss = slideshows.find((x) => x.id === e.target.value)
+            if (ss) dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: ss.url })
+          }}
+        >
+          <option value="">{matched ? 'Saved slideshow…' : 'Choose a saved slideshow…'}</option>
+          {slideshows.map((ss) => (
+            <option key={ss.id} value={ss.id}>
+              {ss.name}
+            </option>
+          ))}
+        </select>
+      )}
       <input
         className="logo-card__site"
         type="text"
         value={slide.url}
-        placeholder="Published Google Slides link (…/pub?start=true&loop=true)"
+        placeholder="…or paste a link (Google …/pub or Canva …/watch?embed)"
         aria-label="Slideshow link"
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: e.target.value })}

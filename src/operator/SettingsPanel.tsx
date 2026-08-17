@@ -6,6 +6,7 @@ import { MusicPanel } from './MusicPanel'
 import { MomentMusicPanel } from './MomentMusicPanel'
 import { DrumrollPicker } from './DrumrollPicker'
 import { ProjectorDisplayPicker } from './ProjectorDisplayPicker'
+import { SlideshowLibraryPanel } from './SlideshowLibraryPanel'
 
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   return (
@@ -21,6 +22,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <section className="settings-section">
           <h3>Bumper music</h3>
           <MusicPanel />
+        </section>
+
+        <section className="settings-section">
+          <h3>Slideshows</h3>
+          <SlideshowLibraryPanel />
         </section>
 
         {window.showboard && (

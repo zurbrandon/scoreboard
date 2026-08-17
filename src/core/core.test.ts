@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialState, templateSkeleton, normSavedTemplates } from './state'
+import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows } from './state'
 import type { AppState, LogoSlide, ShowSlide, Slide, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
@@ -527,6 +527,28 @@ describe('saved templates', () => {
   it('normSavedTemplates falls back to the seed when absent, keeps a valid array', () => {
     expect(normSavedTemplates(undefined).length).toBeGreaterThan(0)
     expect(normSavedTemplates([])).toEqual([])
+  })
+})
+
+describe('saved slideshows (curated library)', () => {
+  it('starts empty; save / update / remove', () => {
+    expect(createInitialState().savedSlideshows).toEqual([])
+    let s = run({ type: 'slideshow.save', id: 'cs', name: 'ComedySportz', url: 'https://x/pub' })
+    expect(s.savedSlideshows).toEqual([{ id: 'cs', name: 'ComedySportz', url: 'https://x/pub' }])
+    s = reduce(s, { type: 'slideshow.update', id: 'cs', name: 'CSz', url: 'https://y/watch?embed' })
+    expect(s.savedSlideshows[0]).toEqual({ id: 'cs', name: 'CSz', url: 'https://y/watch?embed' })
+    s = reduce(s, { type: 'slideshow.remove', id: 'cs' })
+    expect(s.savedSlideshows).toEqual([])
+  })
+
+  it('normSavedSlideshows drops junk, defaults a missing url to empty', () => {
+    expect(normSavedSlideshows(undefined)).toEqual([])
+    expect(
+      normSavedSlideshows([{ id: 'a', name: 'A' }, { name: 'no id' }, { id: 'b', name: 'B', url: 'u' }]),
+    ).toEqual([
+      { id: 'a', name: 'A', url: '' },
+      { id: 'b', name: 'B', url: 'u' },
+    ])
   })
 })
 

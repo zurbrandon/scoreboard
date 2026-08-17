@@ -188,6 +188,20 @@ function baseReduce(state: AppState, command: Command): AppState {
     }
     case 'template.setActive':
       return { ...state, activeTemplate: { ...state.activeTemplate, [command.deck]: command.id } }
+    case 'slideshow.save':
+      return {
+        ...state,
+        savedSlideshows: [...state.savedSlideshows, { id: command.id, name: command.name, url: command.url }],
+      }
+    case 'slideshow.update':
+      return {
+        ...state,
+        savedSlideshows: state.savedSlideshows.map((s) =>
+          s.id === command.id ? { ...s, name: command.name, url: command.url } : s,
+        ),
+      }
+    case 'slideshow.remove':
+      return { ...state, savedSlideshows: state.savedSlideshows.filter((s) => s.id !== command.id) }
     case 'slide.addLogo':
       return {
         ...state,
