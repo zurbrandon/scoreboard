@@ -833,10 +833,18 @@ const SHOW_TEMPLATES: { id: string; label: string; build: (mk: () => string) => 
   {
     id: 'csz-standard',
     label: 'ComedySportz — Standard show',
+    // The run of show: a pre-show slideshow, then the intro beats in order, with
+    // a blackout after the ref and after the red team — so the whole open can be
+    // run by just tapping "next slide" down the list. ('slideshow' = the pre-show
+    // Google Slides slide; everything else is a show beat.)
     build: (mk) =>
       (
-        ['ref', 'logo', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red'] as ShowBeat[]
-      ).map((beat) => ({ type: 'slide.addShow', id: mk(), beat, deck: 'show' }) as Command),
+        ['slideshow', 'logo', 'ref', 'blackout', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red'] as const
+      ).map((kind) =>
+        kind === 'slideshow'
+          ? ({ type: 'slide.addSlideshow', id: mk(), deck: 'show' } as Command)
+          : ({ type: 'slide.addShow', id: mk(), beat: kind, deck: 'show' } as Command),
+      ),
   },
   {
     id: 'csz-simple',
