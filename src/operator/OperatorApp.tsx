@@ -824,6 +824,35 @@ const GAMES: { id: string; label: string; build: (mk: () => string) => Command[]
   },
 ]
 
+// Show templates: pick one and it REPLACES the Show deck with a preset run of
+// beats — a starting point the operator then adds to / reorders / edits. Mirrors
+// GAMES. Music is install-specific (tracks come from the operator's own folder),
+// so a template sets up the beats and leaves each slide's music cue to the
+// operator. Add a variation (e.g. a specific late-night show) by adding an entry.
+const SHOW_TEMPLATES: { id: string; label: string; build: (mk: () => string) => Command[] }[] = [
+  {
+    id: 'csz-standard',
+    label: 'ComedySportz — Standard show',
+    build: (mk) =>
+      (
+        ['ref', 'logo', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red'] as ShowBeat[]
+      ).map((beat) => ({ type: 'slide.addShow', id: mk(), beat, deck: 'show' }) as Command),
+  },
+  {
+    id: 'csz-simple',
+    label: 'ComedySportz — Simple (logo + players)',
+    build: (mk) =>
+      (['logo', 'players'] as ShowBeat[]).map(
+        (beat) => ({ type: 'slide.addShow', id: mk(), beat, deck: 'show' }) as Command,
+      ),
+  },
+  {
+    id: 'blank',
+    label: 'Blank — start from scratch',
+    build: () => [],
+  },
+]
+
 // The scripted show-intro beats: the label shown on the card / add-menu, and
 // which editable field (if any) the operator fills in. Order here is the order
 // they're offered in the "add slide" menu — the same as the default sequence.
@@ -887,17 +916,19 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   const commitOrder = () => dispatch({ type: 'slide.reorder', ids: orderRef.current })
 
-  // Load a game template: REPLACE this deck with the game's slides (clear first,
-  // so picking games doesn't pile them up), then select the first. To build by
-  // hand instead, skip the picker and use "add slide" below.
-  function loadGame(game: (typeof GAMES)[number]) {
+  // Load a preset (a game or a show template): REPLACE this deck with the
+  // preset's slides (clear first, so picking doesn't pile them up), then select
+  // the first. To build by hand instead, skip the picker and use "add slide".
+  function loadPreset(preset: { build: (mk: () => string) => Command[] }) {
     dispatch({ type: 'slide.clearDeck', deck })
     const ids: string[] = []
-    game.build(() => {
-      const id = newSlideId('game')
-      ids.push(id)
-      return id
-    }).forEach(dispatch)
+    preset
+      .build(() => {
+        const id = newSlideId(deck === 'show' ? 'show' : 'game')
+        ids.push(id)
+        return id
+      })
+      .forEach(dispatch)
     if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
   }
 
@@ -915,6 +946,26 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   return (
     <div className="cards">
+      {deck === 'show' && (
+        <select
+          className="game-picker"
+          value=""
+          aria-label="Start from a template"
+          onChange={(e) => {
+            const t = SHOW_TEMPLATES.find((x) => x.id === e.target.value)
+            if (t) loadPreset(t)
+          }}
+        >
+          <option value="" disabled>
+            Start from a template…
+          </option>
+          {SHOW_TEMPLATES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      )}
       {deck === 'games' && (
         <select
           className="game-picker"
@@ -922,7 +973,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
           aria-label="Choose a game"
           onChange={(e) => {
             const game = GAMES.find((g) => g.id === e.target.value)
-            if (game) loadGame(game)
+            if (game) loadPreset(game)
           }}
         >
           <option value="" disabled>
@@ -935,33 +986,35 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
           ))}
         </select>
       )}
+      {/* No AnimatePresence here: wrapping Reorder.Items in it orphaned exiting
+          rows when the whole deck is replaced at once (loading a template), so a
+          fresh set piled on top of ghosts of the old. Reorder.Item still plays
+          its enter animation on mount; removals just cut cleanly (no exit fade). */}
       <Reorder.Group axis="y" values={order} onReorder={setOrder} className="slide-list" as="div">
-        <AnimatePresence initial={false}>
-          {order.map((id, i) => {
-            const slide = itemsById.get(id)
-            if (!slide) return null
-            return (
-              <SlideRow
-                key={id}
-                id={id}
-                index={i}
-                selected={id === selectedId}
-                onSelect={() => dispatch({ type: 'slide.select', id })}
-                onDrop={commitOrder}
-              >
-                {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
-                {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
-                {slide.type === 'slideshow' && (
-                  <SlideshowSlideCard slide={slide} selected={slide.id === selectedId} />
-                )}
-                {slide.type === 'show' && <ShowSlideCard slide={slide} selected={slide.id === selectedId} />}
-                {slide.type === 'text' && (
-                  <TextSlideCard slide={slide} selected={slide.id === selectedId} />
-                )}
-              </SlideRow>
-            )
-          })}
-        </AnimatePresence>
+        {order.map((id, i) => {
+          const slide = itemsById.get(id)
+          if (!slide) return null
+          return (
+            <SlideRow
+              key={id}
+              id={id}
+              index={i}
+              selected={id === selectedId}
+              onSelect={() => dispatch({ type: 'slide.select', id })}
+              onDrop={commitOrder}
+            >
+              {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
+              {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
+              {slide.type === 'slideshow' && (
+                <SlideshowSlideCard slide={slide} selected={slide.id === selectedId} />
+              )}
+              {slide.type === 'show' && <ShowSlideCard slide={slide} selected={slide.id === selectedId} />}
+              {slide.type === 'text' && (
+                <TextSlideCard slide={slide} selected={slide.id === selectedId} />
+              )}
+            </SlideRow>
+          )
+        })}
       </Reorder.Group>
 
       {addOpen ? (
