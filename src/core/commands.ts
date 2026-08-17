@@ -60,6 +60,7 @@ export type Command =
   | { type: 'template.update'; id: string; slides: Slide[] }
   | { type: 'template.rename'; id: string; name: string }
   | { type: 'template.remove'; id: string }
+  | { type: 'template.setActive'; deck: SlideDeck; id: string | null } // mark which template a deck is currently loaded from
   // The main event.
   | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

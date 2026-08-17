@@ -495,8 +495,14 @@ button { font-family: inherit; cursor: pointer; }
 .add-card:hover { border-color: var(--accent); color: var(--text); }
 
 /* Games deck: the game template picker (pick → instantiates that game's slides). */
-.game-picker {
+/* Template picker: a custom dropdown. The button shows the deck's current
+   template; the menu loads / saves / updates / renames / deletes. */
+.tpl { position: relative; }
+.tpl__button {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px dashed #3a4560;
@@ -505,45 +511,87 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  text-align: left;
 }
-.game-picker:hover { border-color: var(--accent); }
-.game-picker { flex: 1; min-width: 0; }
-
-/* Template bar: the load picker + a "Templates ▾" manage button, with the manage
-   popover anchored under it. */
-.tpl-bar { position: relative; display: flex; align-items: stretch; gap: 8px; }
-.tpl-manage {
-  flex: none;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid #2c3346;
-  background: var(--panel);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.tpl-manage:hover, .tpl-manage--open { border-color: var(--accent); color: var(--text); }
-.tpl-pop {
+.tpl__button:hover, .tpl__button--open { border-color: var(--accent); }
+.tpl__button-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tpl__dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px rgba(255, 210, 63, 0.6); }
+.tpl__chev { flex: none; color: var(--muted); font-size: 12px; }
+.tpl__menu {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
   left: 0;
-  z-index: 20;
+  right: 0;
+  z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: 2px;
+  padding: 8px;
   border-radius: 12px;
   border: 1px solid #2c3346;
   background: var(--panel-2, #141a28);
-  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.72);
 }
-.tpl-pop__row { display: flex; align-items: center; gap: 6px; }
-.tpl-pop__new { margin-bottom: 2px; }
-.tpl-pop__label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-.tpl-pop__name {
+.tpl__label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 2px; }
+.tpl__row { display: flex; align-items: center; gap: 4px; border-radius: 8px; }
+.tpl__row--active { background: rgba(255, 255, 255, 0.04); }
+.tpl__name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+.tpl__name:hover { background: rgba(255, 255, 255, 0.06); }
+.tpl__name--builtin { color: var(--muted); font-weight: 500; }
+.tpl__check { flex: none; width: 12px; color: var(--accent); font-size: 10px; }
+.tpl__row-actions { display: flex; align-items: center; gap: 4px; padding-right: 4px; flex: none; }
+.tpl__pill {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, var(--panel));
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tpl__pill:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 34%, var(--panel)); }
+.tpl__pill:disabled { opacity: 0.4; cursor: default; }
+.tpl__pill--no { border-color: #2c3346; background: var(--panel); color: var(--muted); }
+.tpl__icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.tpl__icon:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.tpl__icon--del:hover { color: var(--red); }
+.tpl__confirm { display: flex; align-items: center; gap: 6px; padding-right: 4px; flex: none; }
+.tpl__confirm-q { font-size: 11px; color: var(--muted); }
+.tpl__input {
   flex: 1;
   min-width: 0;
   background: var(--panel);
@@ -554,26 +602,8 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 13px;
   padding: 6px 8px;
 }
-.tpl-pop__name:focus { outline: none; border-color: var(--accent); }
-.tpl-pop__tname { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tpl-pop__btn {
-  flex: none;
-  padding: 5px 9px;
-  border-radius: 8px;
-  border: 1px solid #2c3346;
-  background: var(--panel);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.tpl-pop__btn:hover:not(:disabled) { border-color: var(--accent); }
-.tpl-pop__btn:disabled { opacity: 0.4; cursor: default; }
-.tpl-pop__btn--save { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); border-color: var(--accent); }
-.tpl-pop__btn--del { color: var(--red); }
-.tpl-pop__btn--del:hover { border-color: var(--red); }
-.tpl-pop__close { align-self: flex-end; margin-top: 4px; background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
-.tpl-pop__close:hover { color: var(--text); }
+.tpl__input:focus { outline: none; border-color: var(--accent); }
+.tpl__new { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 8px 4px 2px; border-top: 1px solid #232a3a; }
 
 /* "Add a slide" menu (type/preset picker) shown in place of the + button. */
 .slide-add {

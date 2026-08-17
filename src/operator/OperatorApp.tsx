@@ -865,22 +865,79 @@ const SHOW_BEAT_ORDER: ShowBeat[] = [
 const newSlideId = (p: string) =>
   `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
-// Save / update / delete this deck's templates. Templates capture the deck's
-// current *skeleton* (order, types/beats, cues + pre-show link — but not the
-// per-show ref name / rosters), so this machine's music sticks and can be
-// re-saved anytime. Editing the live deck never changes a saved template; only
-// Update does.
-function TemplateManager({ deck, onClose }: { deck: SlideDeck; onClose: () => void }) {
+// Signature of a slide's reusable skeleton (ignores id + the per-show ref name /
+// rosters), used to tell when a deck has diverged from the template it was loaded
+// from — i.e. whether to offer "Update".
+function skeletonSig(s: Slide): string {
+  const cue =
+    s.type === 'show' && s.cue ? `e=${s.cue.effect ?? ''};t=${s.cue.trackId ?? ''};s=${s.cue.silence ? 1 : 0}` : ''
+  switch (s.type) {
+    case 'show':
+      return `show|${s.beat}|${cue}`
+    case 'slideshow':
+      return `slideshow|${s.url}`
+    case 'text':
+      return `text|${s.template}|${s.headline}|${s.body}|${s.quads.join('~')}`
+    case 'logo':
+      return `logo|${s.src}|${s.website}`
+    case 'image':
+      return `image|${s.src}`
+  }
+}
+const deckSignature = (slides: Slide[]): string => slides.map(skeletonSig).join('||')
+
+// The template control: a custom dropdown. The button shows the template the deck
+// is currently on; open it to load another, save the deck as a new one, or — for
+// the active template, only once the deck has diverged — Update it (with a confirm).
+// Rename / delete live inline per row. Replaces the old <select> + manager popover.
+function TemplatePicker({ deck }: { deck: SlideDeck }) {
   const dispatch = useDispatch()
-  const templates = useAppState((s) => s.savedTemplates).filter((t) => t.deck === deck)
+  const savedTemplates = useAppState((s) => s.savedTemplates).filter((t) => t.deck === deck)
+  const activeId = useAppState((s) => s.activeTemplate[deck])
   const deckSlides = useAppState((s) => s.slides.items).filter((s) => s.deck === deck)
+  const builtins = deck === 'games' ? GAMES : SHOW_BUILTINS
+
+  const [open, setOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameText, setRenameText] = useState('')
+  const [confirmUpdateId, setConfirmUpdateId] = useState<string | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    window.addEventListener('pointerdown', onDown)
+    return () => window.removeEventListener('pointerdown', onDown)
+  }, [open])
+
+  const activeTpl = savedTemplates.find((t) => t.id === activeId) ?? null
+  const dirty = activeTpl ? deckSignature(deckSlides) !== deckSignature(activeTpl.slides) : false
 
   // Snapshot the current deck as a reusable skeleton with fresh, template-scoped ids.
   const capture = (): Slide[] => deckSlides.map((s) => ({ ...templateSkeleton(s), id: newSlideId('tpl') }))
 
+  function loadSaved(t: SavedTemplate) {
+    const clones: Slide[] = t.slides.map((s) => ({ ...s, id: newSlideId(deck === 'show' ? 'show' : 'game') }))
+    dispatch({ type: 'slide.clearDeck', deck })
+    dispatch({ type: 'slide.addMany', deck, slides: clones })
+    dispatch({ type: 'template.setActive', deck, id: t.id })
+    setOpen(false)
+  }
+  function loadBuiltin(b: (typeof builtins)[number]) {
+    dispatch({ type: 'slide.clearDeck', deck })
+    const ids: string[] = []
+    b.build(() => {
+      const id = newSlideId(deck === 'show' ? 'show' : 'game')
+      ids.push(id)
+      return id
+    }).forEach(dispatch)
+    if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
+    dispatch({ type: 'template.setActive', deck, id: null })
+    setOpen(false)
+  }
   const saveNew = () => {
     const name = newName.trim()
     if (!name) return
@@ -889,74 +946,117 @@ function TemplateManager({ deck, onClose }: { deck: SlideDeck; onClose: () => vo
   }
 
   return (
-    <div className="tpl-pop" onClick={(e) => e.stopPropagation()}>
-      <div className="tpl-pop__row tpl-pop__new">
-        <input
-          className="tpl-pop__name"
-          value={newName}
-          placeholder="Save current deck as…"
-          aria-label="New template name"
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && saveNew()}
-        />
-        <button className="tpl-pop__btn tpl-pop__btn--save" onClick={saveNew} disabled={!newName.trim()}>
-          Save
-        </button>
-      </div>
-      {templates.length > 0 && <div className="tpl-pop__label">Your templates</div>}
-      {templates.map((t) => (
-        <div key={t.id} className="tpl-pop__row">
-          {renamingId === t.id ? (
-            <input
-              className="tpl-pop__name"
-              value={renameText}
-              autoFocus
-              aria-label="Rename template"
-              onChange={(e) => setRenameText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && renameText.trim()) {
-                  dispatch({ type: 'template.rename', id: t.id, name: renameText.trim() })
-                  setRenamingId(null)
-                } else if (e.key === 'Escape') {
-                  setRenamingId(null)
-                }
-              }}
-              onBlur={() => setRenamingId(null)}
-            />
-          ) : (
-            <span className="tpl-pop__tname" title={t.name}>
-              {t.name}
-            </span>
-          )}
-          <button
-            className="tpl-pop__btn"
-            title="Overwrite this template with the current deck"
-            onClick={() => dispatch({ type: 'template.update', id: t.id, slides: capture() })}
-          >
-            Update
-          </button>
-          <button
-            className="tpl-pop__btn"
-            title="Rename"
-            onClick={() => {
-              setRenamingId(t.id)
-              setRenameText(t.name)
-            }}
-          >
-            Rename
-          </button>
-          <button
-            className="tpl-pop__btn tpl-pop__btn--del"
-            title="Delete this template"
-            onClick={() => dispatch({ type: 'template.remove', id: t.id })}
-          >
-            ✕
-          </button>
-        </div>
-      ))}
-      <button className="tpl-pop__close" onClick={onClose}>
-        Done
+    <div className="tpl" ref={rootRef}>
+      <button className={`tpl__button ${open ? 'tpl__button--open' : ''}`} onClick={() => setOpen((o) => !o)}>
+        <span className="tpl__button-label">{activeTpl ? activeTpl.name : 'Start from a template…'}</span>
+        {dirty && <span className="tpl__dot" title="Unsaved changes to this template" />}
+        <span className="tpl__chev" aria-hidden>
+          ▾
+        </span>
       </button>
+      {open && (
+        <div className="tpl__menu">
+          {savedTemplates.length > 0 && <div className="tpl__label">Your templates</div>}
+          {savedTemplates.map((t) => {
+            const isActive = t.id === activeId
+            return (
+              <div key={t.id} className={`tpl__row ${isActive ? 'tpl__row--active' : ''}`}>
+                {renamingId === t.id ? (
+                  <input
+                    className="tpl__input"
+                    value={renameText}
+                    autoFocus
+                    aria-label="Rename template"
+                    onChange={(e) => setRenameText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && renameText.trim()) {
+                        dispatch({ type: 'template.rename', id: t.id, name: renameText.trim() })
+                        setRenamingId(null)
+                      } else if (e.key === 'Escape') setRenamingId(null)
+                    }}
+                    onBlur={() => setRenamingId(null)}
+                  />
+                ) : (
+                  <button className="tpl__name" onClick={() => loadSaved(t)} title="Load this template">
+                    <span className="tpl__check" aria-hidden>
+                      {isActive ? '●' : ''}
+                    </span>
+                    {t.name}
+                  </button>
+                )}
+                {confirmUpdateId === t.id ? (
+                  <span className="tpl__confirm">
+                    <span className="tpl__confirm-q">Update?</span>
+                    <button
+                      className="tpl__pill tpl__pill--yes"
+                      onClick={() => {
+                        dispatch({ type: 'template.update', id: t.id, slides: capture() })
+                        setConfirmUpdateId(null)
+                      }}
+                    >
+                      Yes
+                    </button>
+                    <button className="tpl__pill tpl__pill--no" onClick={() => setConfirmUpdateId(null)}>
+                      No
+                    </button>
+                  </span>
+                ) : (
+                  renamingId !== t.id && (
+                    <span className="tpl__row-actions">
+                      {isActive && dirty && (
+                        <button
+                          className="tpl__pill"
+                          title="Save the deck's changes back into this template"
+                          onClick={() => setConfirmUpdateId(t.id)}
+                        >
+                          Update
+                        </button>
+                      )}
+                      <button
+                        className="tpl__icon"
+                        title="Rename"
+                        onClick={() => {
+                          setRenamingId(t.id)
+                          setRenameText(t.name)
+                        }}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        className="tpl__icon tpl__icon--del"
+                        title="Delete template"
+                        onClick={() => dispatch({ type: 'template.remove', id: t.id })}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )
+                )}
+              </div>
+            )
+          })}
+          <div className="tpl__label">Start fresh</div>
+          {builtins.map((b) => (
+            <button key={b.id} className="tpl__name tpl__name--builtin" onClick={() => loadBuiltin(b)}>
+              <span className="tpl__check" aria-hidden></span>
+              {b.label}
+            </button>
+          ))}
+          <div className="tpl__new">
+            <input
+              className="tpl__input"
+              value={newName}
+              placeholder="Save current deck as…"
+              aria-label="New template name"
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && saveNew()}
+            />
+            <button className="tpl__pill tpl__pill--save" onClick={saveNew} disabled={!newName.trim()}>
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -995,34 +1095,6 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   const commitOrder = () => dispatch({ type: 'slide.reorder', ids: orderRef.current })
 
-  // This deck's saved templates (the operator's own, editable + persisted).
-  const savedTemplates = useAppState((s) => s.savedTemplates).filter((t) => t.deck === deck)
-  const builtins = deck === 'games' ? GAMES : SHOW_BUILTINS
-  const [tplOpen, setTplOpen] = useState(false)
-
-  // Load a code built-in ("Blank", the games): REPLACE this deck with the
-  // preset's slides (clear first, so picking doesn't pile them up), then select
-  // the first. To build by hand instead, skip the picker and use "add slide".
-  function loadPreset(preset: { build: (mk: () => string) => Command[] }) {
-    dispatch({ type: 'slide.clearDeck', deck })
-    const ids: string[] = []
-    preset
-      .build(() => {
-        const id = newSlideId(deck === 'show' ? 'show' : 'game')
-        ids.push(id)
-        return id
-      })
-      .forEach(dispatch)
-    if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
-  }
-
-  // Stamp a saved template into this deck: clone its slides with fresh ids so
-  // the deck and the stored template never share objects, then bulk-add.
-  function loadSaved(t: SavedTemplate) {
-    const clones: Slide[] = t.slides.map((s) => ({ ...s, id: newSlideId(deck === 'show' ? 'show' : 'game') }))
-    dispatch({ type: 'slide.clearDeck', deck })
-    dispatch({ type: 'slide.addMany', deck, slides: clones })
-  }
 
   async function onFiles(files: FileList | null) {
     for (const file of Array.from(files ?? [])) {
@@ -1038,51 +1110,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   return (
     <div className="cards">
-      <div className="tpl-bar">
-        <select
-          className="game-picker"
-          value=""
-          aria-label={deck === 'games' ? 'Choose a game' : 'Start from a template'}
-          onChange={(e) => {
-            const v = e.target.value
-            if (v.startsWith('saved:')) {
-              const t = savedTemplates.find((x) => x.id === v.slice(6))
-              if (t) loadSaved(t)
-            } else if (v.startsWith('builtin:')) {
-              const b = builtins.find((x) => x.id === v.slice(8))
-              if (b) loadPreset(b)
-            }
-          }}
-        >
-          <option value="" disabled>
-            {deck === 'games' ? 'Choose a game…' : 'Start from a template…'}
-          </option>
-          {savedTemplates.length > 0 && (
-            <optgroup label="Your templates">
-              {savedTemplates.map((t) => (
-                <option key={t.id} value={`saved:${t.id}`}>
-                  {t.name}
-                </option>
-              ))}
-            </optgroup>
-          )}
-          <optgroup label="Built-in">
-            {builtins.map((b) => (
-              <option key={b.id} value={`builtin:${b.id}`}>
-                {b.label}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-        <button
-          className={`tpl-manage ${tplOpen ? 'tpl-manage--open' : ''}`}
-          onClick={() => setTplOpen((o) => !o)}
-          title="Save / update / delete templates"
-        >
-          Templates ▾
-        </button>
-        {tplOpen && <TemplateManager deck={deck} onClose={() => setTplOpen(false)} />}
-      </div>
+      <TemplatePicker deck={deck} />
       {/* No AnimatePresence here: wrapping Reorder.Items in it orphaned exiting
           rows when the whole deck is replaced at once (loading a template), so a
           fresh set piled on top of ghosts of the old. Reorder.Item still plays

@@ -318,6 +318,10 @@ export interface AppState {
   /** Reusable deck templates the operator can stamp into Show/Games and edit in
    *  place. Persisted, seeded on first run. See SavedTemplate. */
   savedTemplates: SavedTemplate[]
+  /** Which saved template each deck was last loaded from (per deck), or null if
+   *  built from a code built-in / hand-built. Lets the picker show "you're on X"
+   *  and offer Update when the deck has diverged. Persisted. */
+  activeTemplate: Record<SlideDeck, string | null>
   revealPhase: RevealPhase
   /** Which winner-celebration animation the current reveal uses (random each time). */
   revealStyle: RevealStyle
@@ -395,6 +399,7 @@ export function createInitialState(): AppState {
       live: null,
     },
     savedTemplates: defaultSavedTemplates(),
+    activeTemplate: { show: null, games: null },
     revealPhase: 'idle',
     revealStyle: 'pop',
     revealAnimNonce: 0,
