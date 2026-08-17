@@ -441,11 +441,13 @@ describe('live mode', () => {
     expect(s.revealAnimNonce).toBe(beforeAnim + 1)
   })
 
-  it('on: a score bump publishes to the live score immediately (no reveal)', () => {
+  it('on: a score bump publishes live AND shows the scoreboard, silently', () => {
     const s = run({ type: 'live.toggle' }, { type: 'blue.increment' })
     expect(s.teams.blue.pendingScore).toBe(1)
     expect(s.teams.blue.liveScore).toBe(1)
-    expect(s.revealNonce).toBe(0) // no celebration
+    expect(s.scene).toBe('scoreboard') // score is reachable on air in live
+    expect(s.displayWasReveal).toBe(false) // …but silent — no celebration animation
+    expect(s.revealNonce).toBe(0) // no celebration bumper
   })
 
   it('off: a score bump stays pending until a reveal', () => {

@@ -179,6 +179,33 @@ export function OperatorApp() {
   const reveal = () => pushActive(true)
   const black = () => dispatch({ type: 'display.set', scene: 'black' })
 
+  // LIVE mode: whatever tab you're on is what the audience sees. `airCurrent`
+  // pushes a tab's current content to air — the scoreboard shows silently (no
+  // celebration; scores change every point), a slide reveals (animation + cues,
+  // handled by the LIVE wrapper on slide.select). Used when you turn LIVE on and
+  // when you switch tabs while live, so you never have to re-select to display it.
+  function airCurrent(tab: OperatorTab) {
+    if (tab === 'score') {
+      dispatch({ type: 'display.set', scene: 'scoreboard' })
+      dispatch({ type: 'score.commitSilent' })
+    } else {
+      const inDeck = allSlides.filter((s) => s.deck === tab)
+      const sel = inDeck.find((s) => s.id === selectedSlideId) ?? inDeck[0]
+      if (sel) dispatch({ type: 'slide.select', id: sel.id })
+    }
+  }
+  // Switch tabs; in LIVE mode also put that tab's content on air.
+  function goToTab(tab: OperatorTab) {
+    setActiveTab(tab)
+    if (liveMode) airCurrent(tab)
+  }
+  // Toggle LIVE; when turning it ON, immediately air whatever you're on now.
+  function toggleLive() {
+    const goingLive = !liveMode
+    dispatch({ type: 'live.toggle' })
+    if (goingLive) airCurrent(activeTab)
+  }
+
   // Kill switch: while a scoreboard reveal/finale is actually playing (and nothing
   // has been edited), the otherwise-idle REVEAL button becomes STOP — one press
   // fades the sound and jumps to the end frame. Scoped to the scoreboard tab while
@@ -204,7 +231,7 @@ export function OperatorApp() {
   // The reveal button's single action: kill a playing reveal, or fire a new one.
   const primaryAction = () => (canStop ? dispatch({ type: 'reveal.stop' }) : reveal())
 
-  useOperatorKeyboard(dispatch, { selectScene: setActiveTab, reveal: primaryAction, black })
+  useOperatorKeyboard(dispatch, { selectScene: goToTab, reveal: primaryAction, black })
 
   // The deck's captain quick buttons fire a GENERIC captain intro (team name, no
   // scripted person's name) via one command — independent of the Show sequence,
@@ -225,6 +252,8 @@ export function OperatorApp() {
     cycleTab: () => {},
     captain: (_which: 'blue' | 'red' | 'both') => {},
     jump: (_index: number) => {},
+    goToTab: (_tab: OperatorTab) => {},
+    toggleLive: () => {},
   })
   padRef.current = {
     reveal: () => pushActive(true),
@@ -261,8 +290,10 @@ export function OperatorApp() {
     },
     cycleTab: () => {
       const order: OperatorTab[] = ['show', 'score', 'games']
-      setActiveTab(order[(order.indexOf(activeTab) + 1) % order.length])
+      goToTab(order[(order.indexOf(activeTab) + 1) % order.length])
     },
+    goToTab: (tab) => goToTab(tab),
+    toggleLive: () => toggleLive(),
   }
 
   // Macro-pad / keyboard global shortcuts (Electron only). Main registers them
@@ -276,16 +307,16 @@ export function OperatorApp() {
         // changing, and REVEAL (now folder-aware) plays the score. Same idea as the
         // number keys switching to Show.
         case 'blue.up':
-          setActiveTab('score')
+          padRef.current.goToTab('score')
           return dispatch({ type: 'blue.increment' })
         case 'blue.down':
-          setActiveTab('score')
+          padRef.current.goToTab('score')
           return dispatch({ type: 'blue.decrement' })
         case 'red.up':
-          setActiveTab('score')
+          padRef.current.goToTab('score')
           return dispatch({ type: 'red.increment' })
         case 'red.down':
-          setActiveTab('score')
+          padRef.current.goToTab('score')
           return dispatch({ type: 'red.decrement' })
         case 'reveal':
           // Plays the active folder: the score on Score, the selected slide on
@@ -300,11 +331,11 @@ export function OperatorApp() {
         case 'tab.cycle':
           return padRef.current.cycleTab()
         case 'tab.show':
-          return setActiveTab('show')
+          return padRef.current.goToTab('show')
         case 'tab.score':
-          return setActiveTab('score')
+          return padRef.current.goToTab('score')
         case 'tab.games':
-          return setActiveTab('games')
+          return padRef.current.goToTab('games')
         case 'captain':
           return padRef.current.captain(action.which)
         case 'effect':
@@ -324,7 +355,7 @@ export function OperatorApp() {
         case 'audio.fadeOut':
           return dispatch({ type: 'audio.fadeOut' })
         case 'live.toggle':
-          return dispatch({ type: 'live.toggle' })
+          return padRef.current.toggleLive()
         case 'slide.jump':
           return padRef.current.jump(action.index)
       }
@@ -367,7 +398,7 @@ export function OperatorApp() {
           <button
             key={tab}
             className={`scene-tab ${activeTab === tab ? 'scene-tab--active' : ''}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => goToTab(tab)}
           >
             {activeTab === tab && (
               <motion.span
@@ -420,7 +451,7 @@ export function OperatorApp() {
               since selecting already reveals. */}
           <button
             className={`live-btn ${liveMode ? 'live-btn--on' : ''}`}
-            onClick={() => dispatch({ type: 'live.toggle' })}
+            onClick={toggleLive}
             title={liveMode ? 'LIVE — click to go back to staged' : 'Go LIVE (selections play instantly)'}
           >
             {liveMode ? '● LIVE' : 'LIVE'}

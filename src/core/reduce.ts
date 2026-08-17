@@ -493,7 +493,12 @@ export function reduce(state: AppState, command: Command): AppState {
       music: { ...next.music, duck: 1 },
     }
   }
-  if (LIVE_BOARD_CMDS.has(command.type)) return publishBoard(next)
+  if (LIVE_BOARD_CMDS.has(command.type)) {
+    // Editing the board while live publishes it AND shows the scoreboard, so the
+    // score is reachable on air — but silently: no celebration animation / music
+    // (a score changes every point; it shouldn't fanfare each time, unlike a slide).
+    return { ...publishBoard(next), scene: 'scoreboard', displayWasReveal: false }
+  }
   if (LIVE_EDIT_CMDS.has(command.type) && 'id' in command) {
     const live = next.slides.live
     if (live && command.id === live.id) {
