@@ -513,13 +513,24 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
   text-align: left;
 }
-.tpl__button:hover, .tpl__button--open { border-color: var(--accent); }
+.tpl__button:hover { border-color: var(--accent); }
+/* When open, the button flattens its bottom and drops its bottom border so it
+   merges into the menu below — the two read as one connected dropdown. */
+.tpl__button--open {
+  border-style: solid;
+  border-color: var(--accent);
+  border-bottom-color: transparent;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
 .tpl__button-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tpl__dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px rgba(255, 210, 63, 0.6); }
 .tpl__chev { flex: none; color: var(--muted); font-size: 12px; }
+/* Attached to the button (no gap, flat top), darker than the cards, with a deep
+   shadow + accent outline so it reads as a dropdown, not another slide card. */
 .tpl__menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: 100%;
   left: 0;
   right: 0;
   z-index: 30;
@@ -527,10 +538,11 @@ button { font-family: inherit; cursor: pointer; }
   flex-direction: column;
   gap: 2px;
   padding: 8px;
-  border-radius: 12px;
-  border: 1px solid #2c3346;
-  background: var(--panel-2, #141a28);
-  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.72);
+  border: 1px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: #0d1119;
+  box-shadow: 0 22px 48px -12px rgba(0, 0, 0, 0.85);
 }
 .tpl__label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 2px; }
 .tpl__row { display: flex; align-items: center; gap: 4px; border-radius: 8px; }
