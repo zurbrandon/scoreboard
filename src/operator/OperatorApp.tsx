@@ -10,9 +10,9 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { ImageSlide, LogoSlide, OperatorTab, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
 import type { Command } from '../core/commands'
-import { REVEAL_STYLES, type RevealStyle } from '../core/state'
+import { REVEAL_STYLES, templateSkeleton, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
 import { GifSearch } from './GifSearch'
@@ -824,36 +824,11 @@ const GAMES: { id: string; label: string; build: (mk: () => string) => Command[]
   },
 ]
 
-// Show templates: pick one and it REPLACES the Show deck with a preset run of
-// beats — a starting point the operator then adds to / reorders / edits. Mirrors
-// GAMES. Music is install-specific (tracks come from the operator's own folder),
-// so a template sets up the beats and leaves each slide's music cue to the
-// operator. Add a variation (e.g. a specific late-night show) by adding an entry.
-const SHOW_TEMPLATES: { id: string; label: string; build: (mk: () => string) => Command[] }[] = [
-  {
-    id: 'csz-standard',
-    label: 'ComedySportz — Standard show',
-    // The run of show: a pre-show slideshow, then the intro beats in order, with
-    // a blackout after the ref and after the red team — so the whole open can be
-    // run by just tapping "next slide" down the list. ('slideshow' = the pre-show
-    // Google Slides slide; everything else is a show beat.)
-    build: (mk) =>
-      (
-        ['slideshow', 'logo', 'ref', 'blackout', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red'] as const
-      ).map((kind) =>
-        kind === 'slideshow'
-          ? ({ type: 'slide.addSlideshow', id: mk(), deck: 'show' } as Command)
-          : ({ type: 'slide.addShow', id: mk(), beat: kind, deck: 'show' } as Command),
-      ),
-  },
-  {
-    id: 'csz-simple',
-    label: 'ComedySportz — Simple (logo + players)',
-    build: (mk) =>
-      (['logo', 'players'] as ShowBeat[]).map(
-        (beat) => ({ type: 'slide.addShow', id: mk(), beat, deck: 'show' }) as Command,
-      ),
-  },
+// Code built-in show "starters" shown in the picker alongside the operator's own
+// saved templates. Standard/Simple now live as editable saved templates (seeded
+// on first run — see defaultSavedTemplates); only Blank stays code-defined, since
+// there's nothing to edit about an empty deck.
+const SHOW_BUILTINS: { id: string; label: string; build: (mk: () => string) => Command[] }[] = [
   {
     id: 'blank',
     label: 'Blank — start from scratch',
@@ -890,6 +865,102 @@ const SHOW_BEAT_ORDER: ShowBeat[] = [
 const newSlideId = (p: string) =>
   `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
+// Save / update / delete this deck's templates. Templates capture the deck's
+// current *skeleton* (order, types/beats, cues + pre-show link — but not the
+// per-show ref name / rosters), so this machine's music sticks and can be
+// re-saved anytime. Editing the live deck never changes a saved template; only
+// Update does.
+function TemplateManager({ deck, onClose }: { deck: SlideDeck; onClose: () => void }) {
+  const dispatch = useDispatch()
+  const templates = useAppState((s) => s.savedTemplates).filter((t) => t.deck === deck)
+  const deckSlides = useAppState((s) => s.slides.items).filter((s) => s.deck === deck)
+  const [newName, setNewName] = useState('')
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameText, setRenameText] = useState('')
+
+  // Snapshot the current deck as a reusable skeleton with fresh, template-scoped ids.
+  const capture = (): Slide[] => deckSlides.map((s) => ({ ...templateSkeleton(s), id: newSlideId('tpl') }))
+
+  const saveNew = () => {
+    const name = newName.trim()
+    if (!name) return
+    dispatch({ type: 'template.saveNew', id: newSlideId('tpl'), deck, name, slides: capture() })
+    setNewName('')
+  }
+
+  return (
+    <div className="tpl-pop" onClick={(e) => e.stopPropagation()}>
+      <div className="tpl-pop__row tpl-pop__new">
+        <input
+          className="tpl-pop__name"
+          value={newName}
+          placeholder="Save current deck as…"
+          aria-label="New template name"
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && saveNew()}
+        />
+        <button className="tpl-pop__btn tpl-pop__btn--save" onClick={saveNew} disabled={!newName.trim()}>
+          Save
+        </button>
+      </div>
+      {templates.length > 0 && <div className="tpl-pop__label">Your templates</div>}
+      {templates.map((t) => (
+        <div key={t.id} className="tpl-pop__row">
+          {renamingId === t.id ? (
+            <input
+              className="tpl-pop__name"
+              value={renameText}
+              autoFocus
+              aria-label="Rename template"
+              onChange={(e) => setRenameText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && renameText.trim()) {
+                  dispatch({ type: 'template.rename', id: t.id, name: renameText.trim() })
+                  setRenamingId(null)
+                } else if (e.key === 'Escape') {
+                  setRenamingId(null)
+                }
+              }}
+              onBlur={() => setRenamingId(null)}
+            />
+          ) : (
+            <span className="tpl-pop__tname" title={t.name}>
+              {t.name}
+            </span>
+          )}
+          <button
+            className="tpl-pop__btn"
+            title="Overwrite this template with the current deck"
+            onClick={() => dispatch({ type: 'template.update', id: t.id, slides: capture() })}
+          >
+            Update
+          </button>
+          <button
+            className="tpl-pop__btn"
+            title="Rename"
+            onClick={() => {
+              setRenamingId(t.id)
+              setRenameText(t.name)
+            }}
+          >
+            Rename
+          </button>
+          <button
+            className="tpl-pop__btn tpl-pop__btn--del"
+            title="Delete this template"
+            onClick={() => dispatch({ type: 'template.remove', id: t.id })}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button className="tpl-pop__close" onClick={onClose}>
+        Done
+      </button>
+    </div>
+  )
+}
+
 // One deck (Show or Games): logo/text/image/slideshow slides in a selectable,
 // reorderable list, plus an "add slide" menu. Same machinery for both decks —
 // they differ only in which slides they hold (filtered by `deck`).
@@ -924,7 +995,12 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   const commitOrder = () => dispatch({ type: 'slide.reorder', ids: orderRef.current })
 
-  // Load a preset (a game or a show template): REPLACE this deck with the
+  // This deck's saved templates (the operator's own, editable + persisted).
+  const savedTemplates = useAppState((s) => s.savedTemplates).filter((t) => t.deck === deck)
+  const builtins = deck === 'games' ? GAMES : SHOW_BUILTINS
+  const [tplOpen, setTplOpen] = useState(false)
+
+  // Load a code built-in ("Blank", the games): REPLACE this deck with the
   // preset's slides (clear first, so picking doesn't pile them up), then select
   // the first. To build by hand instead, skip the picker and use "add slide".
   function loadPreset(preset: { build: (mk: () => string) => Command[] }) {
@@ -938,6 +1014,14 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
       })
       .forEach(dispatch)
     if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
+  }
+
+  // Stamp a saved template into this deck: clone its slides with fresh ids so
+  // the deck and the stored template never share objects, then bulk-add.
+  function loadSaved(t: SavedTemplate) {
+    const clones: Slide[] = t.slides.map((s) => ({ ...s, id: newSlideId(deck === 'show' ? 'show' : 'game') }))
+    dispatch({ type: 'slide.clearDeck', deck })
+    dispatch({ type: 'slide.addMany', deck, slides: clones })
   }
 
   async function onFiles(files: FileList | null) {
@@ -954,46 +1038,51 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   return (
     <div className="cards">
-      {deck === 'show' && (
+      <div className="tpl-bar">
         <select
           className="game-picker"
           value=""
-          aria-label="Start from a template"
+          aria-label={deck === 'games' ? 'Choose a game' : 'Start from a template'}
           onChange={(e) => {
-            const t = SHOW_TEMPLATES.find((x) => x.id === e.target.value)
-            if (t) loadPreset(t)
+            const v = e.target.value
+            if (v.startsWith('saved:')) {
+              const t = savedTemplates.find((x) => x.id === v.slice(6))
+              if (t) loadSaved(t)
+            } else if (v.startsWith('builtin:')) {
+              const b = builtins.find((x) => x.id === v.slice(8))
+              if (b) loadPreset(b)
+            }
           }}
         >
           <option value="" disabled>
-            Start from a template…
+            {deck === 'games' ? 'Choose a game…' : 'Start from a template…'}
           </option>
-          {SHOW_TEMPLATES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
+          {savedTemplates.length > 0 && (
+            <optgroup label="Your templates">
+              {savedTemplates.map((t) => (
+                <option key={t.id} value={`saved:${t.id}`}>
+                  {t.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label="Built-in">
+            {builtins.map((b) => (
+              <option key={b.id} value={`builtin:${b.id}`}>
+                {b.label}
+              </option>
+            ))}
+          </optgroup>
         </select>
-      )}
-      {deck === 'games' && (
-        <select
-          className="game-picker"
-          value=""
-          aria-label="Choose a game"
-          onChange={(e) => {
-            const game = GAMES.find((g) => g.id === e.target.value)
-            if (game) loadPreset(game)
-          }}
+        <button
+          className={`tpl-manage ${tplOpen ? 'tpl-manage--open' : ''}`}
+          onClick={() => setTplOpen((o) => !o)}
+          title="Save / update / delete templates"
         >
-          <option value="" disabled>
-            Choose a game…
-          </option>
-          {GAMES.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.label}
-            </option>
-          ))}
-        </select>
-      )}
+          Templates ▾
+        </button>
+        {tplOpen && <TemplateManager deck={deck} onClose={() => setTplOpen(false)} />}
+      </div>
       {/* No AnimatePresence here: wrapping Reorder.Items in it orphaned exiting
           rows when the whole deck is replaced at once (loading a template), so a
           fresh set piled on top of ghosts of the old. Reorder.Item still plays

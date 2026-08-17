@@ -185,6 +185,71 @@ export function defaultShowBeats(): ShowSlide[] {
   return beats.map((beat) => showSlide(`show-${beat}`, beat, 'show'))
 }
 
+// --- Saved deck templates ---------------------------------------------------
+// A template is a reusable starting deck the operator can stamp into Show/Games.
+// Stored in (persisted) app state, NOT in code — so the operator can bake in
+// this machine's music cues and update templates without a rebuild. Editing the
+// live deck never changes a saved template; only an explicit save/update does.
+export interface SavedTemplate {
+  id: string
+  deck: SlideDeck
+  name: string
+  slides: Slide[]
+}
+
+// Reduce a live slide to its reusable skeleton: keep the structure + cues +
+// pre-show link (machine setup that should persist), drop the per-show data
+// (ref name, rosters) that changes every performance.
+export function templateSkeleton(slide: Slide): Slide {
+  if (slide.type === 'show') return { ...slide, name: '', roster: '' }
+  return { ...slide }
+}
+
+// The templates seeded on first run (Standard + Simple). Once seeded they live
+// in state and are fully editable; the code here is only the starting point.
+// Blank stays a code built-in (see the operator), so it isn't seeded here.
+export function defaultSavedTemplates(): SavedTemplate[] {
+  const std: Slide[] = [
+    emptySlideshowSlide('tpl-std-preshow', '', 'show'),
+    showSlide('tpl-std-logo', 'logo', 'show'),
+    showSlide('tpl-std-ref', 'ref', 'show'),
+    showSlide('tpl-std-blk1', 'blackout', 'show'),
+    showSlide('tpl-std-players', 'players', 'show'),
+    showSlide('tpl-std-blue', 'team-blue', 'show'),
+    showSlide('tpl-std-red', 'team-red', 'show'),
+    showSlide('tpl-std-blk2', 'blackout', 'show'),
+    showSlide('tpl-std-captains', 'captains', 'show'),
+    showSlide('tpl-std-capblue', 'captain-blue', 'show'),
+    showSlide('tpl-std-capred', 'captain-red', 'show'),
+  ]
+  const simple: Slide[] = [
+    showSlide('tpl-simple-logo', 'logo', 'show'),
+    showSlide('tpl-simple-players', 'players', 'show'),
+  ]
+  return [
+    { id: 'std', deck: 'show', name: 'ComedySportz — Standard show', slides: std },
+    { id: 'simple', deck: 'show', name: 'ComedySportz — Simple', slides: simple },
+  ]
+}
+
+// Normalize persisted saved templates; fall back to the seed on first run (when
+// the field is absent) or if the stored value is unusable.
+export function normSavedTemplates(v: unknown): SavedTemplate[] {
+  if (!Array.isArray(v)) return defaultSavedTemplates()
+  const out: SavedTemplate[] = []
+  for (const t of v) {
+    if (!t || typeof t !== 'object') continue
+    const r = t as Record<string, unknown>
+    if (typeof r.id !== 'string' || typeof r.name !== 'string') continue
+    const deck = asDeck(r.deck)
+    const slides = Array.isArray(r.slides)
+      ? (r.slides.map(normSlide).filter((s): s is Slide => s !== null) as Slide[])
+      : []
+    out.push({ id: r.id, deck, name: r.name, slides })
+  }
+  return out
+}
+
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {
@@ -250,6 +315,9 @@ export interface AppState {
     selectedId: string
     live: Slide | null
   }
+  /** Reusable deck templates the operator can stamp into Show/Games and edit in
+   *  place. Persisted, seeded on first run. See SavedTemplate. */
+  savedTemplates: SavedTemplate[]
   revealPhase: RevealPhase
   /** Which winner-celebration animation the current reveal uses (random each time). */
   revealStyle: RevealStyle
@@ -326,6 +394,7 @@ export function createInitialState(): AppState {
       selectedId: 'show-ref',
       live: null,
     },
+    savedTemplates: defaultSavedTemplates(),
     revealPhase: 'idle',
     revealStyle: 'pop',
     revealAnimNonce: 0,

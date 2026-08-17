@@ -143,6 +143,41 @@ function baseReduce(state: AppState, command: Command): AppState {
         music: { ...state.music, duck: 1 },
       }
     }
+    case 'slide.addMany':
+      // Append pre-built slides (the operator already gave them fresh ids) and
+      // select the first — used to stamp a saved template into a deck.
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: [...state.slides.items, ...command.slides],
+          selectedId: command.slides[0]?.id ?? state.slides.selectedId,
+        },
+      }
+    case 'template.saveNew':
+      return {
+        ...state,
+        savedTemplates: [
+          ...state.savedTemplates,
+          { id: command.id, deck: command.deck, name: command.name, slides: command.slides },
+        ],
+      }
+    case 'template.update':
+      return {
+        ...state,
+        savedTemplates: state.savedTemplates.map((t) =>
+          t.id === command.id ? { ...t, slides: command.slides } : t,
+        ),
+      }
+    case 'template.rename':
+      return {
+        ...state,
+        savedTemplates: state.savedTemplates.map((t) =>
+          t.id === command.id ? { ...t, name: command.name } : t,
+        ),
+      }
+    case 'template.remove':
+      return { ...state, savedTemplates: state.savedTemplates.filter((t) => t.id !== command.id) }
     case 'slide.addLogo':
       return {
         ...state,

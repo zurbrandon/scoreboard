@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, ShowBeat, SlideCue, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -53,6 +53,13 @@ export type Command =
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3
   | { type: 'show.captain'; which: 'blue' | 'red' | 'both' } // reveal a GENERIC captain intro (deck quick button), independent of any scripted captain slide
+  | { type: 'slide.addMany'; deck: SlideDeck; slides: Slide[] } // append pre-built slides (already have fresh ids) + select the first — used to stamp a template
+  // Saved deck templates (persisted, editable): stamp one into a deck, or save /
+  // update / rename / delete from the current deck.
+  | { type: 'template.saveNew'; id: string; deck: SlideDeck; name: string; slides: Slide[] }
+  | { type: 'template.update'; id: string; slides: Slide[] }
+  | { type: 'template.rename'; id: string; name: string }
+  | { type: 'template.remove'; id: string }
   // The main event.
   | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

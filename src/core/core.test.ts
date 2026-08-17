@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialState } from './state'
-import type { AppState, LogoSlide, TextSlide } from './state'
+import { createInitialState, templateSkeleton, normSavedTemplates } from './state'
+import type { AppState, LogoSlide, ShowSlide, Slide, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
 import { sideOf, teamOnSide } from './sides'
@@ -467,6 +467,64 @@ describe('live mode', () => {
   it('live.toggle flips the mode', () => {
     expect(run({ type: 'live.toggle' }).liveMode).toBe(true)
     expect(run({ type: 'live.toggle' }, { type: 'live.toggle' }).liveMode).toBe(false)
+  })
+})
+
+describe('saved templates', () => {
+  it('seeds Standard + Simple on a fresh state', () => {
+    const s = createInitialState()
+    expect(s.savedTemplates.map((t) => t.id).sort()).toEqual(['simple', 'std'])
+    const std = s.savedTemplates.find((t) => t.id === 'std')!
+    expect(std.slides[0].type).toBe('slideshow') // pre-show first
+  })
+
+  it('templateSkeleton strips per-show name/roster but keeps the cue', () => {
+    const beat: ShowSlide = {
+      id: 'x',
+      type: 'show',
+      deck: 'show',
+      beat: 'ref',
+      name: 'Dana',
+      roster: 'a\nb',
+      cue: { trackId: 'trk-1' },
+    }
+    const sk = templateSkeleton(beat) as ShowSlide
+    expect(sk.name).toBe('')
+    expect(sk.roster).toBe('')
+    expect(sk.cue).toEqual({ trackId: 'trk-1' })
+  })
+
+  it('save / update / rename / remove a template', () => {
+    const slides: Slide[] = [{ id: 'a', type: 'show', deck: 'show', beat: 'logo', name: '', roster: '' }]
+    let s = run({ type: 'template.saveNew', id: 'mine', deck: 'show', name: 'My show', slides })
+    expect(s.savedTemplates.find((t) => t.id === 'mine')?.name).toBe('My show')
+
+    const slides2: Slide[] = [...slides, { id: 'b', type: 'show', deck: 'show', beat: 'players', name: '', roster: '' }]
+    s = reduce(s, { type: 'template.update', id: 'mine', slides: slides2 })
+    expect(s.savedTemplates.find((t) => t.id === 'mine')?.slides).toHaveLength(2)
+
+    s = reduce(s, { type: 'template.rename', id: 'mine', name: 'Renamed' })
+    expect(s.savedTemplates.find((t) => t.id === 'mine')?.name).toBe('Renamed')
+
+    s = reduce(s, { type: 'template.remove', id: 'mine' })
+    expect(s.savedTemplates.some((t) => t.id === 'mine')).toBe(false)
+  })
+
+  it('slide.addMany appends slides and selects the first', () => {
+    const slides: Slide[] = [
+      { id: 'n1', type: 'show', deck: 'show', beat: 'logo', name: '', roster: '' },
+      { id: 'n2', type: 'show', deck: 'show', beat: 'players', name: '', roster: '' },
+    ]
+    const before = createInitialState().slides.items.length
+    const s = run({ type: 'slide.clearDeck', deck: 'show' }, { type: 'slide.addMany', deck: 'show', slides })
+    expect(s.slides.items.filter((x) => x.deck === 'show')).toHaveLength(2)
+    expect(s.slides.items.length).toBeLessThan(before) // clearDeck removed the seeded show slides first
+    expect(s.slides.selectedId).toBe('n1')
+  })
+
+  it('normSavedTemplates falls back to the seed when absent, keeps a valid array', () => {
+    expect(normSavedTemplates(undefined).length).toBeGreaterThan(0)
+    expect(normSavedTemplates([])).toEqual([])
   })
 })
 
