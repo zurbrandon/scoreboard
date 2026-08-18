@@ -76,7 +76,7 @@ function loadState(): AppState {
         savedTemplates: normSavedTemplates(parsed.savedTemplates),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
-        idleLogoSlideId: typeof parsed.idleLogoSlideId === 'string' ? parsed.idleLogoSlideId : null,
+        idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.
         teams: {

@@ -460,10 +460,10 @@ export interface AppState {
   /** The two scoreboard corner logos (editable in Settings → Visuals). */
   scoreboardLogos: ScoreboardLogos
   /** What the projector shows when "nothing" is on — i.e. the Blank/black scene.
-   *  null = pure blackout (default); otherwise the id of a logo slide to show on
-   *  black (its logo + website), for venues that want a branded holding screen.
-   *  If the slide is gone it falls back to black. Editable in Settings → Visuals. */
-  idleLogoSlideId: string | null
+   *  null = pure blackout (default); otherwise a logo image `src` to hold on
+   *  black (a scoreboard logo or a deck logo slide), for venues that want a
+   *  branded holding screen. Editable in Settings → Visuals. */
+  idleLogoSrc: string | null
   music: MusicState
 }
 
@@ -516,7 +516,7 @@ export function createInitialState(): AppState {
     reaction: null,
     reactionNonce: 0,
     scoreboardLogos: defaultScoreboardLogos(),
-    idleLogoSlideId: null,
+    idleLogoSrc: null,
     music: {
       volume: 0.8,
       duck: 1,

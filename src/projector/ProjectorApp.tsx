@@ -30,14 +30,17 @@ export function ProjectorApp() {
   const momentNonce = useAppState((s) => s.momentNonce)
   const reaction = useAppState((s) => s.reaction)
   const reactionNonce = useAppState((s) => s.reactionNonce)
-  // Idle (Blank) screen: null → black; else a logo slide shown static on black.
-  // Falls back to black if the referenced slide is gone.
-  const idleLogoSlideId = useAppState((s) => s.idleLogoSlideId)
-  const idleLogoSlide = useAppState((s) =>
-    idleLogoSlideId
-      ? s.slides.items.find((x): x is LogoSlide => x.id === idleLogoSlideId && x.type === 'logo') ?? null
-      : null,
-  )
+  // Idle (Blank) screen: null → black; else a logo src held static on black. If
+  // the src matches a deck logo slide we borrow its website so the URL shows too.
+  const idleLogoSrc = useAppState((s) => s.idleLogoSrc)
+  const idleWebsite = useAppState((s) => {
+    if (!idleLogoSrc) return ''
+    const match = s.slides.items.find((x): x is LogoSlide => x.type === 'logo' && x.src === idleLogoSrc)
+    return match?.website ?? ''
+  })
+  const idleLogoSlide: LogoSlide | null = idleLogoSrc
+    ? { id: '__idle', type: 'logo', deck: 'show', name: '', src: idleLogoSrc, website: idleWebsite }
+    : null
   const effect = useAppState((s) => s.effect)
   // 'team-emoji' effect: which team's scoreboard mood(s) to rain. A blue-side beat
   // → blue's emoji, a red-side beat → red's, anything else → both mixed. Empty

@@ -90,7 +90,7 @@ function loadPersisted(): AppState {
         savedTemplates: normSavedTemplates(parsed.savedTemplates), // seeded first run, then persisted
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
-        idleLogoSlideId: typeof parsed.idleLogoSlideId === 'string' ? parsed.idleLogoSlideId : null,
+        idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
         liveMode: false, // always launch in staged mode, never mid-live

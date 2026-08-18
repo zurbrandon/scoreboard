@@ -301,7 +301,7 @@ function baseReduce(state: AppState, command: Command): AppState {
     case 'scoreboard.setLogo':
       return { ...state, scoreboardLogos: { ...state.scoreboardLogos, [command.side]: command.src } }
     case 'idle.set':
-      return { ...state, idleLogoSlideId: command.slideId }
+      return { ...state, idleLogoSrc: command.src }
     case 'slide.addShow':
       return {
         ...state,

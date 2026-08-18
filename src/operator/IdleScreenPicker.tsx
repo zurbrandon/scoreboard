@@ -1,14 +1,37 @@
 // Settings → Visuals: what the projector shows when nothing's on — the Blank /
-// black scene. Black (default), or one of the deck's logo slides shown on black
-// (its logo + website), for venues that want a branded holding screen.
+// black scene. Black (default), or a logo held on black for a branded holding
+// screen. Options are the scoreboard corner logos (always available) plus any
+// logo slides in the decks — deduped by image, so you always have something to
+// pick even when the show template carries no standalone logo slide.
 
 import { useAppState, useDispatch } from '../store/react'
+import { LOGO_LIBRARY } from '../core/logos'
+
+// A friendly name for a bundled logo src ('logos/comedysportz.png' → 'ComedySportz').
+function bundledName(src: string): string | null {
+  const hit = LOGO_LIBRARY.find((l) => src === `logos/${l.file}`)
+  return hit ? hit.name : null
+}
 
 export function IdleScreenPicker() {
   const dispatch = useDispatch()
-  const current = useAppState((s) => s.idleLogoSlideId)
-  // Any logo slide (from either deck) is a valid holding screen. Show its name.
+  const current = useAppState((s) => s.idleLogoSrc)
+  const scoreboardLogos = useAppState((s) => s.scoreboardLogos)
   const logoSlides = useAppState((s) => s.slides.items).filter((sl) => sl.type === 'logo')
+
+  // Build the option list, deduped by src so a logo used in two places shows once.
+  const options: { label: string; src: string }[] = []
+  const seen = new Set<string>()
+  const add = (label: string, src: string) => {
+    if (src && !seen.has(src)) {
+      seen.add(src)
+      options.push({ label, src })
+    }
+  }
+  add(bundledName(scoreboardLogos.left) ?? 'Top-left logo', scoreboardLogos.left)
+  add(bundledName(scoreboardLogos.right) ?? 'Top-right logo', scoreboardLogos.right)
+  for (const sl of logoSlides) if (sl.type === 'logo') add(sl.name || 'Logo', sl.src)
+
   return (
     <>
       <div className="music-panel__row">
@@ -19,18 +42,18 @@ export function IdleScreenPicker() {
           id="idle-logo"
           className="nextsong__select"
           value={current ?? ''}
-          onChange={(e) => dispatch({ type: 'idle.set', slideId: e.target.value || null })}
+          onChange={(e) => dispatch({ type: 'idle.set', src: e.target.value || null })}
         >
           <option value="">Black (nothing)</option>
-          {logoSlides.map((sl) => (
-            <option key={sl.id} value={sl.id}>
-              {sl.type === 'logo' ? sl.name || 'Logo' : ''}
+          {options.map((o) => (
+            <option key={o.src} value={o.src}>
+              {o.label}
             </option>
           ))}
         </select>
       </div>
       <span className="music-panel__status">
-        Choose a logo slide to hold on screen when the projector is blanked, or keep it black.
+        Choose a logo to hold on screen when the projector is blanked, or keep it black.
       </span>
     </>
   )
