@@ -473,14 +473,15 @@ export function OperatorApp() {
                 onClick={primaryAction}
                 whileTap={{ scale: 0.99 }}
               >
-                {canStop ? '◼ Stop' : 'Reveal'}
+                {canStop ? '◼ Stop' : 'Show score'}
               </motion.button>
               <button
-                className="deck-mini"
+                className="deck-mini deck-mini--stack"
                 onClick={() => pushActive(false)}
                 title="Update the scoreboard with no animation or sound"
               >
-                Silent
+                <span>Silent</span>
+                <span>update</span>
               </button>
             </>
           ) : isPresenting ? (
