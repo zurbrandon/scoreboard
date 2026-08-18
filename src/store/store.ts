@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, type AppState } from '../core/state'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
@@ -89,6 +89,7 @@ function loadPersisted(): AppState {
         slides: migrateSlides(parsed, fresh),
         savedTemplates: normSavedTemplates(parsed.savedTemplates), // seeded first run, then persisted
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
+        scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
         liveMode: false, // always launch in staged mode, never mid-live

@@ -8,6 +8,7 @@ import { MomentMusicPanel } from './MomentMusicPanel'
 import { DrumrollPicker } from './DrumrollPicker'
 import { ProjectorDisplayPicker } from './ProjectorDisplayPicker'
 import { SlideshowLibraryPanel } from './SlideshowLibraryPanel'
+import { ScoreboardLogosPanel } from './ScoreboardLogosPanel'
 
 type SettingsTab = 'visuals' | 'audio'
 
@@ -42,6 +43,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
         {tab === 'visuals' && (
           <>
+            <section className="settings-section">
+              <h3>Scoreboard logos</h3>
+              <ScoreboardLogosPanel />
+            </section>
+
             <section className="settings-section">
               <h3>Slideshows</h3>
               <SlideshowLibraryPanel />

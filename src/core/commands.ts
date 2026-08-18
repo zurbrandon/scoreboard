@@ -56,6 +56,7 @@ export type Command =
   | { type: 'show.captain'; which: 'blue' | 'red' | 'both' } // reveal a GENERIC captain intro (deck quick button), independent of any scripted captain slide
   | { type: 'reaction.flash'; team: TeamId; kind: ReactionKind } // Yay Boo: flash the projector a team color + word (yay/boo)
   | { type: 'reaction.clear' } // return a reaction slide to its neutral holding screen
+  | { type: 'scoreboard.setLogo'; side: 'left' | 'right'; src: string } // change a scoreboard corner logo
   | { type: 'slide.addMany'; deck: SlideDeck; slides: Slide[] } // append pre-built slides (already have fresh ids) + select the first — used to stamp a template
   // Saved deck templates (persisted, editable): stamp one into a deck, or save /
   // update / rename / delete from the current deck.

@@ -298,6 +298,8 @@ function baseReduce(state: AppState, command: Command): AppState {
       }
     case 'reaction.clear':
       return { ...state, reaction: null, reactionNonce: state.reactionNonce + 1 }
+    case 'scoreboard.setLogo':
+      return { ...state, scoreboardLogos: { ...state.scoreboardLogos, [command.side]: command.src } }
     case 'slide.addShow':
       return {
         ...state,

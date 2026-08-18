@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 import { reduce } from '../src/core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, type AppState } from '../src/core/state'
+import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type {
   BumperTrackInfo,
@@ -75,6 +75,7 @@ function loadState(): AppState {
         // Seeded on first run (when absent), then editable + persisted.
         savedTemplates: normSavedTemplates(parsed.savedTemplates),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
+        scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.
         teams: {

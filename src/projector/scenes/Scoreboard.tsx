@@ -10,6 +10,7 @@ import { determineWinner } from '../../core/winner'
 import { formatScore } from '../../core/score'
 import { sideOf, teamOnSide, type Side } from '../../core/sides'
 import type { TeamId } from '../../core/state'
+import { logoSrc } from './LogoScene'
 import { useAnimatedNumber } from '../useAnimatedNumber'
 import { Confetti } from '../Confetti'
 import { EmojiRain } from '../EmojiRain'
@@ -33,6 +34,7 @@ export function Scoreboard() {
   const revealPhase = useAppState((s) => s.revealPhase)
   const finaleStage = useAppState((s) => s.finaleStage)
   const countdown = useAppState((s) => s.countdown)
+  const logos = useAppState((s) => s.scoreboardLogos)
 
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
@@ -54,11 +56,12 @@ export function Scoreboard() {
   return (
     <div className="scoreboard">
       <header className="scoreboard__top">
-        <HeaderLogo file="comedysportz.png" alt="ComedySportz" fallback="CSz" />
+        <HeaderLogo key={logos.left} src={logos.left} alt="Home logo" fallback="CSz" />
         <div className="scoreboard__half">{HALF_LABEL[half]}</div>
         <HeaderLogo
-          file="seattle-comedy-theater.png"
-          alt="Seattle Comedy Theater"
+          key={logos.right}
+          src={logos.right}
+          alt="Venue logo"
           fallback="Theater"
           extraClass="scoreboard__logo--theater"
         />
@@ -227,27 +230,28 @@ function FinaleCountdown({ value }: { value: number }) {
   )
 }
 
-// Shows a logo image from public/logos/, falling back to text if the file
-// isn't there yet — so the scoreboard never breaks before the art is dropped in.
+// Shows a logo image (bundled path or uploaded data URL), falling back to text
+// if it's missing/broken — so the scoreboard never breaks before art is set. The
+// caller keys this on `src` so a new logo remounts and re-tries the image.
 function HeaderLogo({
-  file,
+  src,
   alt,
   fallback,
   extraClass = '',
 }: {
-  file: string
+  src: string
   alt: string
   fallback: string
   extraClass?: string
 }) {
   const [failed, setFailed] = useState(false)
-  if (failed) {
+  if (!src || failed) {
     return <div className={`scoreboard__logo ${extraClass}`}>{fallback}</div>
   }
   return (
     <img
       className={`scoreboard__logo-img ${extraClass}`}
-      src={`${import.meta.env.BASE_URL}logos/${file}`}
+      src={logoSrc(src)}
       alt={alt}
       onError={() => setFailed(true)}
     />

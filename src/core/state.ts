@@ -158,6 +158,26 @@ export interface ShowSlide {
 
 export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide | ShowSlide | ReactionSlide
 
+// The two logos in the scoreboard's top corners (left = home/brand, right =
+// venue). Each is a logo `src`: a bundled path ('logos/foo.png') or a data: URL
+// (an uploaded image). Editable in Settings → Visuals.
+export interface ScoreboardLogos {
+  left: string
+  right: string
+}
+export function defaultScoreboardLogos(): ScoreboardLogos {
+  return { left: 'logos/comedysportz.png', right: 'logos/seattle-comedy-theater.png' }
+}
+export function normScoreboardLogos(v: unknown): ScoreboardLogos {
+  const d = defaultScoreboardLogos()
+  if (!v || typeof v !== 'object') return d
+  const o = v as Record<string, unknown>
+  return {
+    left: typeof o.left === 'string' && o.left ? o.left : d.left,
+    right: typeof o.right === 'string' && o.right ? o.right : d.right,
+  }
+}
+
 export function logoSlide(id: string, name: string, src: string, website = '', deck: SlideDeck = 'show'): LogoSlide {
   return { id, type: 'logo', deck, name, src, website }
 }
@@ -437,6 +457,8 @@ export interface AppState {
   /** Bumped on each reaction tap so the projector replays the flash even when the
    *  same team+word is tapped twice in a row. */
   reactionNonce: number
+  /** The two scoreboard corner logos (editable in Settings → Visuals). */
+  scoreboardLogos: ScoreboardLogos
   music: MusicState
 }
 
@@ -488,6 +510,7 @@ export function createInitialState(): AppState {
     momentNonce: 0,
     reaction: null,
     reactionNonce: 0,
+    scoreboardLogos: defaultScoreboardLogos(),
     music: {
       volume: 0.8,
       duck: 1,
