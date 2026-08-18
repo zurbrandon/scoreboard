@@ -989,7 +989,10 @@ button { font-family: inherit; cursor: pointer; }
 .deck { position: relative; flex: none; z-index: 2; border-top: 1px solid #222838; box-shadow: 0 -7px 12px -7px rgba(0, 0, 0, 0.65); padding: 12px 14px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
 /* Program row: black-screen box · REVEAL (+ silent under it) · run-stack. */
-.deck__main { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.deck__main { display: flex; align-items: stretch; justify-content: center; gap: 12px; }
+/* Footer primary buttons match the Black box height for a thumb-friendly row. */
+.deck__main .present-btn { min-height: 74px; font-size: 15px; }
+.deck__main .present-btn--ghost { min-width: 56px; font-size: 20px; }
 .deck__center { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
 /* Black screen as a little "screen": a dark rectangle with a light border that

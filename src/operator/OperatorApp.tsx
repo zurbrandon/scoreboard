@@ -117,6 +117,7 @@ export function OperatorApp() {
   const selectedSlideId = useAppState((s) => s.slides.selectedId)
   const liveSlideId = useAppState((s) => s.slides.live?.id ?? null)
   const liveMode = useAppState((s) => s.liveMode)
+  const presentation = useAppState((s) => s.presentation)
 
   // What the audience is *actually* seeing right now (program), named specifically.
   // Selector returns a primitive string so its ref stays stable.
@@ -434,9 +435,11 @@ export function OperatorApp() {
           <span className="deck__onair-sep">·</span>
           <span className="deck__onair-item">{onAirLabel}</span>
         </div>
+        {/* Primary controls, tab-specific. Black stays global (universal cut to
+            black). Score stages then reveals/updates; Show/Games run a cue stack
+            (Start → Prev/Next/Stop). The old global LIVE toggle is gone — the tab
+            you're on is the mode. */}
         <div className="deck__main">
-          {/* Black screen, styled as a little "screen": a dark box with a light
-              border. Lights up when it's actually on air. */}
           <button
             className={`black-box ${programScene === 'black' ? 'black-box--active' : ''}`}
             onClick={black}
@@ -445,26 +448,44 @@ export function OperatorApp() {
             <span className="black-box__label">Black</span>
           </button>
 
-          {/* LIVE is the anchor now — a mode toggle. When on, what you touch goes
-              to air immediately (slides auto-reveal, board edits publish). REVEAL
-              flanks it on the right for the staged one-shot; it dims while live
-              since selecting already reveals. */}
-          <button
-            className={`live-btn ${liveMode ? 'live-btn--on' : ''}`}
-            onClick={toggleLive}
-            title={liveMode ? 'LIVE — click to go back to staged' : 'Go LIVE (selections play instantly)'}
-          >
-            {liveMode ? '● LIVE' : 'LIVE'}
-          </button>
-
-          <motion.button
-            className={`reveal ${canStop ? 'reveal--stop' : armed ? 'reveal--armed' : ''} ${liveMode ? 'reveal--dim' : ''}`}
-            onClick={primaryAction}
-            whileTap={{ scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          >
-            {canStop ? 'STOP' : 'REVEAL'}
-          </motion.button>
+          {activeTab === 'score' ? (
+            <>
+              <motion.button
+                className={`present-btn present-btn--go ${canStop ? 'present-btn--stop' : ''}`}
+                onClick={primaryAction}
+                whileTap={{ scale: 0.96 }}
+              >
+                {canStop ? '◼ Stop' : 'Reveal'}
+              </motion.button>
+              <button className="present-btn" onClick={() => pushActive(false)}>
+                Update silently
+              </button>
+            </>
+          ) : presentation && presentation.deck === activeDeck ? (
+            <>
+              <button
+                className="present-btn present-btn--ghost"
+                onClick={() => dispatch({ type: 'present.prev' })}
+                disabled={presentation.index === 0}
+                aria-label="Previous slide"
+              >
+                ◂
+              </button>
+              <button className="present-btn present-btn--go" onClick={() => dispatch({ type: 'present.next' })}>
+                Next ▸
+              </button>
+              <button className="present-btn present-btn--stop" onClick={() => dispatch({ type: 'present.stop' })}>
+                ◼ Stop
+              </button>
+            </>
+          ) : (
+            <button
+              className="present-btn present-btn--go present-btn--wide"
+              onClick={() => activeDeck && dispatch({ type: 'present.start', deck: activeDeck })}
+            >
+              ▶ {activeTab === 'show' ? 'Start show' : 'Start game'}
+            </button>
+          )}
         </div>
 
         {/* Quick triggers: run out / in (random visual + song), and the three
@@ -1224,35 +1245,8 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
     <div className="cards">
       {!pres && <TemplatePicker deck={deck} />}
 
-      {/* Transport: Start drops into the cue stack; Next/Prev advance (or tap a
-          row to jump); Stop pops back to the flat list. Both decks. */}
-      <div className="present-bar">
-        {pres ? (
-          <>
-            <button
-              className="present-btn present-btn--ghost"
-              onClick={() => dispatch({ type: 'present.prev' })}
-              disabled={pres.index === 0}
-              aria-label="Previous slide"
-            >
-              ◂
-            </button>
-            <button className="present-btn present-btn--go" onClick={() => dispatch({ type: 'present.next' })}>
-              Next ▸
-            </button>
-            <button className="present-btn present-btn--stop" onClick={() => dispatch({ type: 'present.stop' })}>
-              ◼ Stop
-            </button>
-          </>
-        ) : (
-          <button
-            className="present-btn present-btn--go present-btn--wide"
-            onClick={() => dispatch({ type: 'present.start', deck })}
-          >
-            ▶ {deck === 'show' ? 'Start show' : 'Start game'}
-          </button>
-        )}
-      </div>
+      {/* Transport (Start / Prev / Next / Stop) lives in the footer now, so it's
+          tab-specific and thumb-reachable. */}
 
       {/* Games: verdict calls right on the tab — one tap for a yes / no ruling. */}
       {deck === 'games' && (
