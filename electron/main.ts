@@ -3,7 +3,7 @@
 // pure reducer the browser prototype uses, pushes state to every window, and
 // persists to disk. Windows are thin views; the projector never mutates.
 
-import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net, globalShortcut } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net, globalShortcut, session } from 'electron'
 import { basename, join } from 'node:path'
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -457,7 +457,46 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
 
+// Slideshow presentation hosts (Canva, Google Slides) serve their non-embed
+// "present / autoplay" pages with X-Frame-Options / CSP frame-ancestors headers
+// that forbid embedding — so they show as a black iframe. This is our own
+// projector kiosk, and the owner explicitly points slideshow slides at these
+// hosts, so we strip ONLY the frame-blocking headers for ONLY these hosts,
+// letting an autoplay link render where the embed link can't. Everything else
+// keeps its headers untouched.
+const FRAMEABLE_HOST = /(^|\.)(canva\.com|canva\.site|google\.com|googleusercontent\.com|gstatic\.com)$/i
+function allowSlideshowFraming() {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    let host = ''
+    try {
+      host = new URL(details.url).hostname
+    } catch {
+      /* non-URL request; leave as-is */
+    }
+    const headers = details.responseHeaders
+    if (!headers || !FRAMEABLE_HOST.test(host)) return callback({ responseHeaders: headers ?? undefined })
+    const next: Record<string, string[]> = {}
+    for (const [key, value] of Object.entries(headers)) {
+      const lk = key.toLowerCase()
+      if (lk === 'x-frame-options') continue // drop entirely — this is the frame ban
+      if (lk === 'content-security-policy') {
+        // Keep the CSP but remove only its frame-ancestors directive.
+        next[key] = (Array.isArray(value) ? value : [String(value)]).map((v) =>
+          v
+            .split(';')
+            .filter((d) => !/^\s*frame-ancestors/i.test(d))
+            .join(';'),
+        )
+        continue
+      }
+      next[key] = value as string[]
+    }
+    callback({ responseHeaders: next })
+  })
+}
+
 app.whenReady().then(() => {
+  allowSlideshowFraming()
   protocol.handle('sbmedia', (request) => {
     try {
       const path = new URL(request.url).searchParams.get('p')

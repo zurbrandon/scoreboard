@@ -1,7 +1,8 @@
 // The curated slideshow library (Settings). The owner defines named slideshows
 // once — each a published embed URL — and the operator later picks one by name
 // on a slideshow slide. Google Slides: publish → …/pub?start=true&loop=true.
-// Canva: Share → Embed → Smart embed link, ending in …/watch?embed (the /watch
+// Canva: the Present / autoplay share link now works too (the main process
+// strips Canva's frame-blocking headers), as does the …/watch?embed embed (the /watch
 // form auto-advances; /view makes viewers click through).
 
 import { useState } from 'react'
@@ -72,8 +73,8 @@ export function SlideshowLibraryPanel() {
         </button>
       </div>
       <span className="music-panel__status">
-        Google Slides: publish → link ending …/pub?start=true&loop=true. Canva: Share → Embed → Smart embed,
-        ending …/watch?embed (the /watch form auto-plays).
+        Google Slides: publish → link ending …/pub?start=true&loop=true. Canva: use the Present / autoplay share
+        link (or the …/watch?embed embed link) — both play full-screen on the projector.
       </span>
     </div>
   )

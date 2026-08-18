@@ -19,6 +19,11 @@ export function Slideshow({ url }: { url: string }) {
       title="Pre-show slideshow"
       allow="autoplay; fullscreen"
       allowFullScreen
+      // Everything an embedded deck needs — EXCEPT top navigation, so a Canva /
+      // Google "present" page can't frame-bust and yank the projector off-screen
+      // mid-show. (Header stripping in the main process is what lets these non-
+      // embed pages load in the first place.)
+      sandbox="allow-scripts allow-same-origin allow-popups allow-presentation allow-forms"
     />
   )
 }

@@ -2119,7 +2119,7 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
         className="logo-card__site"
         type="text"
         value={slide.url}
-        placeholder="…or paste a link (Google …/pub or Canva …/watch?embed)"
+        placeholder="…or paste a link (Google …/pub, or a Canva present / …/watch?embed link)"
         aria-label="Slideshow link"
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: e.target.value })}
