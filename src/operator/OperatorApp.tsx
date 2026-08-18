@@ -447,9 +447,9 @@ export function OperatorApp() {
           <button
             className={`deck-black ${programScene === 'black' ? 'is-active' : ''}`}
             onClick={black}
-            title="Cut to black"
+            title="Blank the projector (cut to black)"
           >
-            Black
+            Blank
           </button>
 
           {activeTab === 'score' ? (
