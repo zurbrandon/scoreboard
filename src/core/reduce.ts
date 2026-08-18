@@ -488,6 +488,8 @@ function baseReduce(state: AppState, command: Command): AppState {
     }
     case 'music.setEnabled':
       return { ...state, music: { ...state.music, enabled: command.enabled } }
+    case 'music.setMuted':
+      return { ...state, music: { ...state.music, muted: command.muted } }
     case 'music.setLibrary':
       return {
         ...state,

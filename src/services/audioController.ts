@@ -65,12 +65,12 @@ export function createAudioController(store: Store): AudioController {
 
   function applyVolume(): void {
     if (!audio) return
-    // Effective volume composes three independent gains: the operator's base
-    // slider (music.volume), the natural end-of-track fade (fadeGain), and the
-    // macro-pad dial's temporary duck (music.duck). Runs on every state change,
-    // so turning the dial adjusts a playing track live.
-    const { volume, duck } = store.getState().music
-    audio.volume = Math.max(0, Math.min(1, volume * fadeGain * (duck ?? 1)))
+    // Effective volume composes the operator's base slider (music.volume), the
+    // natural end-of-track fade (fadeGain), and the macro-pad dial's temporary
+    // duck (music.duck) — and a global mute that forces silence over all of them.
+    // Runs on every state change, so muting/dialing adjusts a playing track live.
+    const { volume, duck, muted } = store.getState().music
+    audio.volume = muted ? 0 : Math.max(0, Math.min(1, volume * fadeGain * (duck ?? 1)))
   }
 
   // Mirror "is reveal sound playing" into the store (deduped) so the operator's

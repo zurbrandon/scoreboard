@@ -1,14 +1,15 @@
-// Operator's bumper controls. Two ways to load bumpers depending on host:
-//   • Electron: choose a music folder (persisted); main scans and pushes tracks.
-//   • Browser (dev): pick MP3 files directly (object URLs).
-// Everything else — sound-check, volume, music-on-reveal, status — is shared.
+// Audio settings, split into two small pieces so the Settings "Audio" tab reads
+// as a clean list of folders + a block of playback controls:
+//   • MusicPanel      — the Score-music folder row (choose folder / load bumpers).
+//   • PlaybackControls — volume, mute, "music on reveals", sound-check.
+// Bumpers load two ways depending on host: Electron scans a chosen folder;
+// the browser dev build picks MP3 files directly (object URLs).
 
 import { useEffect, useRef, useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
 import { useAudio } from '../services/audioContext'
 
 export function MusicPanel() {
-  const dispatch = useDispatch()
   const audio = useAudio()
   const music = useAppState((s) => s.music)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -39,7 +40,7 @@ export function MusicPanel() {
     <div className="extra music-panel">
       <div className="music-panel__row">
         <button className="pill" onClick={loadBumpers}>
-          {isElectron ? 'Choose music folder…' : 'Load bumpers…'}
+          {isElectron ? 'Score music folder…' : 'Load bumpers…'}
         </button>
         {!isElectron && (
           <input
@@ -61,9 +62,6 @@ export function MusicPanel() {
             }}
           />
         )}
-        <button className="pill" disabled={music.librarySize === 0} onClick={() => audio.test()}>
-          ▶ Test
-        </button>
         <span className="music-panel__status">
           {music.librarySize === 0
             ? 'no bumpers loaded'
@@ -72,7 +70,16 @@ export function MusicPanel() {
           {music.lastTrackName && ` · last: ${music.lastTrackName}`}
         </span>
       </div>
+    </div>
+  )
+}
 
+export function PlaybackControls() {
+  const dispatch = useDispatch()
+  const audio = useAudio()
+  const music = useAppState((s) => s.music)
+  return (
+    <div className="extra music-panel">
       <div className="music-panel__row">
         <label className="extra__label" htmlFor="vol">
           Volume
@@ -84,15 +91,30 @@ export function MusicPanel() {
           max={1}
           step={0.01}
           value={music.volume}
+          disabled={music.muted}
           onChange={(e) => dispatch({ type: 'music.setVolume', volume: Number(e.target.value) })}
         />
+        <button className="pill" disabled={music.librarySize === 0 || music.muted} onClick={() => audio.test()}>
+          ▶ Test
+        </button>
+      </div>
+      <div className="music-panel__row">
+        <label className="extra__checkbox">
+          <input
+            type="checkbox"
+            checked={music.muted}
+            onChange={(e) => dispatch({ type: 'music.setMuted', muted: e.target.checked })}
+          />
+          Mute all sound
+        </label>
         <label className="extra__checkbox">
           <input
             type="checkbox"
             checked={music.enabled}
+            disabled={music.muted}
             onChange={(e) => dispatch({ type: 'music.setEnabled', enabled: e.target.checked })}
           />
-          music on reveal
+          Play music on reveals
         </label>
       </div>
     </div>

@@ -318,6 +318,10 @@ export interface MusicState {
    *  then any reveal snaps it back to 1. Never persisted (resets on launch). */
   duck: number
   enabled: boolean
+  /** Global kill switch for ALL app sound (bumpers, cues, drum roll, run songs).
+   *  When true the audio controller holds effective volume at 0. A persisted
+   *  preference for rooms that want the visuals only. */
+  muted: boolean
   /** Id of the most recently played bumper — used to avoid immediate repeats. */
   lastTrackId: string | null
   /** Name of the most recent bumper, for the operator's "music status" display. */
@@ -488,6 +492,7 @@ export function createInitialState(): AppState {
       volume: 0.8,
       duck: 1,
       enabled: true,
+      muted: false,
       lastTrackId: null,
       lastTrackName: null,
       librarySize: 0,

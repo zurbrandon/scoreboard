@@ -96,6 +96,7 @@ export type Command =
   | { type: 'music.setVolume'; volume: number }
   | { type: 'music.nudgeDuck'; delta: number } // dial: dip/raise music under a cue (clamped 0..1)
   | { type: 'music.setEnabled'; enabled: boolean }
+  | { type: 'music.setMuted'; muted: boolean } // global kill switch for ALL app sound
   | { type: 'music.setLibrary'; tracks: BumperTrack[] } // {id,name} of every loaded bumper
   | { type: 'music.setNextTrack'; id: string | null } // pick the next reveal's bumper (null = random)
   | { type: 'music.trackPlayed'; id: string; name: string } // records the bumper that just started
