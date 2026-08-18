@@ -1125,6 +1125,7 @@ function CueStack({
   index: number
   selectedId: string
 }) {
+  const dispatch = useDispatch()
   const viewportRef = useRef<HTMLDivElement>(null)
   const stackRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLDivElement>(null)
@@ -1152,10 +1153,14 @@ function CueStack({
               {active ? (
                 slideCard(slide, selectedId)
               ) : (
-                <div className="cuerow">
+                <button
+                  className="cuerow"
+                  onClick={() => dispatch({ type: 'present.goto', index: i })}
+                  title="Jump to this slide"
+                >
                   <span className="cuerow__n">{i + 1}</span>
                   <span className="cuerow__name">{describeSlide(slide)}</span>
-                </div>
+                </button>
               )}
             </div>
           )
@@ -1219,35 +1224,45 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
     <div className="cards">
       {!pres && <TemplatePicker deck={deck} />}
 
-      {/* Transport: Start drops into the cue stack; Next/Prev advance; Stop pops
-          back to the flat list. (Show only for this first pass.) */}
-      {deck === 'show' && (
-        <div className="present-bar">
-          {pres ? (
-            <>
-              <button
-                className="present-btn present-btn--ghost"
-                onClick={() => dispatch({ type: 'present.prev' })}
-                disabled={pres.index === 0}
-                aria-label="Previous beat"
-              >
-                ◂
-              </button>
-              <button className="present-btn present-btn--go" onClick={() => dispatch({ type: 'present.next' })}>
-                Next ▸
-              </button>
-              <button className="present-btn present-btn--stop" onClick={() => dispatch({ type: 'present.stop' })}>
-                ◼ Stop
-              </button>
-            </>
-          ) : (
+      {/* Transport: Start drops into the cue stack; Next/Prev advance (or tap a
+          row to jump); Stop pops back to the flat list. Both decks. */}
+      <div className="present-bar">
+        {pres ? (
+          <>
             <button
-              className="present-btn present-btn--go present-btn--wide"
-              onClick={() => dispatch({ type: 'present.start', deck })}
+              className="present-btn present-btn--ghost"
+              onClick={() => dispatch({ type: 'present.prev' })}
+              disabled={pres.index === 0}
+              aria-label="Previous slide"
             >
-              ▶ Start show
+              ◂
             </button>
-          )}
+            <button className="present-btn present-btn--go" onClick={() => dispatch({ type: 'present.next' })}>
+              Next ▸
+            </button>
+            <button className="present-btn present-btn--stop" onClick={() => dispatch({ type: 'present.stop' })}>
+              ◼ Stop
+            </button>
+          </>
+        ) : (
+          <button
+            className="present-btn present-btn--go present-btn--wide"
+            onClick={() => dispatch({ type: 'present.start', deck })}
+          >
+            ▶ {deck === 'show' ? 'Start show' : 'Start game'}
+          </button>
+        )}
+      </div>
+
+      {/* Games: verdict calls right on the tab — one tap for a yes / no ruling. */}
+      {deck === 'games' && (
+        <div className="verdict">
+          <button className="verdict-btn verdict-btn--yes" onClick={() => dispatch({ type: 'effect.fire', kind: 'success' })}>
+            ✓ Yes
+          </button>
+          <button className="verdict-btn verdict-btn--no" onClick={() => dispatch({ type: 'effect.fire', kind: 'nope' })}>
+            ✗ No
+          </button>
         </div>
       )}
 

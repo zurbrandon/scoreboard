@@ -413,10 +413,21 @@ button { font-family: inherit; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .cuestack__stack { transition: none; } }
 .cuestack__item.is-done { opacity: 0.4; }
 .cuestack__item.is-active { position: relative; z-index: 2; }
-/* compact rows for the not-on-air beats */
-.cuerow { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 11px; border: 1px solid #232b3a; background: var(--panel); }
+/* compact rows for the not-on-air beats — tap to jump the playhead here */
+.cuerow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border-radius: 11px; border: 1px solid #232b3a; background: var(--panel); color: var(--text); font-family: inherit; text-align: left; cursor: pointer; }
+.cuerow:hover { border-color: var(--accent); }
 .cuerow__n { font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 16px; }
 .cuerow__name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Games verdict row: prominent one-tap yes / no calls. */
+.verdict { display: flex; gap: 8px; }
+.verdict-btn {
+  flex: 1; font-family: inherit; font-weight: 800; font-size: 15px; cursor: pointer;
+  padding: 13px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.verdict-btn:active { transform: scale(0.98); }
+.verdict-btn--yes { color: var(--green, #48d68a); background: color-mix(in srgb, #48d68a 15%, var(--panel)); border: 1px solid color-mix(in srgb, #48d68a 45%, transparent); }
+.verdict-btn--no { color: var(--red); background: color-mix(in srgb, var(--red) 15%, var(--panel)); border: 1px solid color-mix(in srgb, var(--red) 45%, transparent); }
 
 /* Reorderable slide list: each row is a grip rail fused to the slide's card so
    the two read as ONE card split by a seam. The rail (bold number + drag handle)
