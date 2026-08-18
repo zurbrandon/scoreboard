@@ -3,7 +3,7 @@
 // which keeps this trivially testable on a MacBook (Principles: "Build for Testability").
 
 import type { Command } from './commands'
-import type { AppState, Slide, TeamId, TeamState } from './state'
+import type { AppState, Slide, SlideDeck, TeamId, TeamState } from './state'
 import { emptySlideshowSlide, emptyImageSlide, emptyTextSlide, logoSlide, showSlide } from './state'
 import { determineWinner } from './winner'
 
@@ -50,6 +50,28 @@ function publishBoard(state: AppState): AppState {
     audienceLive: { ...state.audience },
     ribbonsLive: { ...state.ribbons },
     lastWinner: determineWinner(blueLive, redLive),
+  }
+}
+
+// Put the slide at `index` of a deck on air and mark the playhead there — the
+// engine behind Start / Next / Prev. Bumps revealAnimNonce so the entrance
+// animation + the slide's cue (music/effect) fire, exactly like a normal reveal.
+// Index clamps to the deck; an empty deck just parks the playhead on black.
+function airDeckSlide(state: AppState, deck: SlideDeck, index: number): AppState {
+  const items = state.slides.items.filter((s) => s.deck === deck)
+  if (items.length === 0) {
+    return { ...state, presentation: { deck, index: 0 }, scene: 'black', displayWasReveal: false }
+  }
+  const i = Math.max(0, Math.min(items.length - 1, index))
+  const slide = items[i]
+  return {
+    ...state,
+    slides: { ...state.slides, selectedId: slide.id, live: slide },
+    scene: 'slides',
+    displayWasReveal: true,
+    revealAnimNonce: state.revealAnimNonce + 1,
+    music: { ...state.music, duck: 1 },
+    presentation: { deck, index: i },
   }
 }
 
@@ -202,6 +224,17 @@ function baseReduce(state: AppState, command: Command): AppState {
       }
     case 'slideshow.remove':
       return { ...state, savedSlideshows: state.savedSlideshows.filter((s) => s.id !== command.id) }
+    case 'present.start':
+      return airDeckSlide(state, command.deck, 0)
+    case 'present.next':
+      return state.presentation ? airDeckSlide(state, state.presentation.deck, state.presentation.index + 1) : state
+    case 'present.prev':
+      return state.presentation ? airDeckSlide(state, state.presentation.deck, state.presentation.index - 1) : state
+    case 'present.goto':
+      return state.presentation ? airDeckSlide(state, state.presentation.deck, command.index) : state
+    case 'present.stop':
+      // Exit the cue stack back to the flat list, and cut to black.
+      return { ...state, presentation: null, scene: 'black', displayWasReveal: false }
     case 'slide.addLogo':
       return {
         ...state,

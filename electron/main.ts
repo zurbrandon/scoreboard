@@ -97,6 +97,7 @@ function loadState(): AppState {
         gifOverlay: null,
         washHold: null,
         liveMode: false,
+        presentation: null,
         countdown: 0,
         music: {
           ...fresh.music,

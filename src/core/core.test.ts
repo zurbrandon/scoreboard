@@ -552,6 +552,41 @@ describe('saved slideshows (curated library)', () => {
   })
 })
 
+describe('presentation (cue stack)', () => {
+  const firstShow = createInitialState().slides.items.find((x) => x.deck === 'show')!
+  const showCount = createInitialState().slides.items.filter((x) => x.deck === 'show').length
+
+  it('start airs the first beat and marks the playhead', () => {
+    const s = run({ type: 'present.start', deck: 'show' })
+    expect(s.presentation).toEqual({ deck: 'show', index: 0 })
+    expect(s.scene).toBe('slides')
+    expect(s.slides.live?.id).toBe(firstShow.id)
+    expect(s.revealAnimNonce).toBe(1)
+  })
+
+  it('next / prev advance the playhead and clamp at the ends', () => {
+    let s = run({ type: 'present.start', deck: 'show' })
+    s = reduce(s, { type: 'present.prev' })
+    expect(s.presentation?.index).toBe(0) // clamps at the top
+    s = reduce(s, { type: 'present.next' })
+    expect(s.presentation?.index).toBe(1)
+    s = reduce(s, { type: 'present.goto', index: 999 })
+    expect(s.presentation?.index).toBe(showCount - 1) // clamps at the end
+  })
+
+  it('stop exits the cue stack and cuts to black', () => {
+    let s = run({ type: 'present.start', deck: 'show' })
+    s = reduce(s, { type: 'present.stop' })
+    expect(s.presentation).toBeNull()
+    expect(s.scene).toBe('black')
+  })
+
+  it('next / prev do nothing when not presenting', () => {
+    expect(run({ type: 'present.next' }).presentation).toBeNull()
+    expect(run({ type: 'present.prev' }).presentation).toBeNull()
+  })
+})
+
 describe('generic captain (deck quick buttons)', () => {
   it('reveals a generic captain with no scripted name, no deck slide needed', () => {
     const s = run({ type: 'show.captain', which: 'blue' })

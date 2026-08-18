@@ -382,6 +382,42 @@ button { font-family: inherit; cursor: pointer; }
 /* Text scene: a queue of clue cards (headline + body) */
 .cards { display: flex; flex-direction: column; gap: 8px; }
 
+/* Transport bar: Start (stopped) → Prev / Next / Stop (presenting). */
+.present-bar { display: flex; gap: 8px; }
+.present-btn {
+  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+  border-radius: 11px; border: 1px solid #2c3346; background: var(--panel);
+  color: var(--text); padding: 12px; display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.present-btn:active { transform: scale(0.98); }
+.present-btn:disabled { opacity: 0.4; cursor: default; }
+.present-btn--wide { flex: 1; }
+.present-btn--go { flex: 1; background: linear-gradient(#ffe27a, #f4c62a); color: #221a00; border-color: #f4c62a; box-shadow: 0 8px 22px -10px rgba(255, 210, 63, 0.6); }
+.present-btn--ghost { flex: 0 0 auto; color: var(--muted); min-width: 48px; }
+.present-btn--ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.present-btn--stop { flex: 0 0 auto; color: var(--red); border-color: #52272b; }
+.present-btn--stop:hover { border-color: var(--red); }
+
+/* Cue stack: the presenting view. The active beat sits centered (its full
+   editor); the column translates so it stays put as you advance. */
+.cuestack {
+  position: relative; height: 60vh; max-height: 620px; min-height: 340px;
+  overflow: hidden; border-radius: 12px; background: var(--panel-2, #0e1420);
+  border: 1px solid #1f2736;
+}
+.cuestack::before, .cuestack::after { content: ""; position: absolute; left: 0; right: 0; height: 64px; z-index: 3; pointer-events: none; }
+.cuestack::before { top: 0; background: linear-gradient(var(--panel-2, #0e1420), rgba(14, 20, 32, 0)); }
+.cuestack::after { bottom: 0; background: linear-gradient(rgba(14, 20, 32, 0), var(--panel-2, #0e1420)); }
+.cuestack__band { position: absolute; left: 8px; right: 8px; top: 50%; transform: translateY(-50%); height: 40%; border-radius: 12px; border: 1px solid #6b5a1e; z-index: 0; }
+.cuestack__stack { position: absolute; left: 8px; right: 8px; top: 0; display: flex; flex-direction: column; gap: 8px; transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .cuestack__stack { transition: none; } }
+.cuestack__item.is-done { opacity: 0.4; }
+.cuestack__item.is-active { position: relative; z-index: 2; }
+/* compact rows for the not-on-air beats */
+.cuerow { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 11px; border: 1px solid #232b3a; background: var(--panel); }
+.cuerow__n { font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 16px; }
+.cuerow__name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* Reorderable slide list: each row is a grip rail fused to the slide's card so
    the two read as ONE card split by a seam. The rail (bold number + drag handle)
    rounds only its LEFT corners; the card squares its LEFT corners (below) — they

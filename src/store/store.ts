@@ -92,6 +92,7 @@ function loadPersisted(): AppState {
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
         liveMode: false, // always launch in staged mode, never mid-live
+        presentation: null, // never restore mid-presentation
         music: { ...fresh.music, ...parsed.music, duck: 1 },
       }
     }

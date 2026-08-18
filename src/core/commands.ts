@@ -65,6 +65,13 @@ export type Command =
   | { type: 'slideshow.save'; id: string; name: string; url: string }
   | { type: 'slideshow.update'; id: string; name: string; url: string }
   | { type: 'slideshow.remove'; id: string }
+  // Presentation: run a deck as a cue stack. Start airs the first beat; next/prev
+  // advance and air; stop exits to the flat list and cuts to black.
+  | { type: 'present.start'; deck: SlideDeck }
+  | { type: 'present.stop' }
+  | { type: 'present.next' }
+  | { type: 'present.prev' }
+  | { type: 'present.goto'; index: number }
   // The main event.
   | { type: 'score.reveal'; style?: RevealStyle } // style: the winner animation (random, operator-picked)
   | { type: 'reveal.finish' } // dispatched by the reveal service when the sequence ends

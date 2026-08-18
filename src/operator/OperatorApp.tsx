@@ -3,7 +3,7 @@
 // to the bottom. Preview/Program: picking a tab only previews a scene; the deck
 // (Reveal / update silently / Black) is what actually changes the projector.
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, Reorder, useDragControls } from 'motion/react'
 import { MdScoreboard, MdViewCarousel, MdSportsEsports } from 'react-icons/md'
 import type { IconType } from 'react-icons'
@@ -1092,6 +1092,79 @@ function TemplatePicker({ deck }: { deck: SlideDeck }) {
   )
 }
 
+// The editable card for a slide — the same editor used in the flat list and as
+// the centered/on-air card of the cue stack.
+function slideCard(slide: Slide, selectedId: string): ReactNode {
+  switch (slide.type) {
+    case 'logo':
+      return <LogoSlideCard slide={slide} selected={slide.id === selectedId} />
+    case 'image':
+      return <ImageSlideCard slide={slide} selected={slide.id === selectedId} />
+    case 'slideshow':
+      return <SlideshowSlideCard slide={slide} selected={slide.id === selectedId} />
+    case 'show':
+      return <ShowSlideCard slide={slide} selected={slide.id === selectedId} />
+    case 'text':
+      return <TextSlideCard slide={slide} selected={slide.id === selectedId} />
+  }
+}
+
+// The "presenting" view of a deck: a vertical playhead. The on-air beat (index)
+// sits centered and full (its editor), previous beats dim above, upcoming ones
+// wait below as compact rows. The whole column translates so the active card
+// stays centered; advancing scrolls it up. Edit is still available — the active
+// card is the real editor, so there's no separate build mode.
+function CueStack({
+  order,
+  itemsById,
+  index,
+  selectedId,
+}: {
+  order: string[]
+  itemsById: Map<string, Slide>
+  index: number
+  selectedId: string
+}) {
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const stackRef = useRef<HTMLDivElement>(null)
+  const activeRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const vp = viewportRef.current
+    const stack = stackRef.current
+    const active = activeRef.current
+    if (!vp || !stack || !active) return
+    stack.style.transform = `translateY(${vp.clientHeight / 2 - (active.offsetTop + active.offsetHeight / 2)}px)`
+  })
+  return (
+    <div className="cuestack" ref={viewportRef}>
+      <div className="cuestack__band" aria-hidden="true" />
+      <div className="cuestack__stack" ref={stackRef}>
+        {order.map((id, i) => {
+          const slide = itemsById.get(id)
+          if (!slide) return null
+          const active = i === index
+          return (
+            <div
+              key={id}
+              ref={active ? activeRef : undefined}
+              className={`cuestack__item ${active ? 'is-active' : i < index ? 'is-done' : 'is-next'}`}
+            >
+              {active ? (
+                slideCard(slide, selectedId)
+              ) : (
+                <div className="cuerow">
+                  <span className="cuerow__n">{i + 1}</span>
+                  <span className="cuerow__name">{describeSlide(slide)}</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // One deck (Show or Games): logo/text/image/slideshow slides in a selectable,
 // reorderable list, plus an "add slide" menu. Same machinery for both decks —
 // they differ only in which slides they hold (filtered by `deck`).
@@ -1101,6 +1174,9 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
   // then derive this deck's slides in the body.
   const items = useAppState((s) => s.slides.items).filter((sl) => sl.deck === deck)
   const selectedId = useAppState((s) => s.slides.selectedId)
+  // Presenting THIS deck? (pres is null on the flat, editable list.)
+  const presentation = useAppState((s) => s.presentation)
+  const pres = presentation && presentation.deck === deck ? presentation : null
   const [addOpen, setAddOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -1141,39 +1217,68 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   return (
     <div className="cards">
-      <TemplatePicker deck={deck} />
-      {/* No AnimatePresence here: wrapping Reorder.Items in it orphaned exiting
-          rows when the whole deck is replaced at once (loading a template), so a
-          fresh set piled on top of ghosts of the old. Reorder.Item still plays
-          its enter animation on mount; removals just cut cleanly (no exit fade). */}
-      <Reorder.Group axis="y" values={order} onReorder={setOrder} className="slide-list" as="div">
-        {order.map((id, i) => {
-          const slide = itemsById.get(id)
-          if (!slide) return null
-          return (
-            <SlideRow
-              key={id}
-              id={id}
-              index={i}
-              selected={id === selectedId}
-              onSelect={() => dispatch({ type: 'slide.select', id })}
-              onDrop={commitOrder}
-            >
-              {slide.type === 'logo' && <LogoSlideCard slide={slide} selected={slide.id === selectedId} />}
-              {slide.type === 'image' && <ImageSlideCard slide={slide} selected={slide.id === selectedId} />}
-              {slide.type === 'slideshow' && (
-                <SlideshowSlideCard slide={slide} selected={slide.id === selectedId} />
-              )}
-              {slide.type === 'show' && <ShowSlideCard slide={slide} selected={slide.id === selectedId} />}
-              {slide.type === 'text' && (
-                <TextSlideCard slide={slide} selected={slide.id === selectedId} />
-              )}
-            </SlideRow>
-          )
-        })}
-      </Reorder.Group>
+      {!pres && <TemplatePicker deck={deck} />}
 
-      {addOpen ? (
+      {/* Transport: Start drops into the cue stack; Next/Prev advance; Stop pops
+          back to the flat list. (Show only for this first pass.) */}
+      {deck === 'show' && (
+        <div className="present-bar">
+          {pres ? (
+            <>
+              <button
+                className="present-btn present-btn--ghost"
+                onClick={() => dispatch({ type: 'present.prev' })}
+                disabled={pres.index === 0}
+                aria-label="Previous beat"
+              >
+                ◂
+              </button>
+              <button className="present-btn present-btn--go" onClick={() => dispatch({ type: 'present.next' })}>
+                Next ▸
+              </button>
+              <button className="present-btn present-btn--stop" onClick={() => dispatch({ type: 'present.stop' })}>
+                ◼ Stop
+              </button>
+            </>
+          ) : (
+            <button
+              className="present-btn present-btn--go present-btn--wide"
+              onClick={() => dispatch({ type: 'present.start', deck })}
+            >
+              ▶ Start show
+            </button>
+          )}
+        </div>
+      )}
+
+      {pres ? (
+        <CueStack order={order} itemsById={itemsById} index={pres.index} selectedId={selectedId} />
+      ) : (
+        /* No AnimatePresence here: wrapping Reorder.Items in it orphaned exiting
+           rows when the whole deck is replaced at once (loading a template), so a
+           fresh set piled on top of ghosts of the old. Reorder.Item still plays
+           its enter animation on mount; removals just cut cleanly (no exit fade). */
+        <Reorder.Group axis="y" values={order} onReorder={setOrder} className="slide-list" as="div">
+          {order.map((id, i) => {
+            const slide = itemsById.get(id)
+            if (!slide) return null
+            return (
+              <SlideRow
+                key={id}
+                id={id}
+                index={i}
+                selected={id === selectedId}
+                onSelect={() => dispatch({ type: 'slide.select', id })}
+                onDrop={commitOrder}
+              >
+                {slideCard(slide, selectedId)}
+              </SlideRow>
+            )
+          })}
+        </Reorder.Group>
+      )}
+
+      {!pres && (addOpen ? (
         <div className="slide-add">
           {deck === 'show' && (
             <>
@@ -1253,7 +1358,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
         <button className="add-card" onClick={() => setAddOpen(true)}>
           + Add slide
         </button>
-      )}
+      ))}
 
       <input
         ref={fileInput}

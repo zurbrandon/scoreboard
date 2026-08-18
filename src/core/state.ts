@@ -274,6 +274,16 @@ export function normSavedSlideshows(v: unknown): SavedSlideshow[] {
   return out
 }
 
+// --- Presentation (running a deck as a cue stack) ---------------------------
+// When set, the operator is "presenting" a deck: the Show/Games tab drops from
+// its flat editable list into a focused playhead (the beat at `index` is on air),
+// and Next/Prev advance through it. null = stopped (flat, editable). Transient —
+// never restored across launches; you always start a show from the top.
+export interface Presentation {
+  deck: SlideDeck
+  index: number
+}
+
 export type Winner = TeamId | 'tie'
 
 export interface TeamState {
@@ -349,6 +359,8 @@ export interface AppState {
   /** Curated, named slideshows the operator picks from when building a slideshow
    *  slide (managed in Settings). Persisted. See SavedSlideshow. */
   savedSlideshows: SavedSlideshow[]
+  /** Non-null while presenting a deck as a cue stack (Show/Games). Transient. */
+  presentation: Presentation | null
   revealPhase: RevealPhase
   /** Which winner-celebration animation the current reveal uses (random each time). */
   revealStyle: RevealStyle
@@ -428,6 +440,7 @@ export function createInitialState(): AppState {
     savedTemplates: defaultSavedTemplates(),
     activeTemplate: { show: null, games: null },
     savedSlideshows: [],
+    presentation: null,
     revealPhase: 'idle',
     revealStyle: 'pop',
     revealAnimNonce: 0,
