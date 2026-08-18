@@ -494,8 +494,8 @@ export function OperatorApp() {
           ) : activeTab === 'games' ? (
             /* Games is pick-and-cut, not a queue: select a game, Show it, Blank,
                pick the next. The primary just reveals the selected slide. */
-            <button className="deck-primary" onClick={reveal} title="Reveal the selected game">
-              Show
+            <button className="deck-primary" onClick={reveal} title="Reveal the selected game slide">
+              Show slide
             </button>
           ) : isPresenting ? (
             <>

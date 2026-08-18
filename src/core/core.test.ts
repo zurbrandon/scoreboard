@@ -598,6 +598,14 @@ describe('presentation (cue stack)', () => {
     expect(s.revealAnimNonce).toBe(1)
   })
 
+  it('start begins at the currently selected slide, not always the top', () => {
+    const showItems = createInitialState().slides.items.filter((x) => x.deck === 'show')
+    const third = showItems[2]
+    const s = run({ type: 'slide.select', id: third.id }, { type: 'present.start', deck: 'show' })
+    expect(s.presentation).toEqual({ deck: 'show', index: 2 })
+    expect(s.slides.live?.id).toBe(third.id)
+  })
+
   it('next / prev advance the playhead and clamp at the ends', () => {
     let s = run({ type: 'present.start', deck: 'show' })
     s = reduce(s, { type: 'present.prev' })

@@ -227,8 +227,13 @@ function baseReduce(state: AppState, command: Command): AppState {
       }
     case 'slideshow.remove':
       return { ...state, savedSlideshows: state.savedSlideshows.filter((s) => s.id !== command.id) }
-    case 'present.start':
-      return airDeckSlide(state, command.deck, 0)
+    case 'present.start': {
+      // Begin the show at whatever slide is currently selected (so "start" from
+      // slide 4 opens on 4), falling back to the top if nothing in this deck is.
+      const deckItems = state.slides.items.filter((s) => s.deck === command.deck)
+      const start = Math.max(0, deckItems.findIndex((s) => s.id === state.slides.selectedId))
+      return airDeckSlide(state, command.deck, start)
+    }
     case 'present.next':
       return state.presentation ? airDeckSlide(state, state.presentation.deck, state.presentation.index + 1) : state
     case 'present.prev':
