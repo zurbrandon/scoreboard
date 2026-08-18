@@ -127,6 +127,7 @@ export function OperatorApp() {
   const liveSlideId = useAppState((s) => s.slides.live?.id ?? null)
   const liveMode = useAppState((s) => s.liveMode)
   const presentation = useAppState((s) => s.presentation)
+  const idleLogoSrc = useAppState((s) => s.idleLogoSrc)
 
   // What the audience is *actually* seeing right now (program), named specifically.
   // Selector returns a primitive string so its ref stays stable.
@@ -467,11 +468,18 @@ export function OperatorApp() {
             </button>
           ) : (
             <button
-              className={`deck-black ${programScene === 'black' ? 'is-active' : ''}`}
+              className={`deck-black ${idleLogoSrc ? 'deck-black--logo' : ''} ${programScene === 'black' ? 'is-active' : ''}`}
               onClick={black}
-              title="Blank the projector (cut to black)"
+              title={idleLogoSrc ? 'Blank the projector (holds the idle logo)' : 'Blank the projector (cut to black)'}
             >
-              Blank
+              {idleLogoSrc ? (
+                <>
+                  <img className="deck-black__logo" src={logoImgSrc(idleLogoSrc)} alt="" />
+                  <span className="deck-black__label">Blank</span>
+                </>
+              ) : (
+                'Blank'
+              )}
             </button>
           )}
 

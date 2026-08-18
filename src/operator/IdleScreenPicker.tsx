@@ -28,9 +28,11 @@ export function IdleScreenPicker() {
       options.push({ label, src })
     }
   }
+  // Deck logo slides first — they carry a website, so they win the src-dedup and
+  // the projector can show the URL under the logo (same as the showboard slide).
+  for (const sl of logoSlides) if (sl.type === 'logo') add(sl.name || 'Logo', sl.src)
   add(bundledName(scoreboardLogos.left) ?? 'Top-left logo', scoreboardLogos.left)
   add(bundledName(scoreboardLogos.right) ?? 'Top-right logo', scoreboardLogos.right)
-  for (const sl of logoSlides) if (sl.type === 'logo') add(sl.name || 'Logo', sl.src)
 
   return (
     <>

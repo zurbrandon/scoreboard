@@ -1161,6 +1161,11 @@ button { font-family: inherit; cursor: pointer; }
   text-transform: uppercase;
 }
 .deck-black.is-active { color: #fff; box-shadow: 0 0 22px rgba(255, 255, 255, 0.22), inset 0 0 0 2px rgba(255, 255, 255, 0.5); }
+/* When the idle screen holds a logo, the Blank button previews it so the operator
+   sees what "blank" will actually show. */
+.deck-black--logo { flex-direction: column; gap: 4px; padding: 8px 10px; }
+.deck-black__logo { max-width: 100%; max-height: 40px; object-fit: contain; }
+.deck-black__label { font-size: 10px; letter-spacing: 0.1em; }
 /* Same anchor slot, but it's Stop while presenting: keep the black-screen look,
    tint the label red so it reads as the exit. */
 .deck-black--stop { color: var(--red); border-color: #52272b; }
