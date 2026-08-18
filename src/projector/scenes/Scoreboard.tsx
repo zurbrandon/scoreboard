@@ -34,7 +34,7 @@ export function Scoreboard() {
   const revealPhase = useAppState((s) => s.revealPhase)
   const finaleStage = useAppState((s) => s.finaleStage)
   const countdown = useAppState((s) => s.countdown)
-  const logos = useAppState((s) => s.scoreboardLogos)
+  const logos = useAppState((s) => s.scoreboardLogos) ?? { left: 'logos/comedysportz.png', right: 'logos/seattle-comedy-theater.png' }
 
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
@@ -56,10 +56,9 @@ export function Scoreboard() {
   return (
     <div className="scoreboard">
       <header className="scoreboard__top">
-        <HeaderLogo key={logos.left} src={logos.left} alt="Home logo" fallback="CSz" />
+        <HeaderLogo src={logos.left} alt="Home logo" fallback="CSz" />
         <div className="scoreboard__half">{HALF_LABEL[half]}</div>
         <HeaderLogo
-          key={logos.right}
           src={logos.right}
           alt="Venue logo"
           fallback="Theater"
@@ -231,8 +230,7 @@ function FinaleCountdown({ value }: { value: number }) {
 }
 
 // Shows a logo image (bundled path or uploaded data URL), falling back to text
-// if it's missing/broken — so the scoreboard never breaks before art is set. The
-// caller keys this on `src` so a new logo remounts and re-tries the image.
+// if it's missing/broken — so the scoreboard never breaks before art is set.
 function HeaderLogo({
   src,
   alt,
@@ -245,6 +243,8 @@ function HeaderLogo({
   extraClass?: string
 }) {
   const [failed, setFailed] = useState(false)
+  // Re-try when the logo changes (a previously-broken src shouldn't stick).
+  useEffect(() => setFailed(false), [src])
   if (!src || failed) {
     return <div className={`scoreboard__logo ${extraClass}`}>{fallback}</div>
   }

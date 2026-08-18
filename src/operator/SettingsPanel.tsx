@@ -9,6 +9,7 @@ import { DrumrollPicker } from './DrumrollPicker'
 import { ProjectorDisplayPicker } from './ProjectorDisplayPicker'
 import { SlideshowLibraryPanel } from './SlideshowLibraryPanel'
 import { ScoreboardLogosPanel } from './ScoreboardLogosPanel'
+import { IdleScreenPicker } from './IdleScreenPicker'
 
 type SettingsTab = 'visuals' | 'audio'
 
@@ -43,6 +44,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
         {tab === 'visuals' && (
           <>
+            <section className="settings-section">
+              <h3>Blank screen</h3>
+              <IdleScreenPicker />
+            </section>
+
             <section className="settings-section">
               <h3>Scoreboard logos</h3>
               <ScoreboardLogosPanel />

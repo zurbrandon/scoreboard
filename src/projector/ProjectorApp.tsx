@@ -3,6 +3,7 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import { useAppState } from '../store/react'
+import type { LogoSlide } from '../core/state'
 import { Scoreboard } from './scenes/Scoreboard'
 import { LogoScene } from './scenes/LogoScene'
 import { TextScene } from './scenes/TextScene'
@@ -29,6 +30,14 @@ export function ProjectorApp() {
   const momentNonce = useAppState((s) => s.momentNonce)
   const reaction = useAppState((s) => s.reaction)
   const reactionNonce = useAppState((s) => s.reactionNonce)
+  // Idle (Blank) screen: null → black; else a logo slide shown static on black.
+  // Falls back to black if the referenced slide is gone.
+  const idleLogoSlideId = useAppState((s) => s.idleLogoSlideId)
+  const idleLogoSlide = useAppState((s) =>
+    idleLogoSlideId
+      ? s.slides.items.find((x): x is LogoSlide => x.id === idleLogoSlideId && x.type === 'logo') ?? null
+      : null,
+  )
   const effect = useAppState((s) => s.effect)
   // 'team-emoji' effect: which team's scoreboard mood(s) to rain. A blue-side beat
   // → blue's emoji, a red-side beat → red's, anything else → both mixed. Empty
@@ -62,7 +71,14 @@ export function ProjectorApp() {
         </AnimatePresence>
       )}
       {scene === 'moment' && moment && <MomentScene key={momentNonce} moment={moment} />}
-      {scene === 'black' && <div className="scene-black" />}
+      {scene === 'black' &&
+        (idleLogoSlide ? (
+          <div className="scene-black">
+            <LogoScene slide={idleLogoSlide} />
+          </div>
+        ) : (
+          <div className="scene-black" />
+        ))}
       {/* A searched GIF over the scene; effects still fly on top of it. */}
       <GifOverlay />
       {/* Held team-color wash (press-and-hold from the operator). */}
