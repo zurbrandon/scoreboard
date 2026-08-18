@@ -1500,9 +1500,12 @@ button { font-family: inherit; cursor: pointer; }
 .reaction { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; }
 .reaction--idle { background: radial-gradient(100% 80% at 50% 0%, #141a2c, #05070d 72%); }
 .reaction__wordmark { font-size: 13cqw; font-weight: 900; letter-spacing: 0.03em; color: #fff; opacity: 0.9; text-transform: uppercase; }
-.reaction--blue { background: radial-gradient(120% 120% at 50% 30%, color-mix(in srgb, #fff 16%, var(--blue)), var(--blue)); }
-.reaction--red { background: radial-gradient(120% 120% at 50% 30%, color-mix(in srgb, #fff 16%, var(--red)), var(--red)); }
-.reaction__word { font-size: 30cqw; font-weight: 900; color: #fff; letter-spacing: 0.01em; text-shadow: 0 0.6cqw 2.2cqw rgba(0, 0, 0, 0.35); }
+.reaction--flash { background: #000; }
+/* Big, bold, team-colored word on black — a soft same-color glow gives it
+   presence without a full-screen flash. Color is by team (blue/red). */
+.reaction__word { font-size: 30cqw; font-weight: 900; letter-spacing: 0.01em; line-height: 0.9; }
+.reaction--blue .reaction__word { color: color-mix(in srgb, var(--blue) 80%, #fff); text-shadow: 0 0 4cqw color-mix(in srgb, var(--blue) 55%, transparent); }
+.reaction--red .reaction__word { color: color-mix(in srgb, var(--red) 80%, #fff); text-shadow: 0 0 4cqw color-mix(in srgb, var(--red) 55%, transparent); }
 
 .scene-text {
   height: 100%;
