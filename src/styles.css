@@ -449,19 +449,22 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Games verdict row: prominent one-tap yes / no calls. */
 .verdict { display: flex; gap: 8px; }
-/* On-air game: the Yes / No ruling fuses to the bottom of the live card so the
-   two read as ONE card (with the grip rail spanning both). The card squares its
-   bottom corners; the ruling butts flush beneath it, sharing the card's bottom
-   border as the seam, and rounds off only the outer bottom-right corner. */
-.slide-row__body:has(> .verdict--onair) > :first-child {
+/* On-air game: the grip rail, the card, and the Yes / No ruling become ONE
+   highlighted card. The accent frame lives on the OUTER edges (rail + card top/
+   sides + ruling bottom/sides); the seam between card and ruling opens up (no
+   border) so the outline is one clean rounded rect, never a zigzag. */
+.slide-row:has(.verdict--onair) .slide-row__grip { border-color: var(--accent); }
+.slide-row:has(.verdict--onair) .slide-row__body > :first-child {
+  border-color: var(--accent);
+  border-bottom: none;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 .verdict--onair {
   margin-top: 0;
   padding: 8px;
-  border: 1.5px solid #2c3346;
-  border-top: none;
+  border: 1.5px solid var(--accent);
+  border-top: none; /* the card above is flush; no line across the seam */
   border-radius: 0 0 12px 0; /* left side is the rail seam; top butts the card */
   background: var(--panel);
 }
