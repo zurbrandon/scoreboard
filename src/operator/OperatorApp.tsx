@@ -440,63 +440,58 @@ export function OperatorApp() {
             (Next / Reveal / Start — always the same spot), and small satellites
             (Prev / Stop / Silent) at the ends. Tab-specific: Score stages then
             reveals; Show/Games run the cue stack. */}
+        {/* One row: Black anchored left, the dominant primary filling the rest,
+            and (while presenting) small Back / Stop flanking it. The primary stays
+            the largest surface in every state. */}
         <div className="deck__main">
-          {/* Small secondary row: the "grab when needed" controls that change with
-              the tab/state — kept off the primary so they never resize or shove it. */}
-          <div className="deck__secondary">
-            <button
-              className={`sec-btn sec-btn--black ${programScene === 'black' ? 'is-active' : ''}`}
-              onClick={black}
-              title="Cut to black"
-            >
-              ◼ Black
-            </button>
-            {activeTab === 'score' && (
+          <button
+            className={`deck-black ${programScene === 'black' ? 'is-active' : ''}`}
+            onClick={black}
+            title="Cut to black"
+          >
+            Black
+          </button>
+
+          {activeTab === 'score' ? (
+            <>
+              <motion.button
+                className={`deck-primary ${canStop ? 'deck-primary--stop' : ''}`}
+                onClick={primaryAction}
+                whileTap={{ scale: 0.99 }}
+              >
+                {canStop ? '◼ Stop' : 'Reveal'}
+              </motion.button>
               <button
-                className="sec-btn"
+                className="deck-mini"
                 onClick={() => pushActive(false)}
                 title="Update the scoreboard with no animation or sound"
               >
-                Update silently
+                Silent
               </button>
-            )}
-            {activeTab !== 'score' && presentation && presentation.deck === activeDeck && (
-              <>
-                <button
-                  className="sec-btn"
-                  onClick={() => dispatch({ type: 'present.prev' })}
-                  disabled={presentation.index === 0}
-                >
-                  ◂ Back
-                </button>
-                <button
-                  className="sec-btn sec-btn--stop"
-                  onClick={() => dispatch({ type: 'present.stop' })}
-                  title="Stop — back to the list, cut to black"
-                >
-                  ◼ Stop
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* The one dominant action, full-width and always in the same place:
-              Reveal on Score; Start → Next on Show/Games. */}
-          {activeTab === 'score' ? (
-            <motion.button
-              className={`deck__primary ${canStop ? 'deck__primary--stop' : ''}`}
-              onClick={primaryAction}
-              whileTap={{ scale: 0.99 }}
-            >
-              {canStop ? '◼ Stop' : 'Reveal'}
-            </motion.button>
+            </>
           ) : presentation && presentation.deck === activeDeck ? (
-            <button className="deck__primary" onClick={() => dispatch({ type: 'present.next' })}>
-              Next ▸
-            </button>
+            <>
+              <button
+                className="deck-mini"
+                onClick={() => dispatch({ type: 'present.prev' })}
+                disabled={presentation.index === 0}
+              >
+                ◂ Back
+              </button>
+              <button className="deck-primary" onClick={() => dispatch({ type: 'present.next' })}>
+                Next ▸
+              </button>
+              <button
+                className="deck-mini deck-mini--stop"
+                onClick={() => dispatch({ type: 'present.stop' })}
+                title="Stop — back to the list, cut to black"
+              >
+                ◼ Stop
+              </button>
+            </>
           ) : (
             <button
-              className="deck__primary"
+              className="deck-primary"
               onClick={() => activeDeck && dispatch({ type: 'present.start', deck: activeDeck })}
             >
               ▶ {activeTab === 'show' ? 'Start show' : 'Start game'}
