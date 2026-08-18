@@ -36,7 +36,19 @@ function useBigStep(): boolean {
   return big
 }
 
-export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
+export function TeamControl({
+  team,
+  side,
+  pot = 0,
+  onAward,
+}: {
+  team: TeamId
+  side: Side
+  // Experiment: a neutral "pot" of points is staged elsewhere; when it's loaded
+  // this card arms as a tap target so a single tap awards the pot to this team.
+  pot?: number
+  onAward?: (team: TeamId) => void
+}) {
   const dispatch = useDispatch()
   const name = useAppState((s) => s.teams[team].name)
   const liveScore = useAppState((s) => s.teams[team].liveScore)
@@ -58,8 +70,10 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
   const [draft, setDraft] = useState<string | null>(null)
   const shown = draft ?? formatScore(pendingScore)
 
+  const armed = pot > 0 && !!onAward
+
   return (
-    <section className={`team-control team-control--${team}`} data-side={side}>
+    <section className={`team-control team-control--${team} ${armed ? 'team-control--armed' : ''}`} data-side={side}>
       <div className="team-control__head">
         <input
           className="team-control__name"
@@ -125,6 +139,17 @@ export function TeamControl({ team, side }: { team: TeamId; side: Side }) {
           </button>
         </div>
       </div>
+
+      {armed && (
+        <button
+          className="team-control__award"
+          onClick={() => onAward!(team)}
+          title={`Award ${formatScore(pot)} to ${name || team}`}
+        >
+          <span className="team-control__award-plus">+{formatScore(pot)}</span>
+          <span className="team-control__award-label">Give {name || team}</span>
+        </button>
+      )}
     </section>
   )
 }

@@ -75,6 +75,7 @@ button { font-family: inherit; cursor: pointer; }
 /* teams sit side by side */
 .teams-row { display: flex; gap: 10px; }
 .team-control {
+  position: relative;
   flex: 1;
   min-width: 0;
   background: var(--panel);
@@ -85,6 +86,70 @@ button { font-family: inherit; cursor: pointer; }
   gap: 10px;
   border: 2px solid transparent;
 }
+/* Armed to receive the neutral pot: the card lifts and a full-card tap target
+   overlays it so a single tap awards the staged points to this team. */
+.team-control--armed { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 26px -14px rgba(255, 210, 63, 0.7); }
+.team-control__award {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+  background: color-mix(in srgb, var(--panel) 62%, transparent);
+  backdrop-filter: blur(1.5px);
+}
+.team-control--blue .team-control__award { background: color-mix(in srgb, var(--blue) 42%, rgba(6, 9, 16, 0.68)); }
+.team-control--red .team-control__award { background: color-mix(in srgb, var(--red) 42%, rgba(6, 9, 16, 0.68)); }
+.team-control__award:hover { filter: brightness(1.12); }
+.team-control__award:active { transform: scale(0.99); }
+.team-control__award-plus { font-size: 34px; font-weight: 900; line-height: 1; }
+.team-control__award-label { font-size: 13px; font-weight: 700; opacity: 0.92; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Neutral pot bar — stage the round's points before you know the winner. */
+.pot {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1.5px dashed #2c3346;
+}
+.pot--armed { border-style: solid; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+.pot__main { display: flex; align-items: center; gap: 12px; }
+.pot__cap { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.pot--armed .pot__cap { color: var(--accent); }
+.pot__stepper { display: flex; align-items: center; gap: 8px; }
+.pot__step {
+  width: 32px; height: 32px; border-radius: 9px; cursor: pointer;
+  border: 1px solid #2c3346; background: var(--panel-2, #141a28); color: var(--text);
+  font-size: 18px; font-weight: 800; line-height: 1;
+}
+.pot__step:hover { border-color: var(--accent); }
+.pot__value { font-size: 24px; font-weight: 900; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.pot__quick { display: flex; gap: 6px; }
+.pot__chip {
+  padding: 6px 10px; border-radius: 8px; cursor: pointer; font-family: inherit;
+  border: 1px solid #2c3346; background: var(--panel-2, #141a28); color: var(--text);
+  font-size: 13px; font-weight: 800;
+}
+.pot__chip:hover { border-color: var(--accent); }
+.pot__clear {
+  margin-left: auto; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-family: inherit;
+  border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700;
+}
+.pot__clear:hover { color: var(--text); border-color: #2c3346; }
+.pot__hint { font-size: 12px; color: var(--muted); }
+.pot--armed .pot__hint { color: var(--accent); font-weight: 700; }
 .team-control--blue { border-color: var(--blue-dim); }
 .team-control--red { border-color: var(--red-dim); }
 

@@ -705,6 +705,18 @@ function ScoreboardConfig() {
   const leftTeam = teamOnSide('left', half)
   const rightTeam = teamOnSide('right', half)
 
+  // Experiment: a neutral "pot" of points staged before the vote. You pre-load
+  // however many points the round is worth; the moment you know the winner you
+  // tap their card and the pot lands on their pending score. Operator-only state
+  // — the audience never sees the pot, only the awarded score on reveal.
+  const [pot, setPot] = useState(0)
+  const addPot = (n: number) => setPot((p) => Math.max(0, p + n))
+  const award = (team: TeamId) => {
+    if (pot <= 0) return
+    dispatch({ type: 'team.bumpScore', team, delta: pot })
+    setPot(0)
+  }
+
   return (
     <>
       <div className="phase-toggle">
@@ -728,8 +740,39 @@ function ScoreboardConfig() {
         </button>
       </div>
       <div className="teams-row">
-        <TeamControl team={leftTeam} side="left" />
-        <TeamControl team={rightTeam} side="right" />
+        <TeamControl team={leftTeam} side="left" pot={pot} onAward={award} />
+        <TeamControl team={rightTeam} side="right" pot={pot} onAward={award} />
+      </div>
+
+      {/* Neutral pot: stage the round's points, then tap the winning team above. */}
+      <div className={`pot ${pot > 0 ? 'pot--armed' : ''}`}>
+        <div className="pot__main">
+          <span className="pot__cap">Up for grabs</span>
+          <div className="pot__stepper">
+            <button className="pot__step" aria-label="Remove a point from the pot" onClick={() => addPot(-1)}>
+              −
+            </button>
+            <strong className="pot__value">{pot}</strong>
+            <button className="pot__step" aria-label="Add a point to the pot" onClick={() => addPot(1)}>
+              +
+            </button>
+          </div>
+          <div className="pot__quick">
+            {[2, 3, 5].map((n) => (
+              <button key={n} className="pot__chip" onClick={() => addPot(n)}>
+                +{n}
+              </button>
+            ))}
+          </div>
+          {pot > 0 && (
+            <button className="pot__clear" onClick={() => setPot(0)}>
+              Clear
+            </button>
+          )}
+        </div>
+        <span className="pot__hint">
+          {pot > 0 ? 'Tap a team above to award' : 'Load the points this round is worth'}
+        </span>
       </div>
 
       <h3 className="section-head">Custom</h3>
