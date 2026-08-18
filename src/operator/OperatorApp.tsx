@@ -10,12 +10,16 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { ImageSlide, LogoSlide, OperatorTab, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide, TextTemplate } from '../core/state'
 import type { Command } from '../core/commands'
 import { REVEAL_STYLES, templateSkeleton, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
 import { GifSearch } from './GifSearch'
+import { LogoScene } from '../projector/scenes/LogoScene'
+import { TextScene } from '../projector/scenes/TextScene'
+import { ImageScene } from '../projector/scenes/ImageScene'
+import { ShowScene } from '../projector/scenes/ShowScene'
 import { WASH_PULSE_MS } from '../projector/WashOverlay'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
@@ -1154,18 +1158,47 @@ function slideCard(slide: Slide, selectedId: string): ReactNode {
 // wait below as compact rows. The whole column translates so the active card
 // stays centered; advancing scrolls it up. Edit is still available — the active
 // card is the real editor, so there's no separate build mode.
+// A faithful mini-preview of what a slide puts on the projector: the real scene
+// components, rendered static (animate=false) inside a size-container box so the
+// cqw/cqh-based scene CSS scales down to thumbnail size. Slideshows (external
+// embeds) and empties show a lightweight placeholder instead of a live iframe.
+function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { name: string }> }) {
+  let scene: ReactNode
+  switch (slide.type) {
+    case 'logo':
+      scene = slide.src ? <LogoScene slide={slide} /> : <div className="slidethumb__ph">Logo</div>
+      break
+    case 'text':
+      scene = <TextScene slide={slide} />
+      break
+    case 'image':
+      scene = slide.src ? <ImageScene slide={slide} /> : <div className="slidethumb__ph">Image</div>
+      break
+    case 'show':
+      scene = <ShowScene slide={slide} teams={teams} />
+      break
+    case 'slideshow':
+      scene = <div className="slidethumb__ph">▶ Slideshow</div>
+      break
+  }
+  return (
+    <div className="slidethumb" aria-hidden="true">
+      <div className="slidethumb__scene">{scene}</div>
+    </div>
+  )
+}
+
 function CueStack({
   order,
   itemsById,
   index,
-  selectedId,
 }: {
   order: string[]
   itemsById: Map<string, Slide>
   index: number
-  selectedId: string
 }) {
   const dispatch = useDispatch()
+  const teams = useAppState((s) => s.teams)
   const viewportRef = useRef<HTMLDivElement>(null)
   const stackRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLDivElement>(null)
@@ -1191,7 +1224,14 @@ function CueStack({
               className={`cuestack__item ${active ? 'is-active' : i < index ? 'is-done' : 'is-next'}`}
             >
               {active ? (
-                slideCard(slide, selectedId)
+                <div className="cueframe">
+                  <SlideThumb slide={slide} teams={teams} />
+                  <div className="cueframe__cap">
+                    <span className="cueframe__n">{i + 1}</span>
+                    <span className="cueframe__name">{describeSlide(slide)}</span>
+                    <span className="cueframe__badge">On air</span>
+                  </div>
+                </div>
               ) : (
                 <button
                   className="cuerow"
@@ -1199,6 +1239,9 @@ function CueStack({
                   title="Jump to this slide"
                 >
                   <span className="cuerow__n">{i + 1}</span>
+                  <span className="cuerow__thumb">
+                    <SlideThumb slide={slide} teams={teams} />
+                  </span>
                   <span className="cuerow__name">{describeSlide(slide)}</span>
                 </button>
               )}
@@ -1280,7 +1323,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
       )}
 
       {pres ? (
-        <CueStack order={order} itemsById={itemsById} index={pres.index} selectedId={selectedId} />
+        <CueStack order={order} itemsById={itemsById} index={pres.index} />
       ) : (
         /* No AnimatePresence here: wrapping Reorder.Items in it orphaned exiting
            rows when the whole deck is replaced at once (loading a template), so a
