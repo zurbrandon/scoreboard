@@ -441,63 +441,67 @@ export function OperatorApp() {
             (Prev / Stop / Silent) at the ends. Tab-specific: Score stages then
             reveals; Show/Games run the cue stack. */}
         <div className="deck__main">
-          <div className="transport">
+          {/* Small secondary row: the "grab when needed" controls that change with
+              the tab/state — kept off the primary so they never resize or shove it. */}
+          <div className="deck__secondary">
             <button
-              className={`transport__seg transport__seg--black ${programScene === 'black' ? 'is-active' : ''}`}
+              className={`sec-btn sec-btn--black ${programScene === 'black' ? 'is-active' : ''}`}
               onClick={black}
               title="Cut to black"
             >
-              Black
+              ◼ Black
             </button>
-
-            {activeTab === 'score' ? (
-              <>
-                <motion.button
-                  className={`transport__seg transport__seg--primary ${canStop ? 'transport__seg--stop' : ''}`}
-                  onClick={primaryAction}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {canStop ? '◼ Stop' : 'Reveal'}
-                </motion.button>
-                <button
-                  className="transport__seg transport__seg--secondary"
-                  onClick={() => pushActive(false)}
-                  title="Update the scoreboard with no animation or sound"
-                >
-                  Silent
-                </button>
-              </>
-            ) : presentation && presentation.deck === activeDeck ? (
-              <>
-                <button
-                  className="transport__seg transport__seg--mini"
-                  onClick={() => dispatch({ type: 'present.prev' })}
-                  disabled={presentation.index === 0}
-                  aria-label="Previous slide"
-                >
-                  ◂
-                </button>
-                <button className="transport__seg transport__seg--primary" onClick={() => dispatch({ type: 'present.next' })}>
-                  Next ▸
-                </button>
-                <button
-                  className="transport__seg transport__seg--mini transport__seg--stop"
-                  onClick={() => dispatch({ type: 'present.stop' })}
-                  aria-label="Stop"
-                  title="Stop — back to the list, cut to black"
-                >
-                  ◼
-                </button>
-              </>
-            ) : (
+            {activeTab === 'score' && (
               <button
-                className="transport__seg transport__seg--primary"
-                onClick={() => activeDeck && dispatch({ type: 'present.start', deck: activeDeck })}
+                className="sec-btn"
+                onClick={() => pushActive(false)}
+                title="Update the scoreboard with no animation or sound"
               >
-                ▶ {activeTab === 'show' ? 'Start show' : 'Start game'}
+                Update silently
               </button>
             )}
+            {activeTab !== 'score' && presentation && presentation.deck === activeDeck && (
+              <>
+                <button
+                  className="sec-btn"
+                  onClick={() => dispatch({ type: 'present.prev' })}
+                  disabled={presentation.index === 0}
+                >
+                  ◂ Back
+                </button>
+                <button
+                  className="sec-btn sec-btn--stop"
+                  onClick={() => dispatch({ type: 'present.stop' })}
+                  title="Stop — back to the list, cut to black"
+                >
+                  ◼ Stop
+                </button>
+              </>
+            )}
           </div>
+
+          {/* The one dominant action, full-width and always in the same place:
+              Reveal on Score; Start → Next on Show/Games. */}
+          {activeTab === 'score' ? (
+            <motion.button
+              className={`deck__primary ${canStop ? 'deck__primary--stop' : ''}`}
+              onClick={primaryAction}
+              whileTap={{ scale: 0.99 }}
+            >
+              {canStop ? '◼ Stop' : 'Reveal'}
+            </motion.button>
+          ) : presentation && presentation.deck === activeDeck ? (
+            <button className="deck__primary" onClick={() => dispatch({ type: 'present.next' })}>
+              Next ▸
+            </button>
+          ) : (
+            <button
+              className="deck__primary"
+              onClick={() => activeDeck && dispatch({ type: 'present.start', deck: activeDeck })}
+            >
+              ▶ {activeTab === 'show' ? 'Start show' : 'Start game'}
+            </button>
+          )}
         </div>
 
         {/* Quick triggers: run out / in (random visual + song), and the three
