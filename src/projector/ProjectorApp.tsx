@@ -9,6 +9,7 @@ import { TextScene } from './scenes/TextScene'
 import { ImageScene } from './scenes/ImageScene'
 import { Slideshow } from './scenes/Slideshow'
 import { ShowScene } from './scenes/ShowScene'
+import { ReactionScene } from './scenes/ReactionScene'
 import { MomentScene } from './scenes/MomentScene'
 import { GifOverlay } from './GifOverlay'
 import { WashOverlay } from './WashOverlay'
@@ -26,6 +27,8 @@ export function ProjectorApp() {
   const teams = useAppState((s) => s.teams)
   const moment = useAppState((s) => s.moment)
   const momentNonce = useAppState((s) => s.momentNonce)
+  const reaction = useAppState((s) => s.reaction)
+  const reactionNonce = useAppState((s) => s.reactionNonce)
   const effect = useAppState((s) => s.effect)
   // 'team-emoji' effect: which team's scoreboard mood(s) to rain. A blue-side beat
   // → blue's emoji, a red-side beat → red's, anything else → both mixed. Empty
@@ -53,6 +56,7 @@ export function ProjectorApp() {
             {liveSlide?.type === 'image' && <ImageScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'slideshow' && <Slideshow url={liveSlide.url} />}
             {liveSlide?.type === 'show' && <ShowScene slide={liveSlide} teams={teams} animate={animate} />}
+            {liveSlide?.type === 'reaction' && <ReactionScene reaction={reaction} nonce={reactionNonce} />}
             {!liveSlide && <div className="scene-logo" />}
           </motion.div>
         </AnimatePresence>

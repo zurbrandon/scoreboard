@@ -26,6 +26,40 @@ function logoSlideOf(s: AppState, id: string): LogoSlide {
 }
 const hasId = (s: AppState, id: string) => s.slides.items.some((i) => i.id === id)
 
+describe('reaction control slide (Yay Boo)', () => {
+  it('flash sets the live reaction and bumps the nonce each tap', () => {
+    let s = run({ type: 'reaction.flash', team: 'blue', kind: 'boo' })
+    expect(s.reaction).toEqual({ team: 'blue', kind: 'boo' })
+    expect(s.reactionNonce).toBe(1)
+    // A repeat of the same team+word still bumps the nonce so the flash replays.
+    s = reduce(s, { type: 'reaction.flash', team: 'blue', kind: 'boo' })
+    expect(s.reactionNonce).toBe(2)
+    s = reduce(s, { type: 'reaction.flash', team: 'red', kind: 'yay' })
+    expect(s.reaction).toEqual({ team: 'red', kind: 'yay' })
+  })
+
+  it('airing a reaction slide resets to the neutral holding screen', () => {
+    const s = run(
+      { type: 'slide.addReaction', id: 'yb', deck: 'games' },
+      { type: 'reaction.flash', team: 'red', kind: 'boo' }, // stale flash from a prior round
+      { type: 'slide.select', id: 'yb' },
+      { type: 'slide.commit' },
+    )
+    expect(s.slides.live?.type).toBe('reaction')
+    expect(s.reaction).toBeNull()
+  })
+
+  it('committing a non-reaction slide leaves any live reaction untouched', () => {
+    const s = run(
+      { type: 'reaction.flash', team: 'blue', kind: 'yay' },
+      { type: 'slide.addText', id: 'tx', template: 'basic', deck: 'games' },
+      { type: 'slide.select', id: 'tx' },
+      { type: 'slide.commit' },
+    )
+    expect(s.reaction).toEqual({ team: 'blue', kind: 'yay' })
+  })
+})
+
 describe('pending vs live (the sacred rule)', () => {
   it('score edits touch pending only, never live', () => {
     const s = run({ type: 'blue.increment' }, { type: 'blue.increment' })

@@ -534,6 +534,34 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--panel);
 }
 .verdict--onair .verdict-btn { padding: 10px; font-size: 13px; }
+
+/* Yay Boo reaction pad — the four live buttons on the on-air reaction card. Same
+   fuse-to-the-card treatment as the verdict: 2×2 grid, blue left / red right. */
+.reactionpad { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.reactionpad--onair {
+  margin-top: 0;
+  padding: 8px;
+  border: 1.5px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 12px 0;
+  background: var(--panel);
+}
+.reactionpad__btn {
+  padding: 12px 8px; border-radius: 10px; cursor: pointer; font-family: inherit;
+  font-weight: 800; font-size: 14px; letter-spacing: 0.04em; color: #fff;
+  border: 1px solid transparent; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.reactionpad__btn--blue { background: color-mix(in srgb, var(--blue) 26%, var(--panel)); border-color: color-mix(in srgb, var(--blue) 55%, transparent); }
+.reactionpad__btn--red { background: color-mix(in srgb, var(--red) 26%, var(--panel)); border-color: color-mix(in srgb, var(--red) 55%, transparent); }
+.reactionpad__btn--blue:hover { background: color-mix(in srgb, var(--blue) 40%, var(--panel)); }
+.reactionpad__btn--red:hover { background: color-mix(in srgb, var(--red) 40%, var(--panel)); }
+.reactionpad__btn--boo { opacity: 0.9; }
+.reactionpad__btn:active { transform: scale(0.98); }
+
+/* Build-view card for the reaction slide — a labeled marker, no fields. */
+.reaction-card__preview { flex-direction: column; gap: 4px; background: radial-gradient(120% 120% at 50% 0%, #23182e, #0b0710 74%) !important; }
+.reaction-card__tag { font-size: 20px; font-weight: 900; color: #fff; }
+.reaction-card__sub { font-size: 12px; color: var(--muted); }
 .verdict-btn {
   flex: 1; font-family: inherit; font-weight: 800; font-size: 15px; cursor: pointer;
   padding: 13px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -1467,6 +1495,14 @@ button { font-family: inherit; cursor: pointer; }
    inside a small operator thumbnail the same scenes scale down faithfully. */
 .projector { height: 100%; background: #000; container: stage / size; }
 .scene-black { height: 100%; background: #000; }
+
+/* Reaction control slide (Yay Boo): neutral wordmark, then a full-color flash. */
+.reaction { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; }
+.reaction--idle { background: radial-gradient(100% 80% at 50% 0%, #141a2c, #05070d 72%); }
+.reaction__wordmark { font-size: 13cqw; font-weight: 900; letter-spacing: 0.03em; color: #fff; opacity: 0.9; text-transform: uppercase; }
+.reaction--blue { background: radial-gradient(120% 120% at 50% 30%, color-mix(in srgb, #fff 16%, var(--blue)), var(--blue)); }
+.reaction--red { background: radial-gradient(120% 120% at 50% 30%, color-mix(in srgb, #fff 16%, var(--red)), var(--red)); }
+.reaction__word { font-size: 30cqw; font-weight: 900; color: #fff; letter-spacing: 0.01em; text-shadow: 0 0.6cqw 2.2cqw rgba(0, 0, 0, 0.35); }
 
 .scene-text {
   height: 100%;

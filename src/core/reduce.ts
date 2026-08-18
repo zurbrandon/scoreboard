@@ -4,7 +4,7 @@
 
 import type { Command } from './commands'
 import type { AppState, Slide, SlideDeck, TeamId, TeamState } from './state'
-import { emptySlideshowSlide, emptyImageSlide, emptyTextSlide, logoSlide, showSlide } from './state'
+import { emptySlideshowSlide, emptyImageSlide, emptyTextSlide, logoSlide, reactionSlide, showSlide } from './state'
 import { determineWinner } from './winner'
 
 // Map over the Slides deck, replacing the slide with matching id.
@@ -145,7 +145,10 @@ function baseReduce(state: AppState, command: Command): AppState {
       // Publish the selected slide. `live` holds the exact object reference so a
       // later edit (which produces a new object) reads as "dirty" until re-committed.
       const sel = state.slides.items.find((s) => s.id === state.slides.selectedId) ?? null
-      return { ...state, slides: { ...state.slides, live: sel } }
+      // Airing a reaction control slide starts it on the neutral holding screen,
+      // never a stale flash left over from a previous round.
+      const reaction = sel?.type === 'reaction' ? null : state.reaction
+      return { ...state, reaction, slides: { ...state.slides, live: sel } }
     }
     case 'show.captain': {
       // The deck's quick captain buttons fire a GENERIC captain intro — a
@@ -271,6 +274,25 @@ function baseReduce(state: AppState, command: Command): AppState {
           selectedId: command.id,
         },
       }
+    case 'slide.addReaction':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: [...state.slides.items, reactionSlide(command.id, command.deck ?? 'games')],
+          selectedId: command.id,
+        },
+      }
+    case 'reaction.flash':
+      // Set the live reaction and bump the nonce so the projector replays the
+      // flash even when the same team+word is tapped twice.
+      return {
+        ...state,
+        reaction: { team: command.team, kind: command.kind },
+        reactionNonce: state.reactionNonce + 1,
+      }
+    case 'reaction.clear':
+      return { ...state, reaction: null, reactionNonce: state.reactionNonce + 1 }
     case 'slide.addShow':
       return {
         ...state,

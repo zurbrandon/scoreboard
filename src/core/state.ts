@@ -113,6 +113,18 @@ export interface SlideshowSlide {
   url: string
 }
 
+// A "reaction" control slide (first use: the game Yay Boo). Unlike a display
+// slide, it holds no content of its own — it's an operator instrument. While it
+// is on air, the operator taps a team+word and the projector flashes that team's
+// color with the word. The live flash lives on AppState.reaction, not the slide,
+// so the slide stays a simple, reusable marker in the deck.
+export type ReactionKind = 'yay' | 'boo'
+export interface ReactionSlide {
+  id: string
+  type: 'reaction'
+  deck: SlideDeck
+}
+
 // A cue a slide carries: fire this on Reveal (never on a silent update). `effect`
 // is an overlay effect kind (confetti, a team wash, …). Music has three states:
 //   • `trackId` set     → start that bumper under the slide (rides; re-cueing the
@@ -144,7 +156,7 @@ export interface ShowSlide {
   generic?: boolean
 }
 
-export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide | ShowSlide
+export type Slide = LogoSlide | TextSlide | ImageSlide | SlideshowSlide | ShowSlide | ReactionSlide
 
 export function logoSlide(id: string, name: string, src: string, website = '', deck: SlideDeck = 'show'): LogoSlide {
   return { id, type: 'logo', deck, name, src, website }
@@ -162,6 +174,9 @@ export function emptyImageSlide(id: string, src = '', deck: SlideDeck = 'show'):
 }
 export function emptySlideshowSlide(id: string, url = '', deck: SlideDeck = 'show'): SlideshowSlide {
   return { id, type: 'slideshow', deck, url }
+}
+export function reactionSlide(id: string, deck: SlideDeck = 'games'): ReactionSlide {
+  return { id, type: 'reaction', deck }
 }
 export function showSlide(id: string, beat: ShowBeat, deck: SlideDeck = 'show', name = '', roster = ''): ShowSlide {
   return { id, type: 'show', deck, beat, name, roster }
@@ -411,6 +426,13 @@ export interface AppState {
   /** Bumped on each moment trigger so the projector replays the animation even
    *  when the same visual is chosen twice. */
   momentNonce: number
+  /** The live reaction (team color + word) shown while a reaction control slide
+   *  is on air, or null for the neutral holding screen. Driven by the operator's
+   *  reaction buttons; see ReactionSlide. */
+  reaction: { team: TeamId; kind: ReactionKind } | null
+  /** Bumped on each reaction tap so the projector replays the flash even when the
+   *  same team+word is tapped twice in a row. */
+  reactionNonce: number
   music: MusicState
 }
 
@@ -460,6 +482,8 @@ export function createInitialState(): AppState {
     washHold: null,
     moment: null,
     momentNonce: 0,
+    reaction: null,
+    reactionNonce: 0,
     music: {
       volume: 0.8,
       duck: 1,
@@ -510,6 +534,7 @@ function normSlide(s: Record<string, unknown>): Slide | null {
   if (s.type === 'text') return textSlideFrom(s)
   if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''), deck)
   if (s.type === 'slideshow') return emptySlideshowSlide(String(s.id ?? rid('show')), String(s.url ?? ''), deck)
+  if (s.type === 'reaction') return reactionSlide(String(s.id ?? rid('reaction')), deck)
   if (s.type === 'show') {
     const slide = showSlide(String(s.id ?? rid('show')), asBeat(s.beat), deck, String(s.name ?? ''), String(s.roster ?? ''))
     const cue = normCue(s.cue)

@@ -93,6 +93,7 @@ function loadPersisted(): AppState {
         washHold: null, // transient hold; never restore across launches
         liveMode: false, // always launch in staged mode, never mid-live
         presentation: null, // never restore mid-presentation
+        reaction: null, // transient Yay-Boo flash; never restore across launches
         music: { ...fresh.music, ...parsed.music, duck: 1 },
       }
     }

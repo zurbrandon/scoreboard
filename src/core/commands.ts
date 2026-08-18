@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -42,6 +42,7 @@ export type Command =
   | { type: 'slide.addText'; id: string; template: TextTemplate; deck?: SlideDeck; theme?: TextTheme } // add a text slide and select it
   | { type: 'slide.addImage'; id: string; deck?: SlideDeck } // add an empty image slide (awaiting a drop) and select it
   | { type: 'slide.addSlideshow'; id: string; deck?: SlideDeck } // add an empty slideshow (Google Slides) slide
+  | { type: 'slide.addReaction'; id: string; deck?: SlideDeck } // add a reaction control slide (Yay Boo)
   | { type: 'slide.addShow'; id: string; beat: ShowBeat; deck?: SlideDeck } // add a scripted show-intro beat
   | { type: 'slide.setShowField'; id: string; field: 'name' | 'roster'; value: string } // show beat's name / roster
   | { type: 'slide.setCue'; id: string; cue: SlideCue } // bind a reveal cue (effect / music) to a slide
@@ -53,6 +54,8 @@ export type Command =
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3
   | { type: 'show.captain'; which: 'blue' | 'red' | 'both' } // reveal a GENERIC captain intro (deck quick button), independent of any scripted captain slide
+  | { type: 'reaction.flash'; team: TeamId; kind: ReactionKind } // Yay Boo: flash the projector a team color + word (yay/boo)
+  | { type: 'reaction.clear' } // return a reaction slide to its neutral holding screen
   | { type: 'slide.addMany'; deck: SlideDeck; slides: Slide[] } // append pre-built slides (already have fresh ids) + select the first — used to stamp a template
   // Saved deck templates (persisted, editable): stamp one into a deck, or save /
   // update / rename / delete from the current deck.

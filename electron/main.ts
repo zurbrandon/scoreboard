@@ -98,6 +98,7 @@ function loadState(): AppState {
         washHold: null,
         liveMode: false,
         presentation: null,
+        reaction: null,
         countdown: 0,
         music: {
           ...fresh.music,

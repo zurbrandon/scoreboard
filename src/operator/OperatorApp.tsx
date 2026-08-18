@@ -10,7 +10,7 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
-import type { ImageSlide, LogoSlide, OperatorTab, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, ReactionSlide, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide, TextTemplate } from '../core/state'
 import type { Command } from '../core/commands'
 import { REVEAL_STYLES, templateSkeleton, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
@@ -20,6 +20,7 @@ import { LogoScene } from '../projector/scenes/LogoScene'
 import { TextScene } from '../projector/scenes/TextScene'
 import { ImageScene } from '../projector/scenes/ImageScene'
 import { ShowScene } from '../projector/scenes/ShowScene'
+import { ReactionScene } from '../projector/scenes/ReactionScene'
 import { WASH_PULSE_MS } from '../projector/WashOverlay'
 import { TeamControl } from './TeamControl'
 import { SettingsPanel } from './SettingsPanel'
@@ -46,6 +47,8 @@ function describeSlide(slide: Slide): string {
       return 'Image'
     case 'slideshow':
       return 'Slideshow'
+    case 'reaction':
+      return 'Yay Boo'
   }
 }
 
@@ -1006,6 +1009,8 @@ function skeletonSig(s: Slide): string {
       return `logo|${s.src}|${s.website}`
     case 'image':
       return `image|${s.src}`
+    case 'reaction':
+      return `reaction`
   }
 }
 const deckSignature = (slides: Slide[]): string => slides.map(skeletonSig).join('||')
@@ -1199,6 +1204,8 @@ function slideCard(slide: Slide, selectedId: string): ReactNode {
       return <ShowSlideCard slide={slide} selected={slide.id === selectedId} />
     case 'text':
       return <TextSlideCard slide={slide} selected={slide.id === selectedId} />
+    case 'reaction':
+      return <ReactionSlideCard slide={slide} selected={slide.id === selectedId} />
   }
 }
 
@@ -1228,6 +1235,9 @@ function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { na
       break
     case 'slideshow':
       scene = <div className="slidethumb__ph">▶ Slideshow</div>
+      break
+    case 'reaction':
+      scene = <ReactionScene reaction={null} nonce={0} />
       break
   }
   return (
@@ -1386,17 +1396,35 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                 onDrop={commitOrder}
               >
                 {slideCard(slide, selectedId)}
-                {/* On-air game → the Yes / No ruling rides on the live card. */}
-                {id === onAirId && (
-                  <div className="verdict verdict--onair">
-                    <button className="verdict-btn verdict-btn--yes" onClick={() => dispatch({ type: 'effect.fire', kind: 'success' })}>
-                      ✓ Yes
-                    </button>
-                    <button className="verdict-btn verdict-btn--no" onClick={() => dispatch({ type: 'effect.fire', kind: 'nope' })}>
-                      ✗ No
-                    </button>
-                  </div>
-                )}
+                {/* On-air game → its controls ride on the live card. A reaction
+                    slide (Yay Boo) gets the yay/boo pad; every other game gets the
+                    Yes / No ruling. */}
+                {id === onAirId &&
+                  (slide.type === 'reaction' ? (
+                    <div className="reactionpad reactionpad--onair">
+                      <button className="reactionpad__btn reactionpad__btn--blue" onClick={() => dispatch({ type: 'reaction.flash', team: 'blue', kind: 'yay' })}>
+                        💙 YAY
+                      </button>
+                      <button className="reactionpad__btn reactionpad__btn--red" onClick={() => dispatch({ type: 'reaction.flash', team: 'red', kind: 'yay' })}>
+                        ❤️ YAY
+                      </button>
+                      <button className="reactionpad__btn reactionpad__btn--blue reactionpad__btn--boo" onClick={() => dispatch({ type: 'reaction.flash', team: 'blue', kind: 'boo' })}>
+                        💙 BOO
+                      </button>
+                      <button className="reactionpad__btn reactionpad__btn--red reactionpad__btn--boo" onClick={() => dispatch({ type: 'reaction.flash', team: 'red', kind: 'boo' })}>
+                        ❤️ BOO
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="verdict verdict--onair">
+                      <button className="verdict-btn verdict-btn--yes" onClick={() => dispatch({ type: 'effect.fire', kind: 'success' })}>
+                        ✓ Yes
+                      </button>
+                      <button className="verdict-btn verdict-btn--no" onClick={() => dispatch({ type: 'effect.fire', kind: 'nope' })}>
+                        ✗ No
+                      </button>
+                    </div>
+                  ))}
               </SlideRow>
             )
           })}
@@ -1405,7 +1433,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
       {!pres && (addOpen ? (
         <div className="slide-add">
-          {deck === 'show' && (
+          {deck === 'show' ? (
             <>
               <span className="slide-add__label">Show beats</span>
               {SHOW_BEAT_ORDER.map((beat) => (
@@ -1421,60 +1449,91 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                 </button>
               ))}
               <span className="slide-add__label">Other slides</span>
+              {LOGO_PRESETS.map((p) => (
+                <button
+                  key={p.name}
+                  className="slide-add__item"
+                  onClick={() => {
+                    dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: p.name, src: p.src, deck })
+                    setAddOpen(false)
+                  }}
+                >
+                  {p.name} logo
+                </button>
+              ))}
+              <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
+                Upload logo…
+              </button>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
+                  setAddOpen(false)
+                }}
+              >
+                Image — drag one in
+              </button>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
+                  setAddOpen(false)
+                }}
+              >
+                Text — headline + body
+              </button>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
+                  setAddOpen(false)
+                }}
+              >
+                Slideshow — Google Slides link
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Games: only game-oriented slide templates — no show chrome. */}
+              <span className="slide-add__label">Game slides</span>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
+                  setAddOpen(false)
+                }}
+              >
+                Headline + subhead
+              </button>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'quadrants', deck })
+                  setAddOpen(false)
+                }}
+              >
+                Four quadrants
+              </button>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addReaction', id: newSlideId('reaction'), deck })
+                  setAddOpen(false)
+                }}
+              >
+                🎭 Yay Boo — reaction pad
+              </button>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
+                  setAddOpen(false)
+                }}
+              >
+                Image — drag one in
+              </button>
             </>
           )}
-          {deck !== 'show' && <span className="slide-add__label">Add a slide</span>}
-          {LOGO_PRESETS.map((p) => (
-            <button
-              key={p.name}
-              className="slide-add__item"
-              onClick={() => {
-                dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: p.name, src: p.src, deck })
-                setAddOpen(false)
-              }}
-            >
-              {p.name} logo
-            </button>
-          ))}
-          <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
-            Upload logo…
-          </button>
-          <button
-            className="slide-add__item"
-            onClick={() => {
-              dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
-              setAddOpen(false)
-            }}
-          >
-            Image — drag one in
-          </button>
-          <button
-            className="slide-add__item"
-            onClick={() => {
-              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
-              setAddOpen(false)
-            }}
-          >
-            Text — headline + body
-          </button>
-          <button
-            className="slide-add__item"
-            onClick={() => {
-              dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'quadrants', deck })
-              setAddOpen(false)
-            }}
-          >
-            Text — four quadrants
-          </button>
-          <button
-            className="slide-add__item"
-            onClick={() => {
-              dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
-              setAddOpen(false)
-            }}
-          >
-            Slideshow — Google Slides link
-          </button>
           <button className="slide-add__cancel" onClick={() => setAddOpen(false)}>
             Cancel
           </button>
@@ -1954,6 +2013,54 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
       {confirming && (
         <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
           <span className="logo-card__confirm-q">Remove this beat?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// The build-view card for a reaction control slide (Yay Boo). It has nothing to
+// fill in — the game is played live from the on-air buttons — so the card is
+// just a labeled marker with a quick reminder of what it does.
+function ReactionSlideCard({ slide, selected }: { slide: ReactionSlide; selected: boolean }) {
+  const dispatch = useDispatch()
+  const [confirming, setConfirming] = useState(false)
+  return (
+    <div
+      className={`logo-card reaction-card ${selected ? 'logo-card--active' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+    >
+      <div className="logo-card__preview reaction-card__preview">
+        <span className="reaction-card__tag">🎭 Yay Boo</span>
+        <span className="reaction-card__sub">Flash yay / boo per team, live</span>
+      </div>
+      <button
+        className="logo-card__remove"
+        aria-label="Remove slide"
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
+      >
+        ✕
+      </button>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this slide?</span>
           <div className="logo-card__confirm-row">
             <button
               className="logo-card__confirm-yes"
