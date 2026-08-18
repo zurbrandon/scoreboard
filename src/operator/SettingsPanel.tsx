@@ -45,7 +45,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         {tab === 'visuals' && (
           <>
             <section className="settings-section">
-              <h3>Blank screen</h3>
+              <h3>Idle screen</h3>
               <IdleScreenPicker />
             </section>
 
