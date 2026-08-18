@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
+import { BufferedInput } from './BufferedField'
 
 const newId = () => `ss-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
@@ -28,18 +29,18 @@ export function SlideshowLibraryPanel() {
     <div className="extra ss-lib">
       {slideshows.map((s) => (
         <div key={s.id} className="ss-lib__row">
-          <input
+          <BufferedInput
             className="ss-lib__name"
             value={s.name}
             aria-label="Slideshow name"
-            onChange={(e) => dispatch({ type: 'slideshow.update', id: s.id, name: e.target.value, url: s.url })}
+            onCommit={(v) => dispatch({ type: 'slideshow.update', id: s.id, name: v, url: s.url })}
           />
-          <input
+          <BufferedInput
             className="ss-lib__url"
             value={s.url}
             placeholder="Published embed link"
             aria-label="Slideshow link"
-            onChange={(e) => dispatch({ type: 'slideshow.update', id: s.id, name: s.name, url: e.target.value })}
+            onCommit={(v) => dispatch({ type: 'slideshow.update', id: s.id, name: s.name, url: v })}
           />
           <button
             className="ss-lib__del"

@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react'
 import { useAppState, useDispatch } from '../store/react'
+import { BufferedInput } from './BufferedField'
 import type { Side } from '../core/sides'
 import type { TeamId } from '../core/state'
 import { formatScore } from '../core/score'
@@ -75,11 +76,11 @@ export function TeamControl({
   return (
     <section className={`team-control team-control--${team} ${armed ? 'team-control--armed' : ''}`} data-side={side}>
       <div className="team-control__head">
-        <input
+        <BufferedInput
           className="team-control__name"
           value={name}
           aria-label={`${team} team name`}
-          onChange={(e) => dispatch({ type: 'team.setName', team, name: e.target.value })}
+          onCommit={(v) => dispatch({ type: 'team.setName', team, name: v })}
         />
         <MoodBox team={team} />
       </div>

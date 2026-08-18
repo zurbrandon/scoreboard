@@ -16,6 +16,7 @@ import { REVEAL_STYLES, templateSkeleton, type RevealStyle } from '../core/state
 import { DUCK_STEP } from '../shared/hotkeys'
 import { pickMomentVisual } from '../moments'
 import { GifSearch } from './GifSearch'
+import { BufferedInput, BufferedTextarea } from './BufferedField'
 import { LogoScene } from '../projector/scenes/LogoScene'
 import { TextScene } from '../projector/scenes/TextScene'
 import { ImageScene } from '../projector/scenes/ImageScene'
@@ -780,19 +781,19 @@ function ScoreboardConfig() {
 
       <h3 className="section-head">Custom</h3>
       <div className="extra ribbons-row">
-        <input
+        <BufferedInput
           className="ribbon-input ribbon-input--blue"
           value={ribbonHome}
           placeholder="Home"
           aria-label="Home label (Blue)"
-          onChange={(e) => dispatch({ type: 'ribbons.setHome', value: e.target.value })}
+          onCommit={(v) => dispatch({ type: 'ribbons.setHome', value: v })}
         />
-        <input
+        <BufferedInput
           className="ribbon-input ribbon-input--red"
           value={ribbonAway}
           placeholder="Away"
           aria-label="Away label (Red)"
-          onChange={(e) => dispatch({ type: 'ribbons.setAway', value: e.target.value })}
+          onCommit={(v) => dispatch({ type: 'ribbons.setAway', value: v })}
         />
         <label className="switch" title={ribbonsVisible ? 'Showing on the board' : 'Hidden'}>
           <input
@@ -807,11 +808,11 @@ function ScoreboardConfig() {
       </div>
 
       <div className="extra audience-row">
-        <input
+        <BufferedInput
           className="audience-label"
           value={audienceLabel}
           aria-label="Audience label"
-          onChange={(e) => dispatch({ type: 'audience.setLabel', label: e.target.value })}
+          onCommit={(v) => dispatch({ type: 'audience.setLabel', label: v })}
         />
         <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.decrement' })}>
           −
@@ -1639,14 +1640,14 @@ function LogoSlideCard({ slide, selected }: { slide: LogoSlide; selected: boolea
       <div className="logo-card__preview">
         <img src={logoImgSrc(slide.src)} alt={slide.name} />
       </div>
-      <input
+      <BufferedInput
         className="logo-card__site"
         type="text"
         value={slide.website}
         placeholder="website (shown under the logo)"
         aria-label={`${slide.name} website`}
         onClick={(e) => e.stopPropagation()}
-        onChange={(e) => dispatch({ type: 'slide.setWebsite', id: slide.id, website: e.target.value })}
+        onCommit={(v) => dispatch({ type: 'slide.setWebsite', id: slide.id, website: v })}
       />
       <button
         className="logo-card__remove"
@@ -1829,21 +1830,21 @@ function TextSlideCard({
 
       {slide.template === 'basic' && (
         <>
-          <textarea
+          <BufferedTextarea
             className="text-card__headline"
             value={slide.headline}
             placeholder="Headline (e.g. Skiing)"
             aria-label="Headline"
             rows={1}
-            onChange={(e) => setField('headline', e.target.value)}
+            onCommit={(v) => setField('headline', v)}
           />
-          <textarea
+          <BufferedTextarea
             className="text-card__body"
             value={slide.body}
             placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
             aria-label="Body"
             rows={1}
-            onChange={(e) => setField('body', e.target.value)}
+            onCommit={(v) => setField('body', v)}
           />
         </>
       )}
@@ -1851,13 +1852,13 @@ function TextSlideCard({
       {slide.template === 'quadrants' && (
         <div className="quad-inputs">
           {(['Top left', 'Top right', 'Bottom left', 'Bottom right'] as const).map((label, i) => (
-            <input
+            <BufferedInput
               key={i}
               className="text-card__quad"
               value={slide.quads[i]}
               placeholder={label}
               aria-label={label}
-              onChange={(e) => setQuad(i, e.target.value)}
+              onCommit={(v) => setQuad(i, v)}
             />
           ))}
         </div>
@@ -1940,27 +1941,27 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
         {!meta.field && <span className="show-card__hint">{meta.hint}</span>}
       </div>
       {meta.field === 'name' && (
-        <input
+        <BufferedInput
           className="logo-card__site"
           type="text"
           value={slide.name}
           placeholder={meta.hint}
           aria-label={meta.hint}
           onClick={(e) => e.stopPropagation()}
-          onChange={(e) => dispatch({ type: 'slide.setShowField', id: slide.id, field: 'name', value: e.target.value })}
+          onCommit={(v) => dispatch({ type: 'slide.setShowField', id: slide.id, field: 'name', value: v })}
         />
       )}
       {meta.field === 'roster' && (
         <div className="show-card__roster-grid" onClick={(e) => e.stopPropagation()}>
           {rosterSlots.map((v, i) => (
-            <input
+            <BufferedInput
               key={i}
               className="logo-card__site"
               type="text"
               value={v}
               placeholder={`Player ${i + 1}`}
               aria-label={`Player ${i + 1}`}
-              onChange={(e) => setRosterSlot(i, e.target.value)}
+              onCommit={(val) => setRosterSlot(i, val)}
             />
           ))}
         </div>
@@ -2115,14 +2116,14 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
           ))}
         </select>
       )}
-      <input
+      <BufferedInput
         className="logo-card__site"
         type="text"
         value={slide.url}
         placeholder="…or paste a link (Google …/pub, or a Canva present / …/watch?embed link)"
         aria-label="Slideshow link"
         onClick={(e) => e.stopPropagation()}
-        onChange={(e) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: e.target.value })}
+        onCommit={(v) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: v })}
       />
       <button
         className="logo-card__remove"
