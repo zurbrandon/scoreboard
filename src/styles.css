@@ -1020,6 +1020,10 @@ button { font-family: inherit; cursor: pointer; }
   text-transform: uppercase;
 }
 .deck-black.is-active { color: #fff; box-shadow: 0 0 22px rgba(255, 255, 255, 0.22), inset 0 0 0 2px rgba(255, 255, 255, 0.5); }
+/* Same anchor slot, but it's Stop while presenting: keep the black-screen look,
+   tint the label red so it reads as the exit. */
+.deck-black--stop { color: var(--red); border-color: #52272b; }
+.deck-black--stop:hover { border-color: var(--red); }
 /* Primary: fills the rest — the dominant surface (Start / Next / Reveal). */
 .deck-primary {
   flex: 1;

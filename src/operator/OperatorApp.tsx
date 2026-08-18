@@ -140,6 +140,7 @@ export function OperatorApp() {
   // Show/Games share one selection; keep it inside the active deck so Reveal
   // always pushes a slide from the deck you're looking at.
   const activeDeck: SlideDeck | null = activeTab === 'score' ? null : activeTab
+  const isPresenting = !!(activeDeck && presentation && presentation.deck === activeDeck)
   useEffect(() => {
     if (!activeDeck) return
     const inDeck = allSlides.filter((s) => s.deck === activeDeck)
@@ -444,13 +445,26 @@ export function OperatorApp() {
             and (while presenting) small Back / Stop flanking it. The primary stays
             the largest surface in every state. */}
         <div className="deck__main">
-          <button
-            className={`deck-black ${programScene === 'black' ? 'is-active' : ''}`}
-            onClick={black}
-            title="Blank the projector (cut to black)"
-          >
-            Blank
-          </button>
+          {/* Left anchor: Blank (cut to black) normally. While a deck is
+              presenting, Stop lives here instead — it does what Blank does plus
+              resets the cue stack, so the two never need to coexist. */}
+          {isPresenting ? (
+            <button
+              className="deck-black deck-black--stop"
+              onClick={() => dispatch({ type: 'present.stop' })}
+              title="Stop the show — reset the deck and cut to black"
+            >
+              ◼ Stop
+            </button>
+          ) : (
+            <button
+              className={`deck-black ${programScene === 'black' ? 'is-active' : ''}`}
+              onClick={black}
+              title="Blank the projector (cut to black)"
+            >
+              Blank
+            </button>
+          )}
 
           {activeTab === 'score' ? (
             <>
@@ -469,24 +483,17 @@ export function OperatorApp() {
                 Silent
               </button>
             </>
-          ) : presentation && presentation.deck === activeDeck ? (
+          ) : isPresenting ? (
             <>
               <button
                 className="deck-mini"
                 onClick={() => dispatch({ type: 'present.prev' })}
-                disabled={presentation.index === 0}
+                disabled={presentation!.index === 0}
               >
                 ◂ Back
               </button>
               <button className="deck-primary" onClick={() => dispatch({ type: 'present.next' })}>
                 Next ▸
-              </button>
-              <button
-                className="deck-mini deck-mini--stop"
-                onClick={() => dispatch({ type: 'present.stop' })}
-                title="Stop — back to the list, cut to black"
-              >
-                ◼ Stop
               </button>
             </>
           ) : (
