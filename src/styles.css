@@ -449,6 +449,9 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Games verdict row: prominent one-tap yes / no calls. */
 .verdict { display: flex; gap: 8px; }
+/* Riding on the on-air game card: a small gap below the card, so the ruling
+   reads as belonging to the slide that's live. */
+.verdict--onair { margin-top: 8px; }
 .verdict-btn {
   flex: 1; font-family: inherit; font-weight: 800; font-size: 15px; cursor: pointer;
   padding: 13px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;

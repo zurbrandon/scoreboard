@@ -488,6 +488,12 @@ export function OperatorApp() {
                 <span>update</span>
               </button>
             </>
+          ) : activeTab === 'games' ? (
+            /* Games is pick-and-cut, not a queue: select a game, Show it, Blank,
+               pick the next. The primary just reveals the selected slide. */
+            <button className="deck-primary" onClick={reveal} title="Reveal the selected game">
+              Show
+            </button>
           ) : isPresenting ? (
             <>
               <button
@@ -506,7 +512,7 @@ export function OperatorApp() {
               className="deck-primary"
               onClick={() => activeDeck && dispatch({ type: 'present.start', deck: activeDeck })}
             >
-              ▶ {activeTab === 'show' ? 'Start show' : 'Start game'}
+              ▶ Start show
             </button>
           )}
         </div>
@@ -1265,6 +1271,12 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
   // Presenting THIS deck? (pres is null on the flat, editable list.)
   const presentation = useAppState((s) => s.presentation)
   const pres = presentation && presentation.deck === deck ? presentation : null
+  // Games verdict lives on the slide that's actually on air: the Yes / No ruling
+  // attaches to the game the audience is looking at, so you rule right where you
+  // just revealed. Null unless a games slide is currently the live scene.
+  const liveSlide = useAppState((s) => s.slides.live)
+  const scene = useAppState((s) => s.scene)
+  const onAirId = deck === 'games' && scene === 'slides' && liveSlide?.deck === 'games' ? liveSlide.id : null
   const [addOpen, setAddOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -1310,18 +1322,6 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
       {/* Transport (Start / Prev / Next / Stop) lives in the footer now, so it's
           tab-specific and thumb-reachable. */}
 
-      {/* Games: verdict calls right on the tab — one tap for a yes / no ruling. */}
-      {deck === 'games' && (
-        <div className="verdict">
-          <button className="verdict-btn verdict-btn--yes" onClick={() => dispatch({ type: 'effect.fire', kind: 'success' })}>
-            ✓ Yes
-          </button>
-          <button className="verdict-btn verdict-btn--no" onClick={() => dispatch({ type: 'effect.fire', kind: 'nope' })}>
-            ✗ No
-          </button>
-        </div>
-      )}
-
       {pres ? (
         <CueStack order={order} itemsById={itemsById} index={pres.index} />
       ) : (
@@ -1343,6 +1343,17 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                 onDrop={commitOrder}
               >
                 {slideCard(slide, selectedId)}
+                {/* On-air game → the Yes / No ruling rides on the live card. */}
+                {id === onAirId && (
+                  <div className="verdict verdict--onair">
+                    <button className="verdict-btn verdict-btn--yes" onClick={() => dispatch({ type: 'effect.fire', kind: 'success' })}>
+                      ✓ Yes
+                    </button>
+                    <button className="verdict-btn verdict-btn--no" onClick={() => dispatch({ type: 'effect.fire', kind: 'nope' })}>
+                      ✗ No
+                    </button>
+                  </div>
+                )}
               </SlideRow>
             )
           })}
