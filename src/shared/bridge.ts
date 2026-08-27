@@ -54,7 +54,7 @@ export interface SoundLibraryUpdate {
 }
 
 export interface ShowboardBridge {
-  role: 'operator' | 'projector'
+  role: 'operator' | 'projector' | 'sound'
   /** Synchronous so the renderer store can start with real state. */
   getInitialState(): AppState
   /** Send a command to the single owner of truth (main). */
@@ -93,6 +93,8 @@ export interface ShowboardBridge {
   // one folder. Tags live in a sidecar keyed by path, so a re-scan never loses
   // them. Pushed to every window, not just the operator, because the soundboard
   // lives in its own window but playback stays with the operator.
+  /** Open (or focus, if already open) the soundboard window. */
+  openSoundWindow(): void
   chooseSoundFolder(): void
   requestSoundLibrary(): void
   /** Add and/or remove tags across many tracks at once — the bulk gesture that

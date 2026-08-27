@@ -16,10 +16,9 @@ import type {
 import type { HotkeyAction } from '../src/shared/hotkeys'
 import type { MomentKind } from '../src/core/state'
 
+const view = new URLSearchParams(location.search).get('view')
 const role: ShowboardBridge['role'] =
-  new URLSearchParams(location.search).get('view') === 'projector'
-    ? 'projector'
-    : 'operator'
+  view === 'projector' ? 'projector' : view === 'sound' ? 'sound' : 'operator'
 
 const bridge: ShowboardBridge = {
   role,
@@ -56,6 +55,7 @@ const bridge: ShowboardBridge = {
     return () => ipcRenderer.removeListener('showboard:hotkey', listener)
   },
 
+  openSoundWindow: () => ipcRenderer.send('showboard:openSoundWindow'),
   chooseSoundFolder: () => ipcRenderer.send('showboard:chooseSoundFolder'),
   requestSoundLibrary: () => ipcRenderer.send('showboard:requestSoundLibrary'),
   setSoundTags: (paths, add, remove) =>

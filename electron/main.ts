@@ -23,10 +23,10 @@ import type {
 import type { MomentKind } from '../src/core/state'
 import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
 import { normalizeTags } from '../src/shared/soundTags'
+import { AUDIO_EXTENSIONS, findAudioFiles, trackName } from '../src/shared/soundScan'
 
 const isDev = !app.isPackaged
 const DEV_URL = 'http://localhost:5173'
-const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']
 
 // Custom scheme so the renderer can stream local audio files without disabling
 // web security. Must be declared before app is ready.
@@ -46,6 +46,10 @@ interface Settings {
   momentOutFolder: string | null
   momentInFolder: string | null
   operatorBounds: { x: number; y: number; width: number; height: number } | null
+  soundBounds: { x: number; y: number; width: number; height: number } | null
+  /** Reopen the soundboard on launch if it was open at quit — a show machine
+   *  should come up in the same arrangement it went down in. */
+  soundWindowOpen: boolean
 }
 
 const stateFile = () => join(app.getPath('userData'), 'showboard-state.json')
@@ -139,6 +143,8 @@ function loadSettings(): Settings {
       momentOutFolder: parsed.momentOutFolder ?? null,
       momentInFolder: parsed.momentInFolder ?? null,
       operatorBounds: parsed.operatorBounds ?? null,
+      soundBounds: parsed.soundBounds ?? null,
+      soundWindowOpen: parsed.soundWindowOpen ?? false,
     }
   } catch {
     return {
@@ -149,6 +155,8 @@ function loadSettings(): Settings {
       momentOutFolder: null,
       momentInFolder: null,
       operatorBounds: null,
+      soundBounds: null,
+      soundWindowOpen: false,
     }
   }
 }
@@ -162,6 +170,8 @@ let settings: Settings = {
   momentOutFolder: null,
   momentInFolder: null,
   operatorBounds: null,
+  soundBounds: null,
+  soundWindowOpen: false,
 }
 
 let saveStateTimer: ReturnType<typeof setTimeout> | undefined
@@ -195,21 +205,22 @@ function scheduleSaveSettings() {
 // --- windows -----------------------------------------------------------------
 let operatorWin: BrowserWindow | null = null
 let projectorWin: BrowserWindow | null = null
+let soundWin: BrowserWindow | null = null
 
 function allWindows(): BrowserWindow[] {
-  return [operatorWin, projectorWin].filter((w): w is BrowserWindow => w !== null)
+  return [operatorWin, projectorWin, soundWin].filter((w): w is BrowserWindow => w !== null)
 }
 
 function broadcastState() {
   for (const win of allWindows()) win.webContents.send('showboard:state', state)
 }
 
-function loadRoute(win: BrowserWindow, view: 'operator' | 'projector') {
+function loadRoute(win: BrowserWindow, view: 'operator' | 'projector' | 'sound') {
   if (isDev) {
-    win.loadURL(view === 'projector' ? `${DEV_URL}/?view=projector` : `${DEV_URL}/`)
+    win.loadURL(view === 'operator' ? `${DEV_URL}/` : `${DEV_URL}/?view=${view}`)
   } else {
     win.loadFile(join(__dirname, '../dist/index.html'), {
-      query: view === 'projector' ? { view: 'projector' } : {},
+      query: view === 'operator' ? {} : { view },
     })
   }
 }
@@ -348,31 +359,16 @@ function saveSoundTags() {
   }
 }
 
-// Walk the folder recursively. Depth-capped and dot-folder-skipping so pointing
-// this at a deep or messy music drive can't wedge the scan, and symlinks are
-// left alone so a self-referential link can't loop forever.
-function scanSoundFolder(folder: string, depth = 0): SoundTrackInfo[] {
-  if (depth > 8) return []
-  const out: SoundTrackInfo[] = []
-  try {
-    for (const entry of readdirSync(folder, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue
-      const full = join(folder, entry.name)
-      if (entry.isDirectory()) {
-        out.push(...scanSoundFolder(full, depth + 1))
-      } else if (entry.isFile() && AUDIO_EXTENSIONS.some((ext) => entry.name.toLowerCase().endsWith(ext))) {
-        out.push({
-          id: full,
-          name: entry.name.replace(/\.[^.]+$/, ''),
-          url: `sbmedia://audio/?p=${encodeURIComponent(full)}`,
-          tags: soundTags[full] ?? [],
-        })
-      }
-    }
-  } catch (err) {
-    console.warn('[main] failed to scan sound folder:', folder, err)
-  }
-  return out
+// Tracks are the audio files under the chosen folder, dressed with their tags
+// and a playable URL. The walk itself lives in shared code so it can be tested
+// against a real directory tree.
+function scanSoundFolder(folder: string): SoundTrackInfo[] {
+  return findAudioFiles(folder).map((full) => ({
+    id: full,
+    name: trackName(basename(full)),
+    url: `sbmedia://audio/?p=${encodeURIComponent(full)}`,
+    tags: soundTags[full] ?? [],
+  }))
 }
 
 function pushSoundLibrary() {
@@ -417,6 +413,50 @@ function pushDrumroll() {
       : null,
   }
   operatorWin?.webContents.send('showboard:drumroll', update)
+}
+
+// The soundboard: search, tags and pads, in its own window so it can be parked
+// on a second display or beside the deck. It never plays audio itself — it
+// dispatches like any other window and the operator's audio controller does the
+// playing, which is what keeps exactly one song sounding at a time and lets this
+// window be closed or moved mid-show without cutting the music.
+function createSoundWindow() {
+  if (soundWin) {
+    soundWin.focus()
+    return
+  }
+  const bounds = settings.soundBounds
+  soundWin = new BrowserWindow({
+    width: bounds?.width ?? 1100,
+    height: bounds?.height ?? 760,
+    minWidth: 720,
+    minHeight: 480,
+    x: bounds?.x,
+    y: bounds?.y,
+    title: 'Showboard — Sound',
+    backgroundColor: '#0c0e14',
+    autoHideMenuBar: true,
+    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
+  })
+  loadRoute(soundWin, 'sound')
+  settings.soundWindowOpen = true
+  scheduleSaveSettings()
+
+  const persistBounds = () => {
+    if (!soundWin) return
+    settings.soundBounds = soundWin.getBounds()
+    scheduleSaveSettings()
+  }
+  soundWin.on('resize', persistBounds)
+  soundWin.on('move', persistBounds)
+  // Closing it is a normal thing to do mid-show; only the operator ends the app.
+  soundWin.on('closed', () => {
+    soundWin = null
+    settings.soundWindowOpen = false
+    scheduleSaveSettings()
+  })
+  // It missed the library push that fired before it existed.
+  soundWin.webContents.once('did-finish-load', () => pushSoundLibrary())
 }
 
 // --- IPC ---------------------------------------------------------------------
@@ -473,6 +513,8 @@ function registerIpc() {
   })
 
   ipcMain.on('showboard:requestTracks', () => pushTracks())
+
+  ipcMain.on('showboard:openSoundWindow', () => createSoundWindow())
 
   ipcMain.on('showboard:chooseSoundFolder', async () => {
     if (!operatorWin) return
@@ -641,6 +683,7 @@ app.whenReady().then(() => {
   registerIpc()
   createOperatorWindow()
   createProjectorWindow()
+  if (settings.soundWindowOpen) createSoundWindow()
   registerGlobalShortcuts()
   console.log('[main] Showboard windows created (isDev=%s)', isDev)
 

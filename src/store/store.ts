@@ -16,11 +16,12 @@ import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlidesh
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
-export type Role = 'operator' | 'projector'
+export type Role = 'operator' | 'projector' | 'sound'
 
 export interface Store {
   getState(): AppState
-  /** Dispatch a command. On the projector this is a no-op (read-only view). */
+  /** Dispatch a command. On the projector this is a no-op (read-only view);
+   *  the soundboard window may dispatch, since it drives playback by command. */
   dispatch(command: Command): void
   subscribe(listener: () => void): () => void
   readonly role: Role
@@ -49,7 +50,7 @@ function createElectronStore(role: Role, bridge: ShowboardBridge): Store {
       return () => listeners.delete(listener)
     },
     dispatch(command) {
-      if (role !== 'operator') return // projector is read-only
+      if (role === 'projector') return // the projector only ever observes
       bridge.dispatch(command) // round-trips through main; state comes back via onState
     },
   }
@@ -150,6 +151,9 @@ function createBrowserStore(role: Role): Store {
       return () => listeners.delete(listener)
     },
     dispatch(command) {
+      // Browser (dev prototype) only: the operator owns truth in-page, so no
+      // other role can write. The soundboard is view-only here; Electron is its
+      // real host, where main owns truth and any window may dispatch.
       if (role !== 'operator') return
       setState(reduce(state, command))
       persist(state)

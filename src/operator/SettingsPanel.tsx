@@ -10,6 +10,7 @@ import { ProjectorDisplayPicker } from './ProjectorDisplayPicker'
 import { SlideshowLibraryPanel } from './SlideshowLibraryPanel'
 import { ScoreboardLogosPanel } from './ScoreboardLogosPanel'
 import { IdleScreenPicker } from './IdleScreenPicker'
+import { SoundLibraryPanel } from './SoundLibraryPanel'
 
 type SettingsTab = 'visuals' | 'audio'
 
@@ -82,6 +83,15 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 {isElectron
                   ? 'Score music plays on reveals; run-out / run-in each play a random song from their folder.'
                   : 'Load a set of bumper MP3s to play on reveals.'}
+              </span>
+            </section>
+
+            <section className="settings-section">
+              <h3>Sound library</h3>
+              <SoundLibraryPanel />
+              <span className="music-panel__status">
+                The soundboard's searchable pool. Subfolders are included, so this can point
+                at the folder holding your other music folders.
               </span>
             </section>
 
