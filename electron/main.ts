@@ -108,6 +108,10 @@ function loadState(): AppState {
         finaleStage: 'idle',
         revealSettled: false,
         audioPlaying: false,
+        // Cues are momentary: never replay one because it was in the state file.
+        soundCueNonce: 0,
+        soundCueTrackId: null,
+        soundStopNonce: 0,
         gifOverlay: null,
         washHold: null,
         liveMode: false,

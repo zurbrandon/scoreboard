@@ -47,6 +47,10 @@ if (audio && window.showboard) {
   window.showboard.requestDrumroll()
   window.showboard.onMomentTracks((update) => audio.setMomentTracks(update.kind, update.tracks))
   window.showboard.requestMomentTracks()
+  // The soundboard window dispatches cues; this window is what plays them, so
+  // it needs the library even though it never shows it.
+  window.showboard.onSoundLibrary((update) => audio.setSoundTracks(update.tracks))
+  window.showboard.requestSoundLibrary()
 }
 
 createRoot(document.getElementById('root')!).render(

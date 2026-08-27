@@ -461,6 +461,20 @@ function baseReduce(state: AppState, command: Command): AppState {
         music: { ...state.music, duck: 1 }, // a fresh cue plays at full volume
       }
 
+    case 'sound.play':
+      // A soundboard pad or an audition from search. Like a moment cue it resets
+      // the dial's duck so a deliberate pick starts at full volume; unlike a
+      // reveal it changes nothing on screen — this window is sound only.
+      return {
+        ...state,
+        soundCueTrackId: command.id,
+        soundCueNonce: state.soundCueNonce + 1,
+        music: { ...state.music, duck: 1 },
+      }
+
+    case 'sound.stop':
+      return { ...state, soundStopNonce: state.soundStopNonce + 1 }
+
     case 'audio.setPlaying':
       return { ...state, audioPlaying: command.value }
     case 'audio.fadeOut':

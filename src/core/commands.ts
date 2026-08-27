@@ -83,6 +83,8 @@ export type Command =
   | { type: 'reveal.stop' } // kill switch: end a playing reveal now (fades audio, freezes the finale winner)
   | { type: 'audio.setPlaying'; value: boolean } // audio controller reflects whether reveal sound is sounding
   | { type: 'audio.fadeOut' } // kill switch: gracefully fade the current music to silence, leaving the scene as-is
+  | { type: 'sound.play'; id: string } // soundboard: play this sound-library track, replacing whatever is sounding
+  | { type: 'sound.stop' } // soundboard: stop its own playback (does not touch the reveal)
   // Final-score sequence steps, dispatched by the reveal service on a timer.
   | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown
   | { type: 'finale.celebrate' } // countdown done → winner takeover (fires confetti + bumper)

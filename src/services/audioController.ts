@@ -23,6 +23,8 @@ export interface AudioController {
   setDrumroll(track: LoadedTrack | null): void
   /** Replace the song pool for a run-out / run-in moment. */
   setMomentTracks(kind: MomentKind, tracks: LoadedTrack[]): void
+  /** Replace the soundboard's library — the tagged pool its pads play from. */
+  setSoundTracks(tracks: LoadedTrack[]): void
   /** Sound-check: play a random bumper now, without a reveal. */
   test(): void
   /** Stop any current playback. */
@@ -35,6 +37,7 @@ export interface AudioController {
 const FADE_AFTER_MS = 15000 // start fading this long after a bumper begins
 const FADE_MS = 3000 // slow fade to silence over this long
 const STOP_FADE_MS = 250 // fast fade when the operator hits STOP (no speaker pop)
+const SOUND_STOP_FADE_MS = 400 // the soundboard's own Stop: quick, but still not a hard cut
 const MOMENT_LEAVE_FADE_MS = 6500 // slow, graceful fade when leaving a moment for another scene
 const BLACK_FADE_MS = 7500 // graceful fade when cueing to black or a blackout beat / "No music"
 const KILL_FADE_MS = 5000 // graceful fade for the "fade music out" kill switch (leaves the scene up)
@@ -43,12 +46,19 @@ export function createAudioController(store: Store): AudioController {
   let tracks: LoadedTrack[] = []
   let drumroll: LoadedTrack | null = null
   const momentTracks: Record<MomentKind, LoadedTrack[]> = { out: [], in: [] }
+  // The soundboard's pool. Kept apart from `tracks` because it's a different
+  // library with different rules — no no-repeat bookkeeping, no auto-fade — but
+  // it shares the single <audio> element, which is what guarantees that a pad
+  // tap replaces whatever is sounding instead of stacking on top of it.
+  let soundTracks: LoadedTrack[] = []
   let audio: HTMLAudioElement | null = null
   let lastNonce = store.getState().revealNonce
   let lastFinaleNonce = store.getState().finaleNonce
   let lastStopNonce = store.getState().stopNonce
   let lastAudioFadeNonce = store.getState().audioFadeNonce
   let lastMomentNonce = store.getState().momentNonce
+  let lastSoundCueNonce = store.getState().soundCueNonce
+  let lastSoundStopNonce = store.getState().soundStopNonce
   let lastAnimNonce = store.getState().revealAnimNonce
   let lastScene = store.getState().scene
   let currentIsMoment = false // is the track now playing a run-out / run-in song?
@@ -214,6 +224,33 @@ export function createAudioController(store: Store): AudioController {
     }
   }
 
+  // A soundboard pick: a pad tap, or an audition while tagging. It behaves like
+  // a slide cue — it rides to the end of the song rather than auto-fading after
+  // 15s, because the operator chose this song deliberately and decides when it
+  // stops. Unlike a slide cue it always restarts, even if the same song is
+  // already playing: tapping a pad again is a re-trigger, not a no-op.
+  function playSoundTrack(id: string): void {
+    const { music } = store.getState()
+    if (music.muted) return // a hard mute means silence, whatever asked
+    const track = soundTracks.find((t) => t.id === id)
+    if (!track) return // library rescanned out from under the pad
+    try {
+      clearFade()
+      releaseAudio()
+      fadeGain = 1
+      audio = new Audio(track.url)
+      applyVolume()
+      audio.addEventListener('ended', () => releaseAudio(), { once: true })
+      void audio.play().catch((err) => {
+        console.warn('[audio] soundboard playback failed; continuing show:', err)
+      })
+      setPlaying(true)
+      store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
+    } catch (err) {
+      console.warn('[audio] could not start soundboard track; continuing show:', err)
+    }
+  }
+
   // The Final-score drum roll — the custom upload, or any bumper as a stand-in.
   function playDrumroll(): void {
     const { music } = store.getState()
@@ -306,6 +343,17 @@ export function createAudioController(store: Store): AudioController {
       else if (cue?.trackId) playTrackById(cue.trackId)
       else if (isGenericCaptain) playBumper(false) // random score-folder track
     }
+    // The soundboard asked for a song. Deliberately NOT gated on music.enabled:
+    // that switch means "play music on reveals", and someone who turns reveal
+    // bumpers off still expects their pads to work.
+    if (s.soundCueNonce !== lastSoundCueNonce) {
+      lastSoundCueNonce = s.soundCueNonce
+      if (s.soundCueTrackId) playSoundTrack(s.soundCueTrackId)
+    }
+    if (s.soundStopNonce !== lastSoundStopNonce) {
+      lastSoundStopNonce = s.soundStopNonce
+      fadeOutOver(SOUND_STOP_FADE_MS)
+    }
     // Run-out / run-in moment fired → play a random song from its pool.
     if (s.momentNonce !== lastMomentNonce) {
       lastMomentNonce = s.momentNonce
@@ -349,6 +397,10 @@ export function createAudioController(store: Store): AudioController {
       for (const t of momentTracks[kind]) URL.revokeObjectURL(t.url) // no-op for sbmedia://
       momentTracks[kind] = next
     },
+    setSoundTracks(next) {
+      for (const t of soundTracks) URL.revokeObjectURL(t.url) // no-op for sbmedia://
+      soundTracks = next
+    },
     test() {
       playBumper(false)
     },
@@ -366,7 +418,9 @@ export function createAudioController(store: Store): AudioController {
       if (drumroll) URL.revokeObjectURL(drumroll.url)
       for (const t of momentTracks.out) URL.revokeObjectURL(t.url)
       for (const t of momentTracks.in) URL.revokeObjectURL(t.url)
+      for (const t of soundTracks) URL.revokeObjectURL(t.url)
       tracks = []
+      soundTracks = []
       drumroll = null
       momentTracks.out = []
       momentTracks.in = []

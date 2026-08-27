@@ -450,6 +450,17 @@ export interface AppState {
   /** Bumped on each moment trigger so the projector replays the animation even
    *  when the same visual is chosen twice. */
   momentNonce: number
+  /** Bumped when the soundboard asks for a song from the sound library — a pad
+   *  tap, or an audition while tagging. The soundboard window dispatches; the
+   *  operator's audio controller is what actually plays, so only one song can
+   *  ever be sounding. */
+  soundCueNonce: number
+  /** Which sound-library track that cue asked for (its absolute path). */
+  soundCueTrackId: string | null
+  /** Bumped by the soundboard's own Stop. Kept separate from the reveal STOP
+   *  because that one also settles the reveal — the sound window must never be
+   *  able to disturb what's on screen. */
+  soundStopNonce: number
   /** The live reaction (team color + word) shown while a reaction control slide
    *  is on air, or null for the neutral holding screen. Driven by the operator's
    *  reaction buttons; see ReactionSlide. */
@@ -513,6 +524,9 @@ export function createInitialState(): AppState {
     washHold: null,
     moment: null,
     momentNonce: 0,
+    soundCueNonce: 0,
+    soundCueTrackId: null,
+    soundStopNonce: 0,
     reaction: null,
     reactionNonce: 0,
     scoreboardLogos: defaultScoreboardLogos(),
