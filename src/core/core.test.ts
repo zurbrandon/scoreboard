@@ -960,3 +960,35 @@ describe('normSoundBanks', () => {
     expect(normSoundBanks(undefined)).toEqual([])
   })
 })
+
+describe('soundboard playback commands', () => {
+  it('records which track a cue asked for and bumps the nonce', () => {
+    const s = run({ type: 'sound.play', id: '/m/song.mp3' })
+    expect(s.soundCueTrackId).toBe('/m/song.mp3')
+    expect(s.soundCueNonce).toBe(1)
+  })
+
+  it('bumps the nonce again for the same track, so a re-tap re-triggers', () => {
+    const s = run({ type: 'sound.play', id: '/m/a' }, { type: 'sound.play', id: '/m/a' })
+    expect(s.soundCueNonce).toBe(2)
+  })
+
+  it('stops without touching the reveal, unlike the reveal STOP', () => {
+    const before = run({ type: 'display.reveal', scene: 'scoreboard' })
+    const after = reduce(before, { type: 'sound.stop' })
+    expect(after.soundStopNonce).toBe(before.soundStopNonce + 1)
+    expect(after.revealPhase).toBe(before.revealPhase)
+    expect(after.stopNonce).toBe(before.stopNonce)
+    expect(after.scene).toBe(before.scene)
+  })
+
+  it('clamps a negative seek rather than passing it to the audio element', () => {
+    expect(run({ type: 'sound.seek', seconds: -12 }).soundSeekTo).toBe(0)
+  })
+
+  it('records the seek target and bumps its nonce', () => {
+    const s = run({ type: 'sound.seek', seconds: 42.5 })
+    expect(s.soundSeekTo).toBe(42.5)
+    expect(s.soundSeekNonce).toBe(1)
+  })
+})

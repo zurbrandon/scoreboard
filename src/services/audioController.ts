@@ -11,6 +11,7 @@
 import { pickBumper, type BumperTrack } from '../core/bumper'
 import type { MomentKind } from '../core/state'
 import type { Store } from '../store/store'
+import type { SoundProgress } from '../shared/bridge'
 
 export interface LoadedTrack extends BumperTrack {
   url: string // object URL (browser) or sbmedia:// URL (Electron)
@@ -25,6 +26,9 @@ export interface AudioController {
   setMomentTracks(kind: MomentKind, tracks: LoadedTrack[]): void
   /** Replace the soundboard's library — the tagged pool its pads play from. */
   setSoundTracks(tracks: LoadedTrack[]): void
+  /** What's sounding right now, for the soundboard's now-playing bar. Read on a
+   *  timer rather than pushed, so nothing here fires on every frame. */
+  getProgress(): SoundProgress
   /** Sound-check: play a random bumper now, without a reveal. */
   test(): void
   /** Stop any current playback. */
@@ -59,6 +63,7 @@ export function createAudioController(store: Store): AudioController {
   let lastMomentNonce = store.getState().momentNonce
   let lastSoundCueNonce = store.getState().soundCueNonce
   let lastSoundStopNonce = store.getState().soundStopNonce
+  let lastSoundSeekNonce = store.getState().soundSeekNonce
   let lastAnimNonce = store.getState().revealAnimNonce
   let lastScene = store.getState().scene
   let currentIsMoment = false // is the track now playing a run-out / run-in song?
@@ -66,6 +71,10 @@ export function createAudioController(store: Store): AudioController {
   // for the SAME track keep it playing instead of restarting — so one song rides
   // continuously across a run of beats (welcome players → blue → red).
   let currentCueTrackId: string | null = null
+  // The name of whatever is sounding, whichever path started it — a bumper, a
+  // slide cue, a moment, or a pad. The now-playing bar shows all of them, since
+  // "what am I hearing" doesn't care which button caused it.
+  let currentName = ''
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -110,6 +119,7 @@ export function createAudioController(store: Store): AudioController {
     audio = null
     currentIsMoment = false
     currentCueTrackId = null
+    currentName = ''
     setPlaying(false)
   }
 
@@ -174,6 +184,7 @@ export function createAudioController(store: Store): AudioController {
       releaseAudio() // drop the previous bumper before starting a new one
       fadeGain = 1
       audio = new Audio(track.url)
+      currentName = track.name
       applyVolume()
       // play() returns a promise that rejects under autoplay policy or decode
       // errors. Swallow it — the reveal has already happened.
@@ -211,6 +222,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentCueTrackId = id
+      currentName = track.name
       applyVolume()
       // Free the element when the song finishes on its own (no auto-fade to do it).
       audio.addEventListener('ended', () => releaseAudio(), { once: true })
@@ -239,6 +251,7 @@ export function createAudioController(store: Store): AudioController {
       releaseAudio()
       fadeGain = 1
       audio = new Audio(track.url)
+      currentName = track.name
       applyVolume()
       audio.addEventListener('ended', () => releaseAudio(), { once: true })
       void audio.play().catch((err) => {
@@ -262,6 +275,7 @@ export function createAudioController(store: Store): AudioController {
       releaseAudio()
       fadeGain = 1
       audio = new Audio(track.url)
+      currentName = track.name
       applyVolume()
       void audio.play().catch((err) => {
         console.warn('[audio] drum roll failed; continuing show:', err)
@@ -286,6 +300,7 @@ export function createAudioController(store: Store): AudioController {
       releaseAudio()
       fadeGain = 1
       audio = new Audio(track.url)
+      currentName = track.name
       applyVolume()
       // Free the element if the song finishes on its own (no auto-fade to do it).
       audio.addEventListener('ended', () => releaseAudio(), { once: true })
@@ -350,6 +365,18 @@ export function createAudioController(store: Store): AudioController {
       lastSoundCueNonce = s.soundCueNonce
       if (s.soundCueTrackId) playSoundTrack(s.soundCueTrackId)
     }
+    if (s.soundSeekNonce !== lastSoundSeekNonce) {
+      lastSoundSeekNonce = s.soundSeekNonce
+      // Seeking past the end (or before metadata has loaded) would throw; a
+      // scrub must never be able to interrupt the show.
+      if (audio && Number.isFinite(audio.duration)) {
+        try {
+          audio.currentTime = Math.min(s.soundSeekTo, audio.duration)
+        } catch (err) {
+          console.warn('[audio] seek failed; continuing show:', err)
+        }
+      }
+    }
     if (s.soundStopNonce !== lastSoundStopNonce) {
       lastSoundStopNonce = s.soundStopNonce
       fadeOutOver(SOUND_STOP_FADE_MS)
@@ -400,6 +427,16 @@ export function createAudioController(store: Store): AudioController {
     setSoundTracks(next) {
       for (const t of soundTracks) URL.revokeObjectURL(t.url) // no-op for sbmedia://
       soundTracks = next
+    },
+    getProgress() {
+      return {
+        name: currentName,
+        position: audio?.currentTime ?? 0,
+        // duration is NaN until metadata loads; report 0 so the bar can say
+        // "not yet" rather than rendering a NaN-wide fill.
+        duration: audio && Number.isFinite(audio.duration) ? audio.duration : 0,
+        playing: !!audio && !audio.paused && !audio.ended,
+      }
     },
     test() {
       playBumper(false)

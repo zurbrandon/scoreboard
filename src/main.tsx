@@ -5,6 +5,7 @@ import { StoreProvider } from './store/react'
 import { attachRevealService } from './services/revealService'
 import { attachGifOverlayService } from './services/gifOverlayService'
 import { createAudioController } from './services/audioController'
+import { attachSoundProgress } from './services/soundProgressService'
 import { AudioProvider } from './services/audioContext'
 import { OperatorApp } from './operator/OperatorApp'
 import { ProjectorApp } from './projector/ProjectorApp'
@@ -51,6 +52,9 @@ if (audio && window.showboard) {
   // it needs the library even though it never shows it.
   window.showboard.onSoundLibrary((update) => audio.setSoundTracks(update.tracks))
   window.showboard.requestSoundLibrary()
+  // Tell the soundboard window what's sounding, so its now-playing bar can show
+  // a song this window started.
+  attachSoundProgress(audio, window.showboard)
 }
 
 createRoot(document.getElementById('root')!).render(

@@ -12,6 +12,7 @@ import { useSoundLibrary } from './useSoundLibrary'
 import { filterTracks } from './search'
 import { TagEditor } from './TagEditor'
 import { BankPanel, DRAG_TYPE } from './BankPanel'
+import { NowPlaying } from './NowPlaying'
 
 export function SoundApp() {
   const { tracks, tags } = useSoundLibrary()
@@ -69,9 +70,6 @@ export function SoundApp() {
             if (e.key === 'Escape') setQuery('')
           }}
         />
-        <button className="pill" onClick={() => dispatch({ type: 'sound.stop' })}>
-          Stop
-        </button>
         <span className="sound__status">
           {visible.length === tracks.length
             ? `${tracks.length} song${tracks.length === 1 ? '' : 's'}`
@@ -100,6 +98,8 @@ export function SoundApp() {
           )}
         </div>
       )}
+
+      <NowPlaying />
 
       <div className="sound__panes">
         <div className="sound__library">

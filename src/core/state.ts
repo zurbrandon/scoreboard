@@ -507,6 +507,11 @@ export interface AppState {
    *  because that one also settles the reveal — the sound window must never be
    *  able to disturb what's on screen. */
   soundStopNonce: number
+  /** Bumped by a scrub on the soundboard's progress bar, with the target in
+   *  soundSeekTo. Only the operator window holds the audio element, so seeking
+   *  has to travel as a command like everything else. */
+  soundSeekNonce: number
+  soundSeekTo: number
   /** The live reaction (team color + word) shown while a reaction control slide
    *  is on air, or null for the neutral holding screen. Driven by the operator's
    *  reaction buttons; see ReactionSlide. */
@@ -574,6 +579,8 @@ export function createInitialState(): AppState {
     soundCueNonce: 0,
     soundCueTrackId: null,
     soundStopNonce: 0,
+    soundSeekNonce: 0,
+    soundSeekTo: 0,
     reaction: null,
     reactionNonce: 0,
     scoreboardLogos: defaultScoreboardLogos(),

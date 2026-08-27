@@ -18,6 +18,7 @@ import type {
   MomentTracksUpdate,
   MusicUpdate,
   SoundLibraryUpdate,
+  SoundProgress,
   SoundTrackInfo,
 } from '../src/shared/bridge'
 import type { MomentKind } from '../src/core/state'
@@ -113,6 +114,8 @@ function loadState(): AppState {
         soundCueNonce: 0,
         soundCueTrackId: null,
         soundStopNonce: 0,
+        soundSeekNonce: 0,
+        soundSeekTo: 0,
         gifOverlay: null,
         washHold: null,
         liveMode: false,
@@ -520,6 +523,12 @@ function registerIpc() {
   ipcMain.on('showboard:requestTracks', () => pushTracks())
 
   ipcMain.on('showboard:openSoundWindow', () => createSoundWindow())
+
+  // Straight through to the soundboard window and nowhere else — this is the
+  // one message that fires continuously, so it must not reach the projector.
+  ipcMain.on('showboard:soundProgress', (_event, progress: SoundProgress) => {
+    soundWin?.webContents.send('showboard:soundProgress', progress)
+  })
 
   ipcMain.on('showboard:chooseSoundFolder', async () => {
     if (!operatorWin) return

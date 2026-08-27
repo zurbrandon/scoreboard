@@ -53,6 +53,16 @@ export interface SoundLibraryUpdate {
   tags: string[]
 }
 
+// What's sounding right now. This rides its own channel rather than app state:
+// a position update several times a second, broadcast to every window, would
+// wake the projector mid-animation for something only the soundboard displays.
+export interface SoundProgress {
+  name: string
+  position: number // seconds
+  duration: number // seconds; 0 while unknown (metadata still loading)
+  playing: boolean
+}
+
 export interface ShowboardBridge {
   role: 'operator' | 'projector' | 'sound'
   /** Synchronous so the renderer store can start with real state. */
@@ -101,6 +111,11 @@ export interface ShowboardBridge {
    *  makes curating a few hundred songs bearable. */
   setSoundTags(paths: string[], add: string[], remove: string[]): void
   onSoundLibrary(callback: (update: SoundLibraryUpdate) => void): () => void
+  /** Operator → main: what's sounding. Only the operator window plays, so only
+   *  it can report. */
+  reportSoundProgress(progress: SoundProgress): void
+  /** Main → soundboard window: the reported progress, forwarded there alone. */
+  onSoundProgress(callback: (progress: SoundProgress) => void): () => void
 }
 
 declare global {

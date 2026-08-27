@@ -85,6 +85,7 @@ export type Command =
   | { type: 'audio.fadeOut' } // kill switch: gracefully fade the current music to silence, leaving the scene as-is
   | { type: 'sound.play'; id: string } // soundboard: play this sound-library track, replacing whatever is sounding
   | { type: 'sound.stop' } // soundboard: stop its own playback (does not touch the reveal)
+  | { type: 'sound.seek'; seconds: number } // soundboard: scrub the sounding track
   // Soundboard banks: tabs of pads over the sound library.
   | { type: 'soundBank.add'; id: string; name: string }
   | { type: 'soundBank.rename'; id: string; name: string }

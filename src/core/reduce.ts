@@ -529,6 +529,13 @@ function baseReduce(state: AppState, command: Command): AppState {
     case 'sound.stop':
       return { ...state, soundStopNonce: state.soundStopNonce + 1 }
 
+    case 'sound.seek':
+      return {
+        ...state,
+        soundSeekTo: Math.max(0, command.seconds),
+        soundSeekNonce: state.soundSeekNonce + 1,
+      }
+
     case 'audio.setPlaying':
       return { ...state, audioPlaying: command.value }
     case 'audio.fadeOut':
