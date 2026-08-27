@@ -36,6 +36,23 @@ export interface MomentTracksUpdate {
   tracks: BumperTrackInfo[] // scanned songs for this moment
 }
 
+// One song in the sound library — the tagged, searchable pool behind the
+// soundboard window. Unlike a bumper it carries tags, and the operator finds it
+// by typing rather than by remembering which folder it lives in.
+export interface SoundTrackInfo {
+  id: string // absolute file path: stable across rescans (moves/renames orphan tags)
+  name: string
+  url: string // a sbmedia:// URL the renderer can play
+  tags: string[] // normalized (lowercased, collapsed) so casing can't fork a tag
+}
+
+export interface SoundLibraryUpdate {
+  folder: string | null
+  tracks: SoundTrackInfo[]
+  /** Every tag in use, sorted — feeds autocomplete without a second pass. */
+  tags: string[]
+}
+
 export interface ShowboardBridge {
   role: 'operator' | 'projector'
   /** Synchronous so the renderer store can start with real state. */
@@ -71,6 +88,17 @@ export interface ShowboardBridge {
   chooseMomentFolder(kind: MomentKind): void
   requestMomentTracks(): void
   onMomentTracks(callback: (update: MomentTracksUpdate) => void): () => void
+
+  // Sound library: the soundboard window's song pool, scanned recursively from
+  // one folder. Tags live in a sidecar keyed by path, so a re-scan never loses
+  // them. Pushed to every window, not just the operator, because the soundboard
+  // lives in its own window but playback stays with the operator.
+  chooseSoundFolder(): void
+  requestSoundLibrary(): void
+  /** Add and/or remove tags across many tracks at once — the bulk gesture that
+   *  makes curating a few hundred songs bearable. */
+  setSoundTags(paths: string[], add: string[], remove: string[]): void
+  onSoundLibrary(callback: (update: SoundLibraryUpdate) => void): () => void
 }
 
 declare global {

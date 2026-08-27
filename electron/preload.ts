@@ -11,6 +11,7 @@ import type {
   MomentTracksUpdate,
   MusicUpdate,
   ShowboardBridge,
+  SoundLibraryUpdate,
 } from '../src/shared/bridge'
 import type { HotkeyAction } from '../src/shared/hotkeys'
 import type { MomentKind } from '../src/core/state'
@@ -53,6 +54,16 @@ const bridge: ShowboardBridge = {
     const listener = (_e: unknown, action: HotkeyAction) => callback(action)
     ipcRenderer.on('showboard:hotkey', listener)
     return () => ipcRenderer.removeListener('showboard:hotkey', listener)
+  },
+
+  chooseSoundFolder: () => ipcRenderer.send('showboard:chooseSoundFolder'),
+  requestSoundLibrary: () => ipcRenderer.send('showboard:requestSoundLibrary'),
+  setSoundTags: (paths, add, remove) =>
+    ipcRenderer.send('showboard:setSoundTags', { paths, add, remove }),
+  onSoundLibrary: (callback) => {
+    const listener = (_e: unknown, update: SoundLibraryUpdate) => callback(update)
+    ipcRenderer.on('showboard:soundLibrary', listener)
+    return () => ipcRenderer.removeListener('showboard:soundLibrary', listener)
   },
 
   chooseMomentFolder: (kind: MomentKind) => ipcRenderer.send('showboard:chooseMomentFolder', kind),

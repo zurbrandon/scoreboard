@@ -17,9 +17,12 @@ import type {
   DrumrollUpdate,
   MomentTracksUpdate,
   MusicUpdate,
+  SoundLibraryUpdate,
+  SoundTrackInfo,
 } from '../src/shared/bridge'
 import type { MomentKind } from '../src/core/state'
 import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
+import { normalizeTags } from '../src/shared/soundTags'
 
 const isDev = !app.isPackaged
 const DEV_URL = 'http://localhost:5173'
@@ -38,6 +41,7 @@ protocol.registerSchemesAsPrivileged([
 interface Settings {
   projectorDisplayId: number | null
   musicFolder: string | null
+  soundFolder: string | null
   drumrollFile: string | null
   momentOutFolder: string | null
   momentInFolder: string | null
@@ -46,6 +50,10 @@ interface Settings {
 
 const stateFile = () => join(app.getPath('userData'), 'showboard-state.json')
 const settingsFile = () => join(app.getPath('userData'), 'showboard-settings.json')
+// Sound-library tags live apart from both state and settings: they're a slowly
+// curated body of work, not show state, and keeping them in their own file means
+// a corrupt or reset state file can never take the tagging with it.
+const soundTagsFile = () => join(app.getPath('userData'), 'showboard-sound-tags.json')
 
 function loadState(): AppState {
   const fresh = createInitialState()
@@ -126,6 +134,7 @@ function loadSettings(): Settings {
     return {
       projectorDisplayId: parsed.projectorDisplayId ?? null,
       musicFolder: parsed.musicFolder ?? null,
+      soundFolder: parsed.soundFolder ?? null,
       drumrollFile: parsed.drumrollFile ?? null,
       momentOutFolder: parsed.momentOutFolder ?? null,
       momentInFolder: parsed.momentInFolder ?? null,
@@ -135,6 +144,7 @@ function loadSettings(): Settings {
     return {
       projectorDisplayId: null,
       musicFolder: null,
+      soundFolder: null,
       drumrollFile: null,
       momentOutFolder: null,
       momentInFolder: null,
@@ -147,6 +157,7 @@ let state: AppState = createInitialState()
 let settings: Settings = {
   projectorDisplayId: null,
   musicFolder: null,
+  soundFolder: null,
   drumrollFile: null,
   momentOutFolder: null,
   momentInFolder: null,
@@ -302,6 +313,83 @@ function pushTracks() {
   operatorWin?.webContents.send('showboard:tracks', update)
 }
 
+// --- sound library -----------------------------------------------------------
+// The soundboard window's song pool. Three things make it different from the
+// bumper folder above: it recurses into subfolders, every track carries tags,
+// and it's pushed to every window rather than just the operator.
+//
+// Tags are keyed by absolute path in a sidecar map, so re-scanning the folder
+// (or adding songs to it) never loses them. Moving or renaming a file DOES
+// orphan its tags — a re-link pass is future work, not something to paper over
+// silently.
+let soundTags: Record<string, string[]> = {}
+
+function loadSoundTags(): Record<string, string[]> {
+  try {
+    const parsed = JSON.parse(readFileSync(soundTagsFile(), 'utf-8'))
+    if (!parsed || typeof parsed !== 'object') return {}
+    // Re-normalize on read: a hand-edited file shouldn't be able to introduce
+    // casing variants that fork a tag in the UI.
+    const out: Record<string, string[]> = {}
+    for (const [path, tags] of Object.entries(parsed)) {
+      if (Array.isArray(tags)) out[path] = normalizeTags(tags as unknown[])
+    }
+    return out
+  } catch {
+    return {} // missing or corrupt tags must never block launch
+  }
+}
+
+function saveSoundTags() {
+  try {
+    writeFileSync(soundTagsFile(), JSON.stringify(soundTags))
+  } catch (err) {
+    console.warn('[main] failed to save sound tags:', err)
+  }
+}
+
+// Walk the folder recursively. Depth-capped and dot-folder-skipping so pointing
+// this at a deep or messy music drive can't wedge the scan, and symlinks are
+// left alone so a self-referential link can't loop forever.
+function scanSoundFolder(folder: string, depth = 0): SoundTrackInfo[] {
+  if (depth > 8) return []
+  const out: SoundTrackInfo[] = []
+  try {
+    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue
+      const full = join(folder, entry.name)
+      if (entry.isDirectory()) {
+        out.push(...scanSoundFolder(full, depth + 1))
+      } else if (entry.isFile() && AUDIO_EXTENSIONS.some((ext) => entry.name.toLowerCase().endsWith(ext))) {
+        out.push({
+          id: full,
+          name: entry.name.replace(/\.[^.]+$/, ''),
+          url: `sbmedia://audio/?p=${encodeURIComponent(full)}`,
+          tags: soundTags[full] ?? [],
+        })
+      }
+    }
+  } catch (err) {
+    console.warn('[main] failed to scan sound folder:', folder, err)
+  }
+  return out
+}
+
+function pushSoundLibrary() {
+  const tracks = settings.soundFolder ? scanSoundFolder(settings.soundFolder) : []
+  tracks.sort((a, b) => a.name.localeCompare(b.name))
+  // Only tags actually in use are published, so deleting the last song carrying
+  // a tag retires it from autocomplete instead of leaving a dead entry behind.
+  const inUse = new Set<string>()
+  for (const track of tracks) for (const tag of track.tags) inUse.add(tag)
+  const update: SoundLibraryUpdate = {
+    folder: settings.soundFolder,
+    tracks,
+    tags: [...inUse].sort(),
+  }
+  for (const win of allWindows()) win.webContents.send('showboard:soundLibrary', update)
+}
+
 function momentFolder(kind: MomentKind): string | null {
   return kind === 'out' ? settings.momentOutFolder : settings.momentInFolder
 }
@@ -385,6 +473,43 @@ function registerIpc() {
   })
 
   ipcMain.on('showboard:requestTracks', () => pushTracks())
+
+  ipcMain.on('showboard:chooseSoundFolder', async () => {
+    if (!operatorWin) return
+    const result = await dialog.showOpenDialog(operatorWin, {
+      title: 'Choose sound library folder',
+      properties: ['openDirectory'],
+    })
+    if (result.canceled || result.filePaths.length === 0) return
+    settings.soundFolder = result.filePaths[0]
+    saveSettings()
+    pushSoundLibrary()
+  })
+
+  ipcMain.on('showboard:requestSoundLibrary', () => pushSoundLibrary())
+
+  // Bulk tag edit: add and/or remove across many tracks in one gesture. Removals
+  // apply after additions so a single call can retag a selection outright, and a
+  // track left with no tags drops out of the map rather than storing an empty
+  // array forever.
+  ipcMain.on(
+    'showboard:setSoundTags',
+    (_event, { paths, add, remove }: { paths: string[]; add: string[]; remove: string[] }) => {
+      if (!Array.isArray(paths) || paths.length === 0) return
+      const adding = normalizeTags(Array.isArray(add) ? add : [])
+      const removing = new Set(normalizeTags(Array.isArray(remove) ? remove : []))
+      for (const path of paths) {
+        if (typeof path !== 'string') continue
+        const next = new Set(soundTags[path] ?? [])
+        for (const tag of adding) next.add(tag)
+        for (const tag of removing) next.delete(tag)
+        if (next.size > 0) soundTags[path] = [...next].sort()
+        else delete soundTags[path]
+      }
+      saveSoundTags()
+      pushSoundLibrary()
+    },
+  )
 
   ipcMain.on('showboard:chooseMomentFolder', async (_event, kind: MomentKind) => {
     if (!operatorWin) return
@@ -512,6 +637,7 @@ app.whenReady().then(() => {
 
   state = loadState()
   settings = loadSettings()
+  soundTags = loadSoundTags()
   registerIpc()
   createOperatorWindow()
   createProjectorWindow()
