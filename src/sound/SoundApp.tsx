@@ -7,13 +7,15 @@
 // cutting the music.
 
 import { useMemo, useRef, useState } from 'react'
-import { useDispatch } from '../store/react'
+import { useAppState, useDispatch } from '../store/react'
 import { useSoundLibrary } from './useSoundLibrary'
 import { filterTracks } from './search'
 import { TagEditor } from './TagEditor'
+import { BankPanel, DRAG_TYPE } from './BankPanel'
 
 export function SoundApp() {
   const { tracks, tags } = useSoundLibrary()
+  const banks = useAppState((s) => s.soundBanks)
   const dispatch = useDispatch()
   const bridge = window.showboard
 
@@ -99,57 +101,76 @@ export function SoundApp() {
         </div>
       )}
 
-      <div className="sound__body">
-        {tracks.length === 0 ? (
-          <p className="sound__empty">
-            Choose a folder above. Subfolders are included, so you can point this at the
-            folder that holds your existing music folders and get everything at once.
-          </p>
-        ) : visible.length === 0 ? (
-          <p className="sound__empty">Nothing matches that.</p>
-        ) : (
-          <ul className="sound__list">
-            {visible.map((track, index) => (
-              <li
-                key={track.id}
-                className={`sound__row${selectedIds.has(track.id) ? ' sound__row--selected' : ''}`}
-                onClick={(e) => selectRow(index, e)}
-                onDoubleClick={() => dispatch({ type: 'sound.play', id: track.id })}
-              >
-                <button
-                  className="sound__play"
-                  title="Play"
-                  onClick={(e) => {
-                    e.stopPropagation() // auditioning shouldn't change the selection
-                    dispatch({ type: 'sound.play', id: track.id })
+      <div className="sound__panes">
+        <div className="sound__library">
+          {tracks.length === 0 ? (
+            <p className="sound__empty">
+              Choose a folder above. Subfolders are included, so you can point this at the
+              folder that holds your existing music folders and get everything at once.
+            </p>
+          ) : visible.length === 0 ? (
+            <p className="sound__empty">Nothing matches that.</p>
+          ) : (
+            <ul className="sound__list">
+              {visible.map((track, index) => (
+                <li
+                  key={track.id}
+                  className={`sound__row${selectedIds.has(track.id) ? ' sound__row--selected' : ''}`}
+                  onClick={(e) => selectRow(index, e)}
+                  onDoubleClick={() => dispatch({ type: 'sound.play', id: track.id })}
+                  draggable
+                  onDragStart={(e) => {
+                    // Dragging a row that's part of the selection drags the whole
+                    // selection — that's how forty songs reach a bank in one go.
+                    const ids = selectedIds.has(track.id) ? [...selectedIds] : [track.id]
+                    e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(ids))
+                    e.dataTransfer.effectAllowed = 'copy'
                   }}
                 >
-                  ▶
-                </button>
-                <span className="sound__name">{track.name}</span>
-                <span className="sound__tags">
-                  {track.tags.map((tag) => (
-                    <span key={tag} className="sound__tag">
-                      {tag}
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                  <button
+                    className="sound__play"
+                    title="Play"
+                    onClick={(e) => {
+                      e.stopPropagation() // auditioning shouldn't change the selection
+                      dispatch({ type: 'sound.play', id: track.id })
+                    }}
+                  >
+                    ▶
+                  </button>
+                  <span className="sound__name">{track.name}</span>
+                  <span className="sound__tags">
+                    {track.tags.map((tag) => (
+                      <span key={tag} className="sound__tag">
+                        {tag}
+                      </span>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {selected.length > 0 && (
+            <TagEditor
+              selected={selected}
+              allTags={tags}
+              onClear={() => {
+                setSelectedIds(new Set())
+                anchor.current = null
+              }}
+            />
+          )}
+        </div>
 
-      {selected.length > 0 && (
-        <TagEditor
+        <BankPanel
+          banks={banks}
+          tracks={tracks}
           selected={selected}
-          allTags={tags}
-          onClear={() => {
+          onClearSelection={() => {
             setSelectedIds(new Set())
             anchor.current = null
           }}
         />
-      )}
+      </div>
     </div>
   )
 }

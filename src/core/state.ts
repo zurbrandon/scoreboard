@@ -285,6 +285,49 @@ export function normSavedTemplates(v: unknown): SavedTemplate[] {
   return out
 }
 
+// --- Soundboard banks (tabbed pads over the sound library) -------------------
+// A bank is a tab of big buttons: "high energy beats", "musical numbers". Pads
+// hold a track id (an absolute path), not a copy of the song, so retagging or
+// renaming a track never desyncs a pad — and a pad whose file has gone missing
+// shows as missing rather than silently doing nothing.
+//
+// There's no cap on pads per bank. The tool this replaces bound its buttons to
+// F1–F12 and so could hold only twelve; forty in one tab is a normal ask.
+export interface SoundPad {
+  id: string
+  trackId: string
+  /** What the button reads. Defaults to the song's name, but a pad is a show
+   *  cue — "SHOOT OUT" is more use mid-show than the filename. */
+  label: string
+}
+
+export interface SoundBank {
+  id: string
+  name: string
+  pads: SoundPad[]
+}
+
+export function normSoundBanks(v: unknown): SoundBank[] {
+  if (!Array.isArray(v)) return []
+  const out: SoundBank[] = []
+  for (const b of v) {
+    if (!b || typeof b !== 'object') continue
+    const r = b as Record<string, unknown>
+    if (typeof r.id !== 'string' || typeof r.name !== 'string') continue
+    const pads: SoundPad[] = []
+    if (Array.isArray(r.pads)) {
+      for (const p of r.pads) {
+        if (!p || typeof p !== 'object') continue
+        const pr = p as Record<string, unknown>
+        if (typeof pr.id !== 'string' || typeof pr.trackId !== 'string') continue
+        pads.push({ id: pr.id, trackId: pr.trackId, label: typeof pr.label === 'string' ? pr.label : '' })
+      }
+    }
+    out.push({ id: r.id, name: r.name, pads })
+  }
+  return out
+}
+
 // --- Saved slideshows (a curated, named library) ----------------------------
 // The owner defines the "approved" slideshows once (each a published embed URL —
 // Google Slides …/pub?start=true&loop=true, or Canva …/watch?embed) in Settings.
@@ -398,6 +441,9 @@ export interface AppState {
   /** Curated, named slideshows the operator picks from when building a slideshow
    *  slide (managed in Settings). Persisted. See SavedSlideshow. */
   savedSlideshows: SavedSlideshow[]
+  /** The soundboard's tabs of pads. Persisted; per-machine, since pads point at
+   *  absolute file paths. See SoundBank. */
+  soundBanks: SoundBank[]
   /** Non-null while presenting a deck as a cue stack (Show/Games). Transient. */
   presentation: Presentation | null
   revealPhase: RevealPhase
@@ -504,6 +550,7 @@ export function createInitialState(): AppState {
     savedTemplates: defaultSavedTemplates(),
     activeTemplate: { show: null, games: null },
     savedSlideshows: [],
+    soundBanks: [],
     presentation: null,
     revealPhase: 'idle',
     revealStyle: 'pop',

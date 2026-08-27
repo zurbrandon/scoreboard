@@ -3,7 +3,7 @@
 // which keeps this trivially testable on a MacBook (Principles: "Build for Testability").
 
 import type { Command } from './commands'
-import type { AppState, Slide, SlideDeck, TeamId, TeamState } from './state'
+import type { AppState, Slide, SlideDeck, SoundPad, TeamId, TeamState } from './state'
 import { emptySlideshowSlide, emptyImageSlide, emptyTextSlide, logoSlide, reactionSlide, showSlide } from './state'
 import { determineWinner } from './winner'
 
@@ -470,6 +470,60 @@ function baseReduce(state: AppState, command: Command): AppState {
         soundCueTrackId: command.id,
         soundCueNonce: state.soundCueNonce + 1,
         music: { ...state.music, duck: 1 },
+      }
+
+    // --- soundboard banks ----------------------------------------------------
+    // Pads carry ids made at the call site, so the reducer stays pure.
+    case 'soundBank.add':
+      return { ...state, soundBanks: [...state.soundBanks, { id: command.id, name: command.name, pads: [] }] }
+
+    case 'soundBank.rename':
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) => (b.id === command.id ? { ...b, name: command.name } : b)),
+      }
+
+    case 'soundBank.remove':
+      return { ...state, soundBanks: state.soundBanks.filter((b) => b.id !== command.id) }
+
+    case 'soundPad.add':
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) =>
+          b.id === command.bankId ? { ...b, pads: [...b.pads, ...command.pads] } : b,
+        ),
+      }
+
+    case 'soundPad.remove':
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) =>
+          b.id === command.bankId ? { ...b, pads: b.pads.filter((p) => p.id !== command.padId) } : b,
+        ),
+      }
+
+    case 'soundPad.relabel':
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) =>
+          b.id === command.bankId
+            ? { ...b, pads: b.pads.map((p) => (p.id === command.padId ? { ...p, label: command.label } : p)) }
+            : b,
+        ),
+      }
+
+    case 'soundPad.reorder':
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) => {
+          if (b.id !== command.bankId) return b
+          // Order by the given ids, then append anything the caller didn't
+          // mention — a stale drag can't silently drop pads off the board.
+          const byId = new Map(b.pads.map((p) => [p.id, p]))
+          const ordered = command.ids.map((id) => byId.get(id)).filter((p): p is SoundPad => !!p)
+          const seen = new Set(ordered.map((p) => p.id))
+          return { ...b, pads: [...ordered, ...b.pads.filter((p) => !seen.has(p.id))] }
+        }),
       }
 
     case 'sound.stop':

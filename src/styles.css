@@ -2562,3 +2562,108 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 13px;
 }
 .tag-editor__input:focus { outline: none; border-color: var(--accent); }
+/* Library on the left, pads on the right. The library is a tool you use between
+   shows; the pads are what you touch during one — so the pads get the room. */
+.sound__panes { flex: 1; display: flex; min-height: 0; }
+.sound__library {
+  flex: 0 0 40%;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border-right: 1px solid #232a3c;
+}
+.banks { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.banks--empty { align-items: flex-start; gap: 12px; padding: 16px 18px; }
+.banks__tabs {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 14px 0;
+}
+.banks__tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 8px 8px 0 0;
+  background: var(--panel);
+  border: 1px solid #232a3c;
+  border-bottom: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.banks__tab--active { background: var(--panel-2); color: var(--text); border-color: #2c3346; }
+.banks__tab--add { color: var(--accent); font-size: 15px; padding: 7px 12px; }
+.banks__count { font-size: 11px; opacity: 0.6; }
+.banks__rename {
+  width: 130px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+}
+.banks__rename:focus { outline: none; }
+.banks__toolbar {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #2c3346;
+  background: var(--panel-2);
+}
+.banks__grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: 84px;
+  gap: 10px;
+  align-content: start;
+}
+.banks__grid--drop { background: color-mix(in srgb, var(--accent) 7%, transparent); outline: 2px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: -8px; }
+/* Chunky on purpose: these get hit fast, mid-show, without looking closely. */
+.pad {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid #2c3346;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+}
+.pad:hover { border-color: var(--accent); }
+.pad:active { background: color-mix(in srgb, var(--accent) 22%, var(--panel-2)); }
+.pad__label { font-size: 13px; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.pad__rename { width: 90%; background: transparent; border: none; border-bottom: 1px solid var(--accent); color: var(--text); font-family: inherit; font-size: 13px; text-align: center; }
+.pad__rename:focus { outline: none; }
+.pad__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  opacity: 0;
+}
+.pad:hover .pad__remove { opacity: 1; }
+.pad__remove:hover { background: var(--red); color: #fff; }
+/* A pad whose file has gone missing says so rather than failing silently. */
+.pad--missing { border-style: dashed; opacity: 0.55; cursor: not-allowed; }
+.pad__missing { position: absolute; bottom: 6px; font-size: 10px; color: var(--red); }

@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundPad, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -85,6 +85,14 @@ export type Command =
   | { type: 'audio.fadeOut' } // kill switch: gracefully fade the current music to silence, leaving the scene as-is
   | { type: 'sound.play'; id: string } // soundboard: play this sound-library track, replacing whatever is sounding
   | { type: 'sound.stop' } // soundboard: stop its own playback (does not touch the reveal)
+  // Soundboard banks: tabs of pads over the sound library.
+  | { type: 'soundBank.add'; id: string; name: string }
+  | { type: 'soundBank.rename'; id: string; name: string }
+  | { type: 'soundBank.remove'; id: string }
+  | { type: 'soundPad.add'; bankId: string; pads: SoundPad[] } // append; many at once, since dropping in a selection of forty is the point
+  | { type: 'soundPad.remove'; bankId: string; padId: string }
+  | { type: 'soundPad.relabel'; bankId: string; padId: string; label: string }
+  | { type: 'soundPad.reorder'; bankId: string; ids: string[] }
   // Final-score sequence steps, dispatched by the reveal service on a timer.
   | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown
   | { type: 'finale.celebrate' } // countdown done → winner takeover (fires confetti + bumper)

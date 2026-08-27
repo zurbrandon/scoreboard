@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSoundBanks, type AppState } from '../core/state'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
@@ -91,6 +91,7 @@ function loadPersisted(): AppState {
         savedTemplates: normSavedTemplates(parsed.savedTemplates), // seeded first run, then persisted
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
+        soundBanks: normSoundBanks(parsed.soundBanks),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
@@ -128,12 +129,17 @@ function createBrowserStore(role: Role): Store {
   }
   const broadcastState = () => channel.postMessage({ kind: 'state', state } satisfies Message)
 
+  // State from a peer is merged over fresh defaults for the same reason
+  // loadPersisted does it: a peer running an older build (or holding state it
+  // loaded before a field existed) would otherwise leave this window reading
+  // `undefined` for anything newly added.
+  const defaults = createInitialState()
   channel.onmessage = (event: MessageEvent<Message>) => {
     const msg = event.data
     if (role === 'operator') {
       if (msg.kind === 'requestState') broadcastState()
     } else if (msg.kind === 'state') {
-      setState(msg.state)
+      setState({ ...defaults, ...msg.state })
     }
   }
 

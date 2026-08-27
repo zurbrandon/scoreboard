@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows } from './state'
+import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows, normSoundBanks } from './state'
 import type { AppState, LogoSlide, ShowSlide, Slide, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
@@ -870,5 +870,93 @@ describe('state stays serializable', () => {
   it('survives a JSON round-trip', () => {
     const s = run({ type: 'blue.increment' }, { type: 'display.set', scene: 'black' })
     expect(JSON.parse(JSON.stringify(s))).toEqual(s)
+  })
+})
+
+describe('soundboard banks', () => {
+  const pad = (id: string, trackId = '/m/a.mp3', label = 'A') => ({ id, trackId, label })
+
+  it('adds a bank, then appends pads to it', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'high energy beats' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1'), pad('p2')] },
+    )
+    expect(s.soundBanks).toHaveLength(1)
+    expect(s.soundBanks[0].name).toBe('high energy beats')
+    expect(s.soundBanks[0].pads.map((p) => p.id)).toEqual(['p1', 'p2'])
+  })
+
+  it('appends rather than replacing, so a second drop keeps the first', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1')] },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p2')] },
+    )
+    expect(s.soundBanks[0].pads.map((p) => p.id)).toEqual(['p1', 'p2'])
+  })
+
+  it('leaves other banks alone when editing one', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundBank.add', id: 'b2', name: 'two' },
+      { type: 'soundPad.add', bankId: 'b2', pads: [pad('p1')] },
+      { type: 'soundBank.rename', id: 'b1', name: 'renamed' },
+    )
+    expect(s.soundBanks[0]).toEqual({ id: 'b1', name: 'renamed', pads: [] })
+    expect(s.soundBanks[1].pads).toHaveLength(1)
+  })
+
+  it('removes a pad and a bank', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1'), pad('p2')] },
+      { type: 'soundPad.remove', bankId: 'b1', padId: 'p1' },
+    )
+    expect(s.soundBanks[0].pads.map((p) => p.id)).toEqual(['p2'])
+    expect(reduce(s, { type: 'soundBank.remove', id: 'b1' }).soundBanks).toEqual([])
+  })
+
+  it('relabels one pad without touching the track it points at', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1', '/m/song.mp3', 'song')] },
+      { type: 'soundPad.relabel', bankId: 'b1', padId: 'p1', label: 'SHOOT OUT' },
+    )
+    expect(s.soundBanks[0].pads[0]).toEqual({ id: 'p1', trackId: '/m/song.mp3', label: 'SHOOT OUT' })
+  })
+
+  it('reorders pads, keeping any the caller did not mention', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1'), pad('p2'), pad('p3')] },
+      { type: 'soundPad.reorder', bankId: 'b1', ids: ['p3', 'p1'] },
+    )
+    // A stale drag must never silently drop a pad off the board.
+    expect(s.soundBanks[0].pads.map((p) => p.id)).toEqual(['p3', 'p1', 'p2'])
+  })
+
+  it('ignores unknown ids instead of throwing mid-show', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'nope', pads: [pad('p1')] },
+      { type: 'soundPad.remove', bankId: 'b1', padId: 'nope' },
+    )
+    expect(s.soundBanks[0].pads).toEqual([])
+  })
+})
+
+describe('normSoundBanks', () => {
+  it('drops junk banks and pads from a hand-edited or older state file', () => {
+    expect(
+      normSoundBanks([
+        { id: 'b1', name: 'ok', pads: [{ id: 'p1', trackId: '/a' }, { nope: true }, null] },
+        { id: 'no-name' },
+        'garbage',
+      ]),
+    ).toEqual([{ id: 'b1', name: 'ok', pads: [{ id: 'p1', trackId: '/a', label: '' }] }])
+  })
+
+  it('returns an empty list when the field is missing entirely', () => {
+    expect(normSoundBanks(undefined)).toEqual([])
   })
 })
