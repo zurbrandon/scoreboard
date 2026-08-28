@@ -81,6 +81,12 @@ export function createAudioController(store: Store): AudioController {
   // slide cue, a moment, or a pad. The now-playing bar shows all of them, since
   // "what am I hearing" doesn't care which button caused it.
   let currentName = ''
+  // Who started what's sounding. The deck and the soundboard each take down what
+  // they started: "cue to black" is a show gesture and shouldn't kill house
+  // music a pad started, and the deck's STOP shouldn't even arm for it. The
+  // soundboard's own Stop still reaches everything — its bar is the one place
+  // that sees all of it.
+  let currentSource: 'show' | 'soundboard' = 'show'
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -126,6 +132,7 @@ export function createAudioController(store: Store): AudioController {
     currentIsMoment = false
     currentCueTrackId = null
     currentName = ''
+    currentSource = 'show'
     setPlaying(false)
   }
 
@@ -191,6 +198,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentSource = 'show'
       applyVolume()
       // play() returns a promise that rejects under autoplay policy or decode
       // errors. Swallow it — the reveal has already happened.
@@ -229,6 +237,7 @@ export function createAudioController(store: Store): AudioController {
       audio = new Audio(track.url)
       currentCueTrackId = id
       currentName = track.name
+      currentSource = 'show'
       applyVolume()
       // Free the element when the song finishes on its own (no auto-fade to do it).
       audio.addEventListener('ended', () => releaseAudio(), { once: true })
@@ -260,7 +269,7 @@ export function createAudioController(store: Store): AudioController {
   // Start a track from the sound library. `fade` off lets it ride to the end of
   // the song (a pad the operator chose deliberately); on gives it the bumper's
   // 15s-then-fade manners, for a song the app started on its own.
-  function playLoadedTrack(track: LoadedTrack, fade: boolean): void {
+  function playLoadedTrack(track: LoadedTrack, fade: boolean, source: 'show' | 'soundboard'): void {
     if (store.getState().music.muted) return // a hard mute means silence, whatever asked
     try {
       clearFade()
@@ -268,13 +277,16 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentSource = source
       applyVolume()
       if (fade) scheduleFade()
       else audio.addEventListener('ended', () => releaseAudio(), { once: true })
       void audio.play().catch((err) => {
         console.warn('[audio] playback failed; continuing show:', err)
       })
-      setPlaying(true)
+      // Only show audio arms the deck's STOP; a pad playing must not make the
+      // deck look like it has a reveal to stop.
+      if (source === 'show') setPlaying(true)
       store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
     } catch (err) {
       console.warn('[audio] could not start track; continuing show:', err)
@@ -284,7 +296,7 @@ export function createAudioController(store: Store): AudioController {
   function playSoundTrack(id: string): void {
     const track = soundTracks.find((t) => t.id === id)
     if (!track) return // library rescanned out from under the pad
-    playLoadedTrack(track, false)
+    playLoadedTrack(track, false, 'soundboard')
   }
 
   // The Final-score drum roll — the custom upload, or any bumper as a stand-in.
@@ -299,6 +311,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentSource = 'show'
       applyVolume()
       void audio.play().catch((err) => {
         console.warn('[audio] drum roll failed; continuing show:', err)
@@ -324,6 +337,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentSource = 'show'
       applyVolume()
       // Free the element if the song finishes on its own (no auto-fade to do it).
       audio.addEventListener('ended', () => releaseAudio(), { once: true })
@@ -356,7 +370,7 @@ export function createAudioController(store: Store): AudioController {
     // STOP kill switch: fade the current sound out fast.
     if (s.stopNonce !== lastStopNonce) {
       lastStopNonce = s.stopNonce
-      fadeOutOver(STOP_FADE_MS)
+      if (currentSource === 'show') fadeOutOver(STOP_FADE_MS)
     }
     // "Fade music out" kill switch: a slow, graceful ramp to silence. Unlike STOP
     // it isn't tied to the reveal, and unlike Black it leaves the scene/slide up.
@@ -381,7 +395,7 @@ export function createAudioController(store: Store): AudioController {
       else if (cue?.trackId) playTrackById(cue.trackId)
       else if (isGenericCaptain) {
         const tagged = pickForSlot('captain')
-        if (tagged) playLoadedTrack(tagged, true)
+        if (tagged) playLoadedTrack(tagged, true, 'show')
         else playBumper(false) // untagged: the old random score-folder track
       }
     }
@@ -413,10 +427,12 @@ export function createAudioController(store: Store): AudioController {
       lastMomentNonce = s.momentNonce
       playMoment(s.moment?.kind ?? 'out')
     }
-    // Going to Black gracefully fades whatever's playing over ~7.5s, regardless
-    // of what it is — the operator's "cue to black" doubles as "take the music
-    // down." (STOP stays the fast hard-cut; this is the slow, musical one.)
-    if (s.scene === 'black' && lastScene !== 'black') {
+    // Going to Black gracefully fades SHOW audio over ~7.5s — the operator's
+    // "cue to black" doubles as "take the music down." It leaves soundboard
+    // music alone: blanking the projector between bits shouldn't kill the house
+    // music a pad started. (STOP stays the fast hard-cut; this is the musical
+    // one.) The soundboard's own Stop still takes down anything.
+    if (s.scene === 'black' && lastScene !== 'black' && currentSource === 'show') {
       fadeOutOver(BLACK_FADE_MS)
     }
     // Leaving a moment for any other scene gracefully fades the moment song out
