@@ -2746,26 +2746,10 @@ button { font-family: inherit; cursor: pointer; }
 .pad--dragging { opacity: 0.35; }
 .pad { transition: opacity 120ms ease; }
 
-/* Selection actions sit directly above the rows they act on, not pinned to the
-   far edge of the window where they were easy to miss. */
-.selbar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-}
-.selbar__count { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
-.selbar__anchor { position: relative; }
 
 /* The tag list as a popover on the button that asks for it. */
 .tagpop {
-  position: absolute;
   z-index: 6;
-  top: calc(100% + 6px);
-  left: 0;
   width: 260px;
   padding: 10px;
   border-radius: 12px;
@@ -2819,3 +2803,33 @@ button { font-family: inherit; cursor: pointer; }
 }
 .banks__delete:hover { color: var(--red); }
 .banks__tabs { padding: 10px 14px 0; border-bottom: 1px solid #2c3346; }
+
+/* Library rows: name, then its tags flowing straight after it, then the row's
+   own actions on the right. Everything a row can do is on the row. */
+.librow { gap: 10px; }
+.librow__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.librow__tags { flex: 0 1 auto; display: flex; gap: 5px; overflow: hidden; }
+.librow__spacer { flex: 1 1 auto; min-width: 8px; }
+/* Actions stay out of the way until the row is under the pointer or selected,
+   so a long library reads as a list rather than a wall of buttons. */
+.librow__actions { flex: none; display: flex; gap: 6px; opacity: 0; transition: opacity 120ms ease; }
+.librow:hover .librow__actions,
+.librow.sound__row--selected .librow__actions { opacity: 1; }
+.librow__btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #2c3346;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.librow__btn:hover { border-color: var(--accent); color: var(--accent); }

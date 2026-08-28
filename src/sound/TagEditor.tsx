@@ -5,7 +5,7 @@
 // hand that asked for them: open it, the tags you already have are right there,
 // click to apply or remove, type to filter or to make a new one.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { SoundTrackInfo } from '../shared/bridge'
 import { normalizeTag } from '../shared/soundTags'
 import { suggestTags, tagsForSelection } from './search'
@@ -13,10 +13,13 @@ import { suggestTags, tagsForSelection } from './search'
 export function TagEditor({
   selected,
   allTags,
+  anchor,
   onClose,
 }: {
   selected: SoundTrackInfo[]
   allTags: string[]
+  /** Where the button that opened it sits, in viewport coordinates. */
+  anchor: DOMRect
   onClose: () => void
 }) {
   const [input, setInput] = useState('')
@@ -62,8 +65,19 @@ export function TagEditor({
     setInput('')
   }
 
+  // Positioned against the viewport rather than the row, because the list it
+  // sits in scrolls — an absolutely positioned popover would be clipped by it.
+  // Opens upward when there isn't room below.
+  const HEIGHT = 330
+  const below = anchor.bottom + HEIGHT < window.innerHeight
+  const style: CSSProperties = {
+    position: 'fixed',
+    left: Math.max(8, Math.min(anchor.left, window.innerWidth - 276)),
+    ...(below ? { top: anchor.bottom + 6 } : { bottom: window.innerHeight - anchor.top + 6 }),
+  }
+
   return (
-    <div className="tagpop" ref={boxRef}>
+    <div className="tagpop" ref={boxRef} style={style}>
       <div className="tagpop__head">
         Tagging {selected.length} song{selected.length === 1 ? '' : 's'}
       </div>
