@@ -82,3 +82,31 @@ export function topTags(
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
     .slice(0, limit)
 }
+
+/** One row in the search panel. Before anything is typed the rows are tag
+ *  shortcuts; after, they're songs. Both are in one list so the keyboard can
+ *  walk it without caring which mode it's in — type, arrow down, Enter. */
+export type SearchItem =
+  | { kind: 'tag'; tag: string; count: number }
+  | { kind: 'track'; track: SoundTrackInfo }
+
+/** What the panel should show for `query`. Computed here rather than in the
+ *  component so the keyboard handler and the list render from the same list —
+ *  otherwise Enter can activate a different row than the one highlighted. */
+export function searchItems(
+  tracks: readonly SoundTrackInfo[],
+  query: string,
+  tagLimit = 8,
+): SearchItem[] {
+  if (query.trim().length === 0) {
+    return topTags(tracks, tagLimit).map(({ tag, count }) => ({ kind: 'tag', tag, count }))
+  }
+  return filterTracks(tracks, query).map((track) => ({ kind: 'track', track }))
+}
+
+/** Move a highlight by `delta`, wrapping at both ends so holding Down cycles
+ *  rather than sticking at the bottom. Returns 0 for an empty list. */
+export function moveIndex(current: number, delta: number, length: number): number {
+  if (length === 0) return 0
+  return (((current + delta) % length) + length) % length
+}

@@ -13,13 +13,14 @@
 // window's audio controller does the playing, which guarantees one song at a
 // time and lets this window be moved or closed mid-show without cutting it.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
-import type { SoundTrackInfo } from '../shared/bridge'
+
 import { useSoundLibrary } from './useSoundLibrary'
 import { BankPanel } from './BankPanel'
 import { NowPlaying } from './NowPlaying'
 import { SearchResults } from './SearchResults'
+import { moveIndex, searchItems, type SearchItem } from './search'
 import { LibraryManager } from './LibraryManager'
 import { makePads } from './pads'
 
@@ -35,14 +36,48 @@ export function SoundApp() {
   // search can target it; falls back to the first bank so a deleted one can't
   // leave the panel pointing at nothing.
   const [activeBankId, setActiveBankId] = useState<string | null>(null)
+  // Which row Enter acts on. The list and the keyboard read the same items, so
+  // Enter can't fire a different row than the one highlighted.
+  const [activeIndex, setActiveIndex] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  const items = useMemo(() => searchItems(tracks, query), [tracks, query])
 
   const activeBank = banks.find((b) => b.id === activeBankId) ?? banks[0] ?? null
 
   function closeSearch() {
     setSearchOpen(false)
     setQuery('')
+    setActiveIndex(0)
     searchRef.current?.blur()
+  }
+
+  // A tag narrows the search to that tag; a song plays and gets out of the way.
+  function activate(item: SearchItem) {
+    if (item.kind === 'tag') {
+      setQuery(item.tag)
+      setActiveIndex(0)
+      searchRef.current?.focus()
+      return
+    }
+    dispatch({ type: 'sound.play', id: item.track.id })
+    closeSearch()
+  }
+
+  function onSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      // Stop the caret jumping to the ends of the text while arrowing the list.
+      e.preventDefault()
+      setSearchOpen(true)
+      setActiveIndex((i) => moveIndex(i, e.key === 'ArrowDown' ? 1 : -1, items.length))
+      return
+    }
+    if (e.key === 'Enter') {
+      const item = items[activeIndex]
+      if (item) activate(item)
+      return
+    }
+    if (e.key === 'Escape') closeSearch()
   }
 
   // Escape closes the panel from anywhere, not just from the field. Clicking a
@@ -81,17 +116,16 @@ export function SoundApp() {
         <h1>Sound</h1>
         <input
           ref={searchRef}
-          className="sound__search"
+          className="sound__search sound__search--hero"
           value={query}
           placeholder="Search for a song…"
           onFocus={() => setSearchOpen(true)}
           onChange={(e) => {
             setQuery(e.target.value)
             setSearchOpen(true)
+            setActiveIndex(0) // new results, start from the top
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') closeSearch()
-          }}
+          onKeyDown={onSearchKey}
         />
         <button className="pill" onClick={() => setManaging(true)}>
           Library
@@ -112,19 +146,15 @@ export function SoundApp() {
                 pads is never a hunt for a close button. */}
             <div className="results__scrim" onClick={closeSearch} />
             <SearchResults
-              tracks={tracks}
+              items={items}
               query={query}
+              activeIndex={activeIndex}
               activeBank={activeBank}
-              onPickTag={(tag) => {
-                setQuery(tag)
-                searchRef.current?.focus()
-              }}
-              onPlay={(track: SoundTrackInfo) => {
-                dispatch({ type: 'sound.play', id: track.id })
-                closeSearch() // played it; get out of the way
-              }}
-              onAddToBank={(track: SoundTrackInfo) => {
-                if (!activeBank) return
+              onActivate={activate}
+              onHover={setActiveIndex}
+              onAddToBank={(trackId) => {
+                const track = tracks.find((t) => t.id === trackId)
+                if (!activeBank || !track) return
                 dispatch({ type: 'soundPad.add', bankId: activeBank.id, pads: makePads([track]) })
               }}
             />

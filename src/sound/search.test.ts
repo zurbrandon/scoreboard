@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { filterTracks, matchesQuery, suggestTags, tagsForSelection, topTags } from './search'
+import {
+  filterTracks,
+  matchesQuery,
+  moveIndex,
+  searchItems,
+  suggestTags,
+  tagsForSelection,
+  topTags,
+} from './search'
 import type { SoundTrackInfo } from '../shared/bridge'
 
 const track = (name: string, tags: string[] = []): SoundTrackInfo => ({
@@ -119,5 +127,43 @@ describe('topTags', () => {
 
   it('returns nothing for an untagged library', () => {
     expect(topTags([{ id: 'a', name: 'a', url: '', tags: [] }])).toEqual([])
+  })
+})
+
+describe('searchItems', () => {
+  it('offers tag shortcuts before anything is typed', () => {
+    const items = searchItems(LIBRARY, '')
+    expect(items.every((i) => i.kind === 'tag')).toBe(true)
+    expect(items[0]).toEqual({ kind: 'tag', tag: 'rap', count: 2 })
+  })
+
+  it('switches to songs once something is typed', () => {
+    const items = searchItems(LIBRARY, 'rap')
+    expect(items).toHaveLength(2)
+    expect(items.every((i) => i.kind === 'track')).toBe(true)
+  })
+
+  it('treats a whitespace-only query as untyped', () => {
+    expect(searchItems(LIBRARY, '   ')[0].kind).toBe('tag')
+  })
+
+  it('returns an empty list when nothing matches, so the panel can say so', () => {
+    expect(searchItems(LIBRARY, 'zzzz')).toEqual([])
+  })
+})
+
+describe('moveIndex', () => {
+  it('walks down and up', () => {
+    expect(moveIndex(0, 1, 3)).toBe(1)
+    expect(moveIndex(2, -1, 3)).toBe(1)
+  })
+
+  it('wraps at both ends rather than sticking', () => {
+    expect(moveIndex(2, 1, 3)).toBe(0)
+    expect(moveIndex(0, -1, 3)).toBe(2)
+  })
+
+  it('stays at 0 for an empty list', () => {
+    expect(moveIndex(0, 1, 0)).toBe(0)
   })
 })

@@ -2704,3 +2704,42 @@ button { font-family: inherit; cursor: pointer; }
 .now-playing--live .now-playing__name { color: var(--text); }
 .now-playing__scrub { flex: 1; min-width: 80px; accent-color: var(--accent); }
 .now-playing__time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* The search field is the thing you reach for while looking at three other
+   screens, so it gets the weight — big target, big type, obvious focus. */
+.sound__search--hero {
+  padding: 13px 20px;
+  font-size: 17px;
+  border-radius: 14px;
+  border-color: #39415a;
+}
+.sound__search--hero::placeholder { color: var(--muted); font-size: 16px; }
+.sound__search--hero:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.sound__topbar { padding: 12px 18px; gap: 14px; align-items: center; }
+
+/* Rows are taller here than in the library: this list is walked with the arrow
+   keys mid-show, so the highlight has to be readable at a glance. */
+.results__row { padding: 11px 12px; gap: 10px; }
+.results__row--active {
+  background: color-mix(in srgb, var(--accent) 20%, var(--panel-2));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.results__row--active .sound__name { color: var(--text); font-weight: 600; }
+.results__kind {
+  flex: none;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+/* The old empty state was one dim line and got missed. This one is the size of
+   the thing it's replacing. */
+.results__empty { padding: 26px 16px 30px; text-align: center; }
+.results__empty-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.results__empty-hint { font-size: 13px; color: var(--muted); max-width: 46ch; margin: 0 auto; line-height: 1.5; }
