@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync } 
 import { Readable } from 'node:stream'
 
 import { reduce } from '../src/core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSoundBanks, type AppState } from '../src/core/state'
+import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type {
   BumperTrackInfo,
@@ -102,6 +102,7 @@ function loadState(): AppState {
         savedTemplates: normSavedTemplates(parsed.savedTemplates),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         soundBanks: normSoundBanks(parsed.soundBanks),
+        soundSlots: normSoundSlots(parsed.soundSlots),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
         // Reset every draft to its live value on launch — no stale pending

@@ -328,6 +328,35 @@ export function normSoundBanks(v: unknown): SoundBank[] {
   return out
 }
 
+// --- Sound slots (a behavior pulls from a tag, not a folder) -----------------
+// Each of the app's automatic music moments names a tag; the song is drawn at
+// random from whatever carries it. That replaces "point this behavior at a
+// folder" with "point it at a tag", so one library serves everything and adding
+// a song to a behavior is a matter of tagging it.
+//
+// A slot with no tag (or a tag nothing carries yet) falls back to the folder it
+// used before, so the show keeps working while the library is being tagged.
+export type SoundSlotId = 'runOut' | 'runIn' | 'captain' | 'drumroll'
+
+export const SOUND_SLOTS: { id: SoundSlotId; label: string; hint: string }[] = [
+  { id: 'runOut', label: 'Team runs out', hint: 'Plays when a team runs off' },
+  { id: 'runIn', label: 'Team runs in', hint: 'Plays when a team runs back on' },
+  { id: 'captain', label: 'Captains on the field', hint: 'Behind a captain intro' },
+  { id: 'drumroll', label: 'Final score drum roll', hint: 'Under the final-score reveal' },
+]
+
+export type SoundSlots = Record<SoundSlotId, string | null>
+
+export function normSoundSlots(v: unknown): SoundSlots {
+  const out: SoundSlots = { runOut: null, runIn: null, captain: null, drumroll: null }
+  if (!v || typeof v !== 'object') return out
+  const r = v as Record<string, unknown>
+  for (const { id } of SOUND_SLOTS) {
+    if (typeof r[id] === 'string' && r[id]) out[id] = r[id] as string
+  }
+  return out
+}
+
 // --- Saved slideshows (a curated, named library) ----------------------------
 // The owner defines the "approved" slideshows once (each a published embed URL —
 // Google Slides …/pub?start=true&loop=true, or Canva …/watch?embed) in Settings.
@@ -444,6 +473,8 @@ export interface AppState {
   /** The soundboard's tabs of pads. Persisted; per-machine, since pads point at
    *  absolute file paths. See SoundBank. */
   soundBanks: SoundBank[]
+  /** Which tag each automatic music moment draws from. See SoundSlots. */
+  soundSlots: SoundSlots
   /** Non-null while presenting a deck as a cue stack (Show/Games). Transient. */
   presentation: Presentation | null
   revealPhase: RevealPhase
@@ -556,6 +587,7 @@ export function createInitialState(): AppState {
     activeTemplate: { show: null, games: null },
     savedSlideshows: [],
     soundBanks: [],
+    soundSlots: { runOut: null, runIn: null, captain: null, drumroll: null },
     presentation: null,
     revealPhase: 'idle',
     revealStyle: 'pop',

@@ -8,13 +8,19 @@
 // In Electron (M4) setTracks() will be fed by a real music-folder scan; the
 // selection logic (core/bumper.ts) stays identical.
 
-import { pickBumper, type BumperTrack } from '../core/bumper'
-import type { MomentKind } from '../core/state'
+import { pickBumper, pickFromPool, tracksWithTag, type BumperTrack } from '../core/bumper'
+import type { MomentKind, SoundSlotId } from '../core/state'
 import type { Store } from '../store/store'
 import type { SoundProgress } from '../shared/bridge'
 
 export interface LoadedTrack extends BumperTrack {
   url: string // object URL (browser) or sbmedia:// URL (Electron)
+}
+
+/** A sound-library track. Carries its tags, which is what lets a behavior's
+ *  slot resolve to a pool without asking anyone else. */
+export interface LoadedSoundTrack extends LoadedTrack {
+  tags: string[]
 }
 
 export interface AudioController {
@@ -25,7 +31,7 @@ export interface AudioController {
   /** Replace the song pool for a run-out / run-in moment. */
   setMomentTracks(kind: MomentKind, tracks: LoadedTrack[]): void
   /** Replace the soundboard's library — the tagged pool its pads play from. */
-  setSoundTracks(tracks: LoadedTrack[]): void
+  setSoundTracks(tracks: LoadedSoundTrack[]): void
   /** What's sounding right now, for the soundboard's now-playing bar. Read on a
    *  timer rather than pushed, so nothing here fires on every frame. */
   getProgress(): SoundProgress
@@ -54,7 +60,7 @@ export function createAudioController(store: Store): AudioController {
   // library with different rules — no no-repeat bookkeeping, no auto-fade — but
   // it shares the single <audio> element, which is what guarantees that a pad
   // tap replaces whatever is sounding instead of stacking on top of it.
-  let soundTracks: LoadedTrack[] = []
+  let soundTracks: LoadedSoundTrack[] = []
   let audio: HTMLAudioElement | null = null
   let lastNonce = store.getState().revealNonce
   let lastFinaleNonce = store.getState().finaleNonce
@@ -236,16 +242,26 @@ export function createAudioController(store: Store): AudioController {
     }
   }
 
+  // What a behavior should play: a song carrying its slot's tag, or null when
+  // the slot is unset or nothing carries that tag yet — the caller then falls
+  // back to the folder it used before, so a half-tagged library still runs a
+  // show. The sound library is the pool, so tagging a song is all it takes to
+  // put it into rotation.
+  function pickForSlot(slot: SoundSlotId): LoadedTrack | null {
+    const tag = store.getState().soundSlots?.[slot] ?? null
+    return pickFromPool(tracksWithTag(soundTracks, tag))
+  }
+
   // A soundboard pick: a pad tap, or an audition while tagging. It behaves like
   // a slide cue — it rides to the end of the song rather than auto-fading after
   // 15s, because the operator chose this song deliberately and decides when it
   // stops. Unlike a slide cue it always restarts, even if the same song is
   // already playing: tapping a pad again is a re-trigger, not a no-op.
-  function playSoundTrack(id: string): void {
-    const { music } = store.getState()
-    if (music.muted) return // a hard mute means silence, whatever asked
-    const track = soundTracks.find((t) => t.id === id)
-    if (!track) return // library rescanned out from under the pad
+  // Start a track from the sound library. `fade` off lets it ride to the end of
+  // the song (a pad the operator chose deliberately); on gives it the bumper's
+  // 15s-then-fade manners, for a song the app started on its own.
+  function playLoadedTrack(track: LoadedTrack, fade: boolean): void {
+    if (store.getState().music.muted) return // a hard mute means silence, whatever asked
     try {
       clearFade()
       releaseAudio()
@@ -253,22 +269,29 @@ export function createAudioController(store: Store): AudioController {
       audio = new Audio(track.url)
       currentName = track.name
       applyVolume()
-      audio.addEventListener('ended', () => releaseAudio(), { once: true })
+      if (fade) scheduleFade()
+      else audio.addEventListener('ended', () => releaseAudio(), { once: true })
       void audio.play().catch((err) => {
-        console.warn('[audio] soundboard playback failed; continuing show:', err)
+        console.warn('[audio] playback failed; continuing show:', err)
       })
       setPlaying(true)
       store.dispatch({ type: 'music.trackPlayed', id: track.id, name: track.name })
     } catch (err) {
-      console.warn('[audio] could not start soundboard track; continuing show:', err)
+      console.warn('[audio] could not start track; continuing show:', err)
     }
+  }
+
+  function playSoundTrack(id: string): void {
+    const track = soundTracks.find((t) => t.id === id)
+    if (!track) return // library rescanned out from under the pad
+    playLoadedTrack(track, false)
   }
 
   // The Final-score drum roll — the custom upload, or any bumper as a stand-in.
   function playDrumroll(): void {
     const { music } = store.getState()
     if (!music.enabled) return
-    const track = drumroll ?? pickBumper(tracks, music.lastTrackId, Math.random)
+    const track = pickForSlot('drumroll') ?? drumroll ?? pickBumper(tracks, music.lastTrackId, Math.random)
     if (!track) return
     try {
       clearFade()
@@ -292,9 +315,9 @@ export function createAudioController(store: Store): AudioController {
   function playMoment(kind: MomentKind): void {
     const { music } = store.getState()
     if (!music.enabled) return
-    const pool = momentTracks[kind]
-    if (pool.length === 0) return
-    const track = pool[Math.floor(Math.random() * pool.length)]
+    const tagged = pickForSlot(kind === 'out' ? 'runOut' : 'runIn')
+    const track = tagged ?? pickFromPool(momentTracks[kind])
+    if (!track) return
     try {
       clearFade()
       releaseAudio()
@@ -356,7 +379,11 @@ export function createAudioController(store: Store): AudioController {
       const cue = live && 'cue' in live ? live.cue : undefined
       if (isBlackout || cue?.silence) fadeOutOver(BLACK_FADE_MS)
       else if (cue?.trackId) playTrackById(cue.trackId)
-      else if (isGenericCaptain) playBumper(false) // random score-folder track
+      else if (isGenericCaptain) {
+        const tagged = pickForSlot('captain')
+        if (tagged) playLoadedTrack(tagged, true)
+        else playBumper(false) // untagged: the old random score-folder track
+      }
     }
     // The soundboard asked for a song. Deliberately NOT gated on music.enabled:
     // that switch means "play music on reveals", and someone who turns reveal

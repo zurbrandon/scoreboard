@@ -11,6 +11,7 @@ import { SlideshowLibraryPanel } from './SlideshowLibraryPanel'
 import { ScoreboardLogosPanel } from './ScoreboardLogosPanel'
 import { IdleScreenPicker } from './IdleScreenPicker'
 import { SoundLibraryPanel } from './SoundLibraryPanel'
+import { SoundSlotsPanel } from './SoundSlotsPanel'
 
 type SettingsTab = 'visuals' | 'audio'
 
@@ -93,6 +94,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 The soundboard's searchable pool. Subfolders are included, so this can point
                 at the folder holding your other music folders.
               </span>
+            </section>
+
+            <section className="settings-section">
+              <h3>What each moment plays</h3>
+              <SoundSlotsPanel />
             </section>
 
             <section className="settings-section">

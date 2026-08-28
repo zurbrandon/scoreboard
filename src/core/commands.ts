@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundPad, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundPad, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -94,6 +94,7 @@ export type Command =
   | { type: 'soundPad.remove'; bankId: string; padId: string }
   | { type: 'soundPad.relabel'; bankId: string; padId: string; label: string }
   | { type: 'soundPad.reorder'; bankId: string; ids: string[] }
+  | { type: 'soundSlot.set'; slot: SoundSlotId; tag: string | null } // which tag a behavior draws from
   // Final-score sequence steps, dispatched by the reveal service on a timer.
   | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown
   | { type: 'finale.celebrate' } // countdown done → winner takeover (fires confetti + bumper)

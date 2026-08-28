@@ -526,6 +526,9 @@ function baseReduce(state: AppState, command: Command): AppState {
         }),
       }
 
+    case 'soundSlot.set':
+      return { ...state, soundSlots: { ...state.soundSlots, [command.slot]: command.tag } }
+
     case 'sound.stop':
       return { ...state, soundStopNonce: state.soundStopNonce + 1 }
 
