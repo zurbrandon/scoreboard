@@ -64,3 +64,21 @@ export function suggestTags(
   const skip = new Set(exclude)
   return allTags.filter((tag) => !skip.has(tag) && (term === '' || tag.includes(term))).slice(0, 12)
 }
+
+/** The tags carrying the most songs, biggest first. These become the shortcuts
+ *  offered before anything is typed — the handful you actually reach for, rather
+ *  than the whole tag list, which is a curation-time concern. */
+export function topTags(
+  tracks: readonly SoundTrackInfo[],
+  limit = 8,
+): { tag: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const track of tracks) {
+    for (const tag of track.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    // Ties break alphabetically so the row doesn't reshuffle between renders.
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+    .slice(0, limit)
+}

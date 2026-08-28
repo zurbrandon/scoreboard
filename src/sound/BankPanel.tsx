@@ -7,6 +7,7 @@ import { useDispatch } from '../store/react'
 import type { SoundBank, SoundPad } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
 import { newId } from '../shared/ids'
+import { makePads, tracksByIds } from './pads'
 
 /** Payload for a drag out of the library list. */
 export const DRAG_TYPE = 'application/x-showboard-tracks'
@@ -14,28 +15,27 @@ export const DRAG_TYPE = 'application/x-showboard-tracks'
 export function BankPanel({
   banks,
   tracks,
-  selected,
-  onClearSelection,
+  activeBankId,
+  onSelectBank,
 }: {
   banks: SoundBank[]
   tracks: SoundTrackInfo[]
-  selected: SoundTrackInfo[]
-  onClearSelection: () => void
+  activeBankId: string | null
+  onSelectBank: (id: string) => void
 }) {
   const dispatch = useDispatch()
-  const [activeId, setActiveId] = useState<string | null>(null)
   const [renamingBank, setRenamingBank] = useState<string | null>(null)
   const [renamingPad, setRenamingPad] = useState<string | null>(null)
   const [dropActive, setDropActive] = useState(false)
 
-  // Fall back to the first bank rather than tracking selection in state, so a
-  // deleted bank can't leave the panel pointing at nothing.
-  const active = banks.find((b) => b.id === activeId) ?? banks[0] ?? null
+  // Fall back to the first bank, so a deleted one can't leave the board pointing
+  // at nothing.
+  const active = banks.find((b) => b.id === activeBankId) ?? banks[0] ?? null
 
   function addBank() {
     const id = newId('bank')
     dispatch({ type: 'soundBank.add', id, name: `Bank ${banks.length + 1}` })
-    setActiveId(id)
+    onSelectBank(id)
     setRenamingBank(id)
   }
 
@@ -58,16 +58,9 @@ export function BankPanel({
     setRenamingPad(null)
   }
 
-  function padsFor(trackIds: string[]): SoundPad[] {
-    return trackIds
-      .map((trackId) => tracks.find((t) => t.id === trackId))
-      .filter((t): t is SoundTrackInfo => !!t)
-      .map((t) => ({ id: newId('pad'), trackId: t.id, label: t.name }))
-  }
-
   function addTracks(trackIds: string[]) {
     if (!active || trackIds.length === 0) return
-    const pads = padsFor(trackIds)
+    const pads = makePads(tracksByIds(tracks, trackIds))
     if (pads.length > 0) dispatch({ type: 'soundPad.add', bankId: active.id, pads })
   }
 
@@ -76,7 +69,7 @@ export function BankPanel({
       <div className="banks banks--empty">
         <p className="sound__empty">
           Banks are tabs of pads — "high energy beats", "musical numbers". Make one, then
-          drag songs over from the left, or select them and use Add selected.
+          search for songs and use + to put them here.
         </p>
         <button className="pill" onClick={addBank}>
           New bank
@@ -92,13 +85,13 @@ export function BankPanel({
           <div
             key={bank.id}
             className={`banks__tab${bank.id === active?.id ? ' banks__tab--active' : ''}`}
-            onClick={() => setActiveId(bank.id)}
+            onClick={() => onSelectBank(bank.id)}
             onDoubleClick={() => setRenamingBank(bank.id)}
             // Dragging onto a tab switches to it, so you can drop into a bank
             // you aren't looking at.
             onDragOver={(e) => {
               e.preventDefault()
-              setActiveId(bank.id)
+              onSelectBank(bank.id) // drop into a bank you aren't looking at
             }}
           >
             {renamingBank === bank.id ? (
@@ -129,16 +122,6 @@ export function BankPanel({
       </div>
 
       <div className="banks__toolbar">
-        <button
-          className="pill"
-          disabled={selected.length === 0}
-          onClick={() => {
-            addTracks(selected.map((t) => t.id))
-            onClearSelection()
-          }}
-        >
-          Add selected{selected.length > 0 ? ` (${selected.length})` : ''}
-        </button>
         <button className="pill" onClick={() => setRenamingBank(active!.id)}>
           Rename bank
         </button>
@@ -177,7 +160,7 @@ export function BankPanel({
         }}
       >
         {active?.pads.length === 0 ? (
-          <p className="sound__empty">Drag songs here, or select them on the left and Add selected.</p>
+          <p className="sound__empty">Search for a song and use + to add it here.</p>
         ) : (
           active?.pads.map((pad) => {
             const missing = !tracks.some((t) => t.id === pad.trackId)

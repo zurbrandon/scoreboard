@@ -1,59 +1,72 @@
-// The soundboard window: find a song by typing, tag it, hear it. Pads land here
-// in M4 — this milestone is the library half.
+// The soundboard window. Two surfaces, deliberately unequal:
+//
+//   • The board — pads, always there, owning the space. This is what a show
+//     touches, and ninety percent of the time the song you want is already on it.
+//   • Search — a drop-down over the board for the other ten percent: the one
+//     specific song you need right now. Click a result and it plays; + puts it on
+//     a bank for later.
+//
+// Tagging lives behind the Library button, in its own full-window mode, because
+// it's an hour of work you do once and never during a show.
 //
 // This window never plays audio itself. It dispatches a cue and the operator
-// window's audio controller does the playing, which is what guarantees exactly
-// one song at a time and lets this window be moved or closed mid-show without
-// cutting the music.
+// window's audio controller does the playing, which guarantees one song at a
+// time and lets this window be moved or closed mid-show without cutting it.
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
+import type { SoundTrackInfo } from '../shared/bridge'
 import { useSoundLibrary } from './useSoundLibrary'
-import { filterTracks } from './search'
-import { TagEditor } from './TagEditor'
-import { BankPanel, DRAG_TYPE } from './BankPanel'
+import { BankPanel } from './BankPanel'
 import { NowPlaying } from './NowPlaying'
+import { SearchResults } from './SearchResults'
+import { LibraryManager } from './LibraryManager'
+import { makePads } from './pads'
 
 export function SoundApp() {
-  const { tracks, tags } = useSoundLibrary()
+  const { tracks, tags, folder } = useSoundLibrary()
   const banks = useAppState((s) => s.soundBanks)
   const dispatch = useDispatch()
-  const bridge = window.showboard
 
+  const [managing, setManaging] = useState(false)
   const [query, setQuery] = useState('')
-  const [pinned, setPinned] = useState<string[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  // Anchor for shift-click ranges — the row a range extends from.
-  const anchor = useRef<number | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  // Which bank the + on a search result drops onto. Lifted out of the board so
+  // search can target it; falls back to the first bank so a deleted one can't
+  // leave the panel pointing at nothing.
+  const [activeBankId, setActiveBankId] = useState<string | null>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
 
-  const visible = useMemo(() => filterTracks(tracks, query, pinned), [tracks, query, pinned])
-  // Selection survives filtering (you can tag, retype, and tag again), so the
-  // editor works from ids rather than from what's currently on screen.
-  const selected = useMemo(() => tracks.filter((t) => selectedIds.has(t.id)), [tracks, selectedIds])
+  const activeBank = banks.find((b) => b.id === activeBankId) ?? banks[0] ?? null
 
-  function togglePinned(tag: string) {
-    setPinned((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  function closeSearch() {
+    setSearchOpen(false)
+    setQuery('')
+    searchRef.current?.blur()
   }
 
-  function selectRow(index: number, event: React.MouseEvent) {
-    const track = visible[index]
-    if (!track) return
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (event.shiftKey && anchor.current !== null) {
-        const [from, to] = [anchor.current, index].sort((a, b) => a - b)
-        for (let i = from; i <= to; i++) next.add(visible[i].id)
-      } else if (event.metaKey || event.ctrlKey) {
-        if (next.has(track.id)) next.delete(track.id)
-        else next.add(track.id)
-        anchor.current = index
-      } else {
-        next.clear()
-        next.add(track.id)
-        anchor.current = index
-      }
-      return next
-    })
+  // Escape closes the panel from anywhere, not just from the field. Clicking a
+  // result's + moves focus onto that button, and Escape has to keep working
+  // there or the way out of search depends on where you last clicked.
+  useEffect(() => {
+    if (!searchOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeSearch()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [searchOpen])
+
+  if (managing) {
+    return (
+      <LibraryManager
+        tracks={tracks}
+        tags={tags}
+        folder={folder}
+        activeBank={activeBank}
+        onClose={() => setManaging(false)}
+      />
+    )
   }
 
   return (
@@ -61,115 +74,58 @@ export function SoundApp() {
       <header className="sound__topbar">
         <h1>Sound</h1>
         <input
+          ref={searchRef}
           className="sound__search"
           value={query}
-          autoFocus
-          placeholder="Search songs and tags…"
-          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search for a song…"
+          onFocus={() => setSearchOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setSearchOpen(true)
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') setQuery('')
+            if (e.key === 'Escape') closeSearch()
           }}
         />
-        <span className="sound__status">
-          {visible.length === tracks.length
-            ? `${tracks.length} song${tracks.length === 1 ? '' : 's'}`
-            : `${visible.length} of ${tracks.length}`}
-        </span>
-        <button className="pill" onClick={() => bridge?.chooseSoundFolder()}>
-          Folder…
+        <button className="pill" onClick={() => setManaging(true)}>
+          Library
         </button>
       </header>
 
-      {tags.length > 0 && (
-        <div className="sound__tagrail">
-          {tags.map((tag) => (
-            <button
-              key={tag}
-              className={`sound__tag sound__tag--pin${pinned.includes(tag) ? ' sound__tag--pinned' : ''}`}
-              onClick={() => togglePinned(tag)}
-            >
-              {tag}
-            </button>
-          ))}
-          {pinned.length > 0 && (
-            <button className="sound__tag sound__tag--clear" onClick={() => setPinned([])}>
-              clear filters
-            </button>
-          )}
-        </div>
-      )}
-
       <NowPlaying />
 
-      <div className="sound__panes">
-        <div className="sound__library">
-          {tracks.length === 0 ? (
-            <p className="sound__empty">
-              Choose a folder above. Subfolders are included, so you can point this at the
-              folder that holds your existing music folders and get everything at once.
-            </p>
-          ) : visible.length === 0 ? (
-            <p className="sound__empty">Nothing matches that.</p>
-          ) : (
-            <ul className="sound__list">
-              {visible.map((track, index) => (
-                <li
-                  key={track.id}
-                  className={`sound__row${selectedIds.has(track.id) ? ' sound__row--selected' : ''}`}
-                  onClick={(e) => selectRow(index, e)}
-                  onDoubleClick={() => dispatch({ type: 'sound.play', id: track.id })}
-                  draggable
-                  onDragStart={(e) => {
-                    // Dragging a row that's part of the selection drags the whole
-                    // selection — that's how forty songs reach a bank in one go.
-                    const ids = selectedIds.has(track.id) ? [...selectedIds] : [track.id]
-                    e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(ids))
-                    e.dataTransfer.effectAllowed = 'copy'
-                  }}
-                >
-                  <button
-                    className="sound__play"
-                    title="Play"
-                    onClick={(e) => {
-                      e.stopPropagation() // auditioning shouldn't change the selection
-                      dispatch({ type: 'sound.play', id: track.id })
-                    }}
-                  >
-                    ▶
-                  </button>
-                  <span className="sound__name">{track.name}</span>
-                  <span className="sound__tags">
-                    {track.tags.map((tag) => (
-                      <span key={tag} className="sound__tag">
-                        {tag}
-                      </span>
-                    ))}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {selected.length > 0 && (
-            <TagEditor
-              selected={selected}
-              allTags={tags}
-              onClear={() => {
-                setSelectedIds(new Set())
-                anchor.current = null
-              }}
-            />
-          )}
-        </div>
-
+      <div className="sound__board">
         <BankPanel
           banks={banks}
           tracks={tracks}
-          selected={selected}
-          onClearSelection={() => {
-            setSelectedIds(new Set())
-            anchor.current = null
-          }}
+          activeBankId={activeBank?.id ?? null}
+          onSelectBank={setActiveBankId}
         />
+
+        {searchOpen && (
+          <>
+            {/* Clicking anywhere off the panel closes it, so getting back to the
+                pads is never a hunt for a close button. */}
+            <div className="results__scrim" onClick={closeSearch} />
+            <SearchResults
+              tracks={tracks}
+              query={query}
+              activeBank={activeBank}
+              onPickTag={(tag) => {
+                setQuery(tag)
+                searchRef.current?.focus()
+              }}
+              onPlay={(track: SoundTrackInfo) => {
+                dispatch({ type: 'sound.play', id: track.id })
+                closeSearch() // played it; get out of the way
+              }}
+              onAddToBank={(track: SoundTrackInfo) => {
+                if (!activeBank) return
+                dispatch({ type: 'soundPad.add', bankId: activeBank.id, pads: makePads([track]) })
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   )

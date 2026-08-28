@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterTracks, matchesQuery, suggestTags, tagsForSelection } from './search'
+import { filterTracks, matchesQuery, suggestTags, tagsForSelection, topTags } from './search'
 import type { SoundTrackInfo } from '../shared/bridge'
 
 const track = (name: string, tags: string[] = []): SoundTrackInfo => ({
@@ -95,5 +95,29 @@ describe('suggestTags', () => {
 
   it('never offers a tag the selection already has', () => {
     expect(suggestTags(ALL, 'rap', ['rap'])).toEqual([])
+  })
+})
+
+describe('topTags', () => {
+  it('ranks by how many songs carry the tag', () => {
+    expect(topTags(LIBRARY).map((t) => t.tag)).toEqual([
+      'rap',
+      'classic',
+      'guessing game',
+      'high energy',
+      'musical numbers',
+    ])
+  })
+
+  it('reports the count alongside each tag', () => {
+    expect(topTags(LIBRARY)[0]).toEqual({ tag: 'rap', count: 2 })
+  })
+
+  it('honours the limit', () => {
+    expect(topTags(LIBRARY, 2).map((t) => t.tag)).toEqual(['rap', 'classic'])
+  })
+
+  it('returns nothing for an untagged library', () => {
+    expect(topTags([{ id: 'a', name: 'a', url: '', tags: [] }])).toEqual([])
   })
 })
