@@ -57,15 +57,21 @@ export function SoundApp() {
     return () => window.removeEventListener('keydown', onKey)
   }, [searchOpen])
 
+  // The transport is pinned to the bottom and lives outside the mode switch, so
+  // it's in the same place whichever surface you're on — including while
+  // auditioning songs in the library.
   if (managing) {
     return (
-      <LibraryManager
-        tracks={tracks}
-        tags={tags}
-        folder={folder}
-        activeBank={activeBank}
-        onClose={() => setManaging(false)}
-      />
+      <div className="sound">
+        <LibraryManager
+          tracks={tracks}
+          tags={tags}
+          folder={folder}
+          activeBank={activeBank}
+          onClose={() => setManaging(false)}
+        />
+        <NowPlaying />
+      </div>
     )
   }
 
@@ -91,8 +97,6 @@ export function SoundApp() {
           Library
         </button>
       </header>
-
-      <NowPlaying />
 
       <div className="sound__board">
         <BankPanel
@@ -127,6 +131,8 @@ export function SoundApp() {
           </>
         )}
       </div>
+
+      <NowPlaying />
     </div>
   )
 }
