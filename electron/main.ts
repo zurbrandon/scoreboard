@@ -4,9 +4,9 @@
 // persists to disk. Windows are thin views; the projector never mutates.
 
 import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net, globalShortcut, session } from 'electron'
-import { basename, join } from 'node:path'
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { basename, extname, join } from 'node:path'
+import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync } from 'node:fs'
+import { Readable } from 'node:stream'
 
 import { reduce } from '../src/core/reduce'
 import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSoundBanks, type AppState } from '../src/core/state'
@@ -25,6 +25,19 @@ import type { MomentKind } from '../src/core/state'
 import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
 import { normalizeTags } from '../src/shared/soundTags'
 import { AUDIO_EXTENSIONS, findAudioFiles, trackName } from '../src/shared/soundScan'
+import { parseByteRange } from '../src/shared/byteRange'
+
+// Content-Type matters: without it the element has to sniff, and some builds
+// refuse to report a duration for an unlabelled stream — which also breaks
+// seeking.
+const AUDIO_MIME: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.flac': 'audio/flac',
+}
 
 const isDev = !app.isPackaged
 const DEV_URL = 'http://localhost:5173'
@@ -680,11 +693,50 @@ function allowSlideshowFraming() {
 
 app.whenReady().then(() => {
   allowSlideshowFraming()
+  // Serves local audio with byte-range support. This has to be a hand-rolled
+  // handler rather than net.fetch on a file:// URL, because that ignores Range
+  // and answers 200 with the whole body — a media element given a response it
+  // can't range-request has to re-download from the start to move the playhead,
+  // so seeking restarts the song instead of moving within it.
   protocol.handle('sbmedia', (request) => {
     try {
       const path = new URL(request.url).searchParams.get('p')
       if (!path) return new Response('missing path', { status: 400 })
-      return net.fetch(pathToFileURL(path).toString())
+      const size = statSync(path).size
+      const type = AUDIO_MIME[extname(path).toLowerCase()] ?? 'application/octet-stream'
+      const range = request.headers.get('range')
+
+      // No Range asked for: send the whole file, but advertise that ranges work
+      // so the element knows it may seek later.
+      if (!range) {
+        return new Response(Readable.toWeb(createReadStream(path)) as ReadableStream, {
+          status: 200,
+          headers: {
+            'Content-Type': type,
+            'Content-Length': String(size),
+            'Accept-Ranges': 'bytes',
+          },
+        })
+      }
+
+      const parsed = parseByteRange(range, size)
+      if (!parsed) {
+        return new Response('unsatisfiable range', {
+          status: 416,
+          headers: { 'Content-Range': `bytes */${size}` },
+        })
+      }
+      const { start, end } = parsed
+
+      return new Response(Readable.toWeb(createReadStream(path, { start, end })) as ReadableStream, {
+        status: 206,
+        headers: {
+          'Content-Type': type,
+          'Content-Length': String(end - start + 1),
+          'Content-Range': `bytes ${start}-${end}/${size}`,
+          'Accept-Ranges': 'bytes',
+        },
+      })
     } catch (err) {
       console.warn('[main] media protocol error:', err)
       return new Response('error', { status: 500 })
