@@ -2774,3 +2774,7 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--muted);
   letter-spacing: 0.02em;
 }
+/* The pad being dragged stays visible but recedes, so the gap it left — and the
+   pads shifting to make room — are what the eye follows. */
+.pad--dragging { opacity: 0.35; }
+.pad { transition: opacity 120ms ease; }

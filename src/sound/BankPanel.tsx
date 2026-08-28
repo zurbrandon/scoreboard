@@ -2,7 +2,7 @@
 // and whatever was playing stops. That's the whole interaction, and everything
 // here is in service of finding the right button fast during a show.
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useDispatch } from '../store/react'
 import type { SoundBank, SoundPad } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
@@ -12,6 +12,10 @@ import { makePads, tracksByIds } from './pads'
 
 /** Payload for a drag out of the library list. */
 export const DRAG_TYPE = 'application/x-showboard-tracks'
+/** Payload for dragging a pad within its bank. A distinct type so the grid can
+ *  tell "reorder what's here" from "add something new" during dragover, where
+ *  the data itself can't be read yet — only its types. */
+const PAD_DRAG_TYPE = 'application/x-showboard-pad'
 
 export function BankPanel({
   banks,
@@ -28,10 +32,36 @@ export function BankPanel({
   const [renamingBank, setRenamingBank] = useState<string | null>(null)
   const [renamingPad, setRenamingPad] = useState<string | null>(null)
   const [dropActive, setDropActive] = useState(false)
+  // Which pad is being dragged, and where it would land. Held as "the pad we're
+  // hovering, and which side" rather than an index, so it survives the list
+  // reshuffling underneath as the preview updates.
+  const [dragPadId, setDragPadId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ id: string; before: boolean } | 'end' | null>(null)
 
   // Fall back to the first bank, so a deleted one can't leave the board pointing
   // at nothing.
   const active = banks.find((b) => b.id === activeBankId) ?? banks[0] ?? null
+
+  // The order to draw right now: while dragging, the pads with the dragged one
+  // lifted out and re-inserted where it would land, so the rest visibly make
+  // room instead of the operator guessing where it will go.
+  const pads = active?.pads ?? []
+  const preview = useMemo(() => {
+    if (!dragPadId || !dropTarget) return pads
+    const dragged = pads.find((p) => p.id === dragPadId)
+    if (!dragged) return pads
+    const without = pads.filter((p) => p.id !== dragPadId)
+    if (dropTarget === 'end') return [...without, dragged]
+    const index = without.findIndex((p) => p.id === dropTarget.id)
+    if (index === -1) return pads
+    const at = dropTarget.before ? index : index + 1
+    return [...without.slice(0, at), dragged, ...without.slice(at)]
+  }, [pads, dragPadId, dropTarget])
+
+  function endDrag() {
+    setDragPadId(null)
+    setDropTarget(null)
+  }
 
   function addBank() {
     const id = newId('bank')
@@ -146,12 +176,28 @@ export function BankPanel({
         className={`banks__grid${dropActive ? ' banks__grid--drop' : ''}`}
         onDragOver={(e) => {
           e.preventDefault()
+          if (e.dataTransfer.types.includes(PAD_DRAG_TYPE)) {
+            // Over the grid's empty space rather than a pad: land at the end.
+            if (e.target === e.currentTarget) setDropTarget('end')
+            return
+          }
           setDropActive(true)
         }}
         onDragLeave={() => setDropActive(false)}
         onDrop={(e) => {
           e.preventDefault()
           setDropActive(false)
+          if (e.dataTransfer.types.includes(PAD_DRAG_TYPE)) {
+            if (active && dragPadId) {
+              dispatch({
+                type: 'soundPad.reorder',
+                bankId: active.id,
+                ids: preview.map((p) => p.id),
+              })
+            }
+            endDrag()
+            return
+          }
           try {
             const ids = JSON.parse(e.dataTransfer.getData(DRAG_TYPE)) as string[]
             if (Array.isArray(ids)) addTracks(ids)
@@ -160,10 +206,10 @@ export function BankPanel({
           }
         }}
       >
-        {active?.pads.length === 0 ? (
+        {pads.length === 0 ? (
           <p className="sound__empty">Search for a song and use + to add it here.</p>
         ) : (
-          active?.pads.map((pad) => {
+          preview.map((pad) => {
             // A tag pad is unavailable when nothing carries its tag (yet); a song
             // pad when its file has gone. Either way it says so rather than being
             // a button that quietly does nothing.
@@ -179,7 +225,26 @@ export function BankPanel({
             return (
               <div
                 key={pad.id}
-                className={`pad${missing ? ' pad--missing' : ''}${pad.kind === 'tag' ? ' pad--tag' : ''}`}
+                className={`pad${missing ? ' pad--missing' : ''}${pad.kind === 'tag' ? ' pad--tag' : ''}${
+                  dragPadId === pad.id ? ' pad--dragging' : ''
+                }`}
+                // Not draggable mid-rename, or the text can't be selected.
+                draggable={renamingPad !== pad.id}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(PAD_DRAG_TYPE, pad.id)
+                  e.dataTransfer.effectAllowed = 'move'
+                  setDragPadId(pad.id)
+                }}
+                onDragEnd={endDrag}
+                onDragOver={(e) => {
+                  if (!dragPadId || pad.id === dragPadId) return
+                  e.preventDefault()
+                  e.stopPropagation() // the grid's end-of-list fallback shouldn't also fire
+                  // Left half means "in front of this pad", right half "after" —
+                  // the same read as dragging a tab between two others.
+                  const box = e.currentTarget.getBoundingClientRect()
+                  setDropTarget({ id: pad.id, before: e.clientX < box.left + box.width / 2 })
+                }}
                 onClick={fire}
                 onDoubleClick={() => setRenamingPad(pad.id)}
                 title={
