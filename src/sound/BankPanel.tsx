@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useDispatch } from '../store/react'
 import type { SoundBank, SoundPad } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
+import { MdLocalOffer } from 'react-icons/md'
 import { newId } from '../shared/ids'
 import { makePads, tracksByIds } from './pads'
 
@@ -163,15 +164,37 @@ export function BankPanel({
           <p className="sound__empty">Search for a song and use + to add it here.</p>
         ) : (
           active?.pads.map((pad) => {
-            const missing = !tracks.some((t) => t.id === pad.trackId)
+            // A tag pad is unavailable when nothing carries its tag (yet); a song
+            // pad when its file has gone. Either way it says so rather than being
+            // a button that quietly does nothing.
+            const taggedCount =
+              pad.kind === 'tag' ? tracks.filter((t) => t.tags.includes(pad.tag)).length : 0
+            const missing =
+              pad.kind === 'tag' ? taggedCount === 0 : !tracks.some((t) => t.id === pad.trackId)
+            const fire = () => {
+              if (missing) return
+              if (pad.kind === 'tag') dispatch({ type: 'sound.playTag', tag: pad.tag, mode: pad.mode })
+              else dispatch({ type: 'sound.play', id: pad.trackId })
+            }
             return (
               <div
                 key={pad.id}
-                className={`pad${missing ? ' pad--missing' : ''}`}
-                onClick={() => !missing && dispatch({ type: 'sound.play', id: pad.trackId })}
+                className={`pad${missing ? ' pad--missing' : ''}${pad.kind === 'tag' ? ' pad--tag' : ''}`}
+                onClick={fire}
                 onDoubleClick={() => setRenamingPad(pad.id)}
-                title={missing ? `Missing file: ${pad.trackId}` : pad.trackId}
+                title={
+                  pad.kind === 'tag'
+                    ? `${taggedCount} song${taggedCount === 1 ? '' : 's'} tagged “${pad.tag}”`
+                    : missing
+                      ? `Missing file: ${pad.trackId}`
+                      : pad.trackId
+                }
               >
+                {pad.kind === 'tag' && (
+                  <span className="pad__badge" title="Plays from a tag">
+                    <MdLocalOffer />
+                  </span>
+                )}
                 {renamingPad === pad.id ? (
                   <input
                     className="pad__rename"
@@ -188,7 +211,18 @@ export function BankPanel({
                 ) : (
                   <span className="pad__label">{pad.label}</span>
                 )}
-                {missing && <span className="pad__missing">file missing</span>}
+                {/* The mode is the difference between "a run-in" and "house
+                    music", so it belongs on the face, not in a tooltip. */}
+                {pad.kind === 'tag' && !missing && (
+                  <span className="pad__meta">
+                    {pad.mode === 'continuous' ? 'keeps playing' : 'random'} · {taggedCount}
+                  </span>
+                )}
+                {missing && (
+                  <span className="pad__missing">
+                    {pad.kind === 'tag' ? 'nothing tagged' : 'file missing'}
+                  </span>
+                )}
                 <button
                   className="pad__remove"
                   title="Remove pad"

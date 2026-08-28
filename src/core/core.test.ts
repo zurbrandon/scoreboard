@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows, normSoundBanks } from './state'
-import type { AppState, LogoSlide, ShowSlide, Slide, TextSlide } from './state'
+import type { AppState, LogoSlide, ShowSlide, Slide, SoundPad, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
 import { sideOf, teamOnSide } from './sides'
@@ -874,7 +874,8 @@ describe('state stays serializable', () => {
 })
 
 describe('soundboard banks', () => {
-  const pad = (id: string, trackId = '/m/a.mp3', label = 'A') => ({ id, trackId, label })
+  const pad = (id: string, trackId = '/m/a.mp3', label = 'A') =>
+    ({ id, kind: 'track', trackId, label }) satisfies SoundPad
 
   it('adds a bank, then appends pads to it', () => {
     const s = run(
@@ -922,7 +923,12 @@ describe('soundboard banks', () => {
       { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1', '/m/song.mp3', 'song')] },
       { type: 'soundPad.relabel', bankId: 'b1', padId: 'p1', label: 'SHOOT OUT' },
     )
-    expect(s.soundBanks[0].pads[0]).toEqual({ id: 'p1', trackId: '/m/song.mp3', label: 'SHOOT OUT' })
+    expect(s.soundBanks[0].pads[0]).toEqual({
+      id: 'p1',
+      kind: 'track',
+      trackId: '/m/song.mp3',
+      label: 'SHOOT OUT',
+    })
   })
 
   it('reorders pads, keeping any the caller did not mention', () => {
@@ -953,7 +959,9 @@ describe('normSoundBanks', () => {
         { id: 'no-name' },
         'garbage',
       ]),
-    ).toEqual([{ id: 'b1', name: 'ok', pads: [{ id: 'p1', trackId: '/a', label: '' }] }])
+    ).toEqual([
+      { id: 'b1', name: 'ok', pads: [{ id: 'p1', kind: 'track', trackId: '/a', label: '' }] },
+    ])
   })
 
   it('returns an empty list when the field is missing entirely', () => {
@@ -990,5 +998,47 @@ describe('soundboard playback commands', () => {
     const s = run({ type: 'sound.seek', seconds: 42.5 })
     expect(s.soundSeekTo).toBe(42.5)
     expect(s.soundSeekNonce).toBe(1)
+  })
+})
+
+describe('tag pads', () => {
+  it('keeps a tag pad through normalization, defaulting an unknown mode to random', () => {
+    expect(
+      normSoundBanks([
+        {
+          id: 'b1',
+          name: 'ok',
+          pads: [
+            { id: 'p1', kind: 'tag', tag: 'run in', mode: 'continuous', label: 'RUN IN' },
+            { id: 'p2', kind: 'tag', tag: 'rap', mode: 'nonsense', label: 'RAP' },
+            { id: 'p3', kind: 'tag', label: 'no tag' },
+          ],
+        },
+      ])[0].pads,
+    ).toEqual([
+      { id: 'p1', kind: 'tag', tag: 'run in', mode: 'continuous', label: 'RUN IN' },
+      { id: 'p2', kind: 'tag', tag: 'rap', mode: 'random', label: 'RAP' },
+    ])
+  })
+
+  it('reads a pad saved before tag pads existed as a song pad', () => {
+    // No `kind` in the file: it predates the union and is a track pad.
+    expect(normSoundBanks([{ id: 'b1', name: 'ok', pads: [{ id: 'p1', trackId: '/a' }] }])[0].pads).toEqual([
+      { id: 'p1', kind: 'track', trackId: '/a', label: '' },
+    ])
+  })
+
+  it('records the tag and mode a tag pad asked for', () => {
+    const s = run({ type: 'sound.playTag', tag: 'run in', mode: 'continuous' })
+    expect(s.soundTagCue).toEqual({ tag: 'run in', mode: 'continuous' })
+    expect(s.soundTagCueNonce).toBe(1)
+  })
+
+  it('bumps the nonce on a re-tap of the same tag pad', () => {
+    const s = run(
+      { type: 'sound.playTag', tag: 'rap', mode: 'random' },
+      { type: 'sound.playTag', tag: 'rap', mode: 'random' },
+    )
+    expect(s.soundTagCueNonce).toBe(2)
   })
 })

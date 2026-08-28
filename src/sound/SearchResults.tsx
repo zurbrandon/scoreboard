@@ -4,7 +4,7 @@
 // plays. The whole point is type, down, down, Enter, without looking.
 
 import { useEffect, useRef } from 'react'
-import type { SoundBank } from '../core/state'
+import type { SoundBank, SoundPadMode } from '../core/state'
 import type { SearchItem } from './search'
 import { DRAG_TYPE } from './BankPanel'
 
@@ -16,6 +16,7 @@ export function SearchResults({
   onActivate,
   onHover,
   onAddToBank,
+  onAddTagPad,
 }: {
   items: SearchItem[]
   query: string
@@ -24,6 +25,7 @@ export function SearchResults({
   onActivate: (item: SearchItem) => void
   onHover: (index: number) => void
   onAddToBank: (trackId: string) => void
+  onAddTagPad: (tag: string, mode: SoundPadMode) => void
 }) {
   const activeRef = useRef<HTMLLIElement>(null)
   const typed = query.trim().length > 0
@@ -83,6 +85,32 @@ export function SearchResults({
                   <span className="sound__status">
                     {item.count} song{item.count === 1 ? '' : 's'}
                   </span>
+                  {/* Two ways to make a pad from a tag, rather than one button
+                      plus a mode to find later: "one random song" and "keep
+                      playing" are different buttons in a show, so they're
+                      different buttons here. */}
+                  <button
+                    className="results__add"
+                    disabled={!activeBank}
+                    title={activeBank ? `Add a random-song pad to “${activeBank.name}”` : 'Make a bank first'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onAddTagPad(item.tag, 'random')
+                    }}
+                  >
+                    + random
+                  </button>
+                  <button
+                    className="results__add"
+                    disabled={!activeBank}
+                    title={activeBank ? `Add a keeps-playing pad to “${activeBank.name}”` : 'Make a bank first'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onAddTagPad(item.tag, 'continuous')
+                    }}
+                  >
+                    + keeps playing
+                  </button>
                 </>
               ) : (
                 <>

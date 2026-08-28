@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundPad, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -84,6 +84,7 @@ export type Command =
   | { type: 'audio.setPlaying'; value: boolean } // audio controller reflects whether reveal sound is sounding
   | { type: 'audio.fadeOut' } // kill switch: gracefully fade the current music to silence, leaving the scene as-is
   | { type: 'sound.play'; id: string } // soundboard: play this sound-library track, replacing whatever is sounding
+  | { type: 'sound.playTag'; tag: string; mode: SoundPadMode } // a tag pad: pick from whatever carries the tag
   | { type: 'sound.stop' } // soundboard: stop its own playback (does not touch the reveal)
   | { type: 'sound.seek'; seconds: number } // soundboard: scrub the sounding track
   // Soundboard banks: tabs of pads over the sound library.

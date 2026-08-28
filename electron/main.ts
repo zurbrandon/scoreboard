@@ -127,6 +127,8 @@ function loadState(): AppState {
         // Cues are momentary: never replay one because it was in the state file.
         soundCueNonce: 0,
         soundCueTrackId: null,
+        soundTagCueNonce: 0,
+        soundTagCue: null,
         soundStopNonce: 0,
         soundSeekNonce: 0,
         soundSeekTo: 0,

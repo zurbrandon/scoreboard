@@ -9,7 +9,8 @@
 // selection logic (core/bumper.ts) stays identical.
 
 import { pickBumper, pickFromPool, tracksWithTag, type BumperTrack } from '../core/bumper'
-import type { MomentKind, SoundSlotId } from '../core/state'
+import type { MomentKind, SoundPadMode, SoundSlotId } from '../core/state'
+import { refillBag } from '../core/shuffleBag'
 import type { Store } from '../store/store'
 import type { SoundProgress } from '../shared/bridge'
 
@@ -69,6 +70,7 @@ export function createAudioController(store: Store): AudioController {
   let lastMomentNonce = store.getState().momentNonce
   let lastSoundCueNonce = store.getState().soundCueNonce
   let lastSoundStopNonce = store.getState().soundStopNonce
+  let lastSoundTagCueNonce = store.getState().soundTagCueNonce
   let lastSoundSeekNonce = store.getState().soundSeekNonce
   let lastAnimNonce = store.getState().revealAnimNonce
   let lastScene = store.getState().scene
@@ -87,6 +89,11 @@ export function createAudioController(store: Store): AudioController {
   // soundboard's own Stop still reaches everything — its bar is the one place
   // that sees all of it.
   let currentSource: 'show' | 'soundboard' = 'show'
+  // A running tag pad in continuous mode: which tag, and the songs left in its
+  // bag. Everything in the bag plays before anything repeats. Cleared by any
+  // other cue, which is what makes "continuous ends when something else plays"
+  // true without a special case at every call site.
+  let running: { tag: string; bag: string[]; lastId: string | null } | null = null
 
   // Effective volume = slider volume × fadeGain. fadeGain rides 1 → 0 during the
   // fade so it composes with live volume-slider changes without fighting them.
@@ -271,6 +278,7 @@ export function createAudioController(store: Store): AudioController {
   // 15s-then-fade manners, for a song the app started on its own.
   function playLoadedTrack(track: LoadedTrack, fade: boolean, source: 'show' | 'soundboard'): void {
     if (store.getState().music.muted) return // a hard mute means silence, whatever asked
+    running = null // a deliberate cue ends any continuous run; no auto-resume
     try {
       clearFade()
       releaseAudio()
@@ -297,6 +305,57 @@ export function createAudioController(store: Store): AudioController {
     const track = soundTracks.find((t) => t.id === id)
     if (!track) return // library rescanned out from under the pad
     playLoadedTrack(track, false, 'soundboard')
+  }
+
+  // A tag pad. Which song it plays is decided now, from whatever currently
+  // carries the tag — so the pad keeps working as the library grows, and an
+  // empty tag simply does nothing rather than erroring mid-show.
+  //
+  // 'continuous' keeps dealing from a shuffled bag as each song ends: house
+  // music that plays everything before it repeats anything.
+  function playTagCue(tag: string, mode: SoundPadMode): void {
+    const pool = tracksWithTag(soundTracks, tag)
+    if (pool.length === 0) return
+    const bag = refillBag(pool.map((t) => t.id), null)
+    const firstId = bag.shift()
+    if (!firstId) return
+    if (mode === 'continuous') running = { tag, bag, lastId: firstId }
+    playTagTrack(firstId, mode === 'continuous')
+  }
+
+  // Play one song from a tag run. `chain` arms the hand-off to the next song
+  // when this one ends; a random pad plays exactly one and stops.
+  function playTagTrack(id: string, chain: boolean): void {
+    const track = soundTracks.find((t) => t.id === id)
+    if (!track) return
+    const keepRunning = running // playLoadedTrack clears it; this cue is the exception
+    playLoadedTrack(track, false, 'soundboard')
+    if (!chain) return
+    running = keepRunning
+    audio?.addEventListener('ended', advanceRun, { once: true })
+  }
+
+  // One song ended during a continuous run: deal the next. Refills the bag when
+  // it's spent, so a pass never opens with the song that just finished.
+  function advanceRun(): void {
+    if (!running) return
+    const pool = tracksWithTag(soundTracks, running.tag)
+    if (pool.length === 0) {
+      running = null
+      releaseAudio()
+      return
+    }
+    if (running.bag.length === 0) {
+      running.bag = refillBag(pool.map((t) => t.id), running.lastId)
+    }
+    const nextId = running.bag.shift()
+    if (!nextId) {
+      running = null
+      releaseAudio()
+      return
+    }
+    running.lastId = nextId
+    playTagTrack(nextId, true)
   }
 
   // The Final-score drum roll — the custom upload, or any bumper as a stand-in.
@@ -376,6 +435,7 @@ export function createAudioController(store: Store): AudioController {
     // it isn't tied to the reveal, and unlike Black it leaves the scene/slide up.
     if (s.audioFadeNonce !== lastAudioFadeNonce) {
       lastAudioFadeNonce = s.audioFadeNonce
+      running = null
       fadeOutOver(KILL_FADE_MS)
     }
     // A slide was revealed → act on its music cue. revealAnimNonce bumps only on
@@ -402,6 +462,10 @@ export function createAudioController(store: Store): AudioController {
     // The soundboard asked for a song. Deliberately NOT gated on music.enabled:
     // that switch means "play music on reveals", and someone who turns reveal
     // bumpers off still expects their pads to work.
+    if (s.soundTagCueNonce !== lastSoundTagCueNonce) {
+      lastSoundTagCueNonce = s.soundTagCueNonce
+      if (s.soundTagCue) playTagCue(s.soundTagCue.tag, s.soundTagCue.mode)
+    }
     if (s.soundCueNonce !== lastSoundCueNonce) {
       lastSoundCueNonce = s.soundCueNonce
       if (s.soundCueTrackId) playSoundTrack(s.soundCueTrackId)
@@ -420,6 +484,7 @@ export function createAudioController(store: Store): AudioController {
     }
     if (s.soundStopNonce !== lastSoundStopNonce) {
       lastSoundStopNonce = s.soundStopNonce
+      running = null // Stop means stop, not "stop this song and start the next"
       fadeOutOver(SOUND_STOP_FADE_MS)
     }
     // Run-out / run-in moment fired → play a random song from its pool.

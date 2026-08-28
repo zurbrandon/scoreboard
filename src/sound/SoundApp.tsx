@@ -22,7 +22,7 @@ import { NowPlaying } from './NowPlaying'
 import { SearchResults } from './SearchResults'
 import { moveIndex, searchItems, type SearchItem } from './search'
 import { LibraryManager } from './LibraryManager'
-import { makePads } from './pads'
+import { makePads, makeTagPad } from './pads'
 
 export function SoundApp() {
   const { tracks, tags, folder } = useSoundLibrary()
@@ -152,6 +152,10 @@ export function SoundApp() {
               activeBank={activeBank}
               onActivate={activate}
               onHover={setActiveIndex}
+              onAddTagPad={(tag, mode) => {
+                if (!activeBank) return
+                dispatch({ type: 'soundPad.add', bankId: activeBank.id, pads: [makeTagPad(tag, mode)] })
+              }}
               onAddToBank={(trackId) => {
                 const track = tracks.find((t) => t.id === trackId)
                 if (!activeBank || !track) return

@@ -293,13 +293,31 @@ export function normSavedTemplates(v: unknown): SavedTemplate[] {
 //
 // There's no cap on pads per bank. The tool this replaces bound its buttons to
 // F1–F12 and so could hold only twelve; forty in one tab is a normal ask.
-export interface SoundPad {
+/** How a tag pad picks. 'random' plays one song and stops; 'continuous' keeps
+ *  going until something else plays or the operator stops it — house music. */
+export type SoundPadMode = 'random' | 'continuous'
+
+export interface SoundTrackPad {
   id: string
+  kind: 'track'
   trackId: string
   /** What the button reads. Defaults to the song's name, but a pad is a show
    *  cue — "SHOOT OUT" is more use mid-show than the filename. */
   label: string
 }
+
+/** A pad that points at a tag rather than a song: "some rap beat", "a run-in".
+ *  Which song it plays is decided when it's tapped, from whatever currently
+ *  carries the tag — so the pad keeps working as the library grows. */
+export interface SoundTagPad {
+  id: string
+  kind: 'tag'
+  tag: string
+  mode: SoundPadMode
+  label: string
+}
+
+export type SoundPad = SoundTrackPad | SoundTagPad
 
 export interface SoundBank {
   id: string
@@ -319,8 +337,21 @@ export function normSoundBanks(v: unknown): SoundBank[] {
       for (const p of r.pads) {
         if (!p || typeof p !== 'object') continue
         const pr = p as Record<string, unknown>
-        if (typeof pr.id !== 'string' || typeof pr.trackId !== 'string') continue
-        pads.push({ id: pr.id, trackId: pr.trackId, label: typeof pr.label === 'string' ? pr.label : '' })
+        if (typeof pr.id !== 'string') continue
+        const label = typeof pr.label === 'string' ? pr.label : ''
+        if (pr.kind === 'tag') {
+          if (typeof pr.tag !== 'string' || !pr.tag) continue
+          pads.push({
+            id: pr.id,
+            kind: 'tag',
+            tag: pr.tag,
+            mode: pr.mode === 'continuous' ? 'continuous' : 'random',
+            label,
+          })
+        } else if (typeof pr.trackId === 'string') {
+          // Pads written before tag pads existed have no `kind`; they're songs.
+          pads.push({ id: pr.id, kind: 'track', trackId: pr.trackId, label })
+        }
       }
     }
     out.push({ id: r.id, name: r.name, pads })
@@ -534,6 +565,9 @@ export interface AppState {
   soundCueNonce: number
   /** Which sound-library track that cue asked for (its absolute path). */
   soundCueTrackId: string | null
+  /** Bumped when a tag pad is tapped, with which tag and mode in soundTagCue. */
+  soundTagCueNonce: number
+  soundTagCue: { tag: string; mode: SoundPadMode } | null
   /** Bumped by the soundboard's own Stop. Kept separate from the reveal STOP
    *  because that one also settles the reveal — the sound window must never be
    *  able to disturb what's on screen. */
@@ -610,6 +644,8 @@ export function createInitialState(): AppState {
     momentNonce: 0,
     soundCueNonce: 0,
     soundCueTrackId: null,
+    soundTagCueNonce: 0,
+    soundTagCue: null,
     soundStopNonce: 0,
     soundSeekNonce: 0,
     soundSeekTo: 0,
