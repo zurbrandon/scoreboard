@@ -502,6 +502,26 @@ function baseReduce(state: AppState, command: Command): AppState {
         ),
       }
 
+    case 'soundPad.move': {
+      // Moving a pad to another bank is one command rather than remove+add, so
+      // a pad can never briefly exist in both banks or in neither.
+      if (command.fromBankId === command.toBankId) return state
+      const pad = state.soundBanks
+        .find((b) => b.id === command.fromBankId)
+        ?.pads.find((p) => p.id === command.padId)
+      // The destination must exist too, or the pad would be removed from its
+      // bank and added to nothing — a silently vanished pad.
+      if (!pad || !state.soundBanks.some((b) => b.id === command.toBankId)) return state
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) => {
+          if (b.id === command.fromBankId) return { ...b, pads: b.pads.filter((p) => p.id !== pad.id) }
+          if (b.id === command.toBankId) return { ...b, pads: [...b.pads, pad] }
+          return b
+        }),
+      }
+    }
+
     case 'soundPad.relabel':
       return {
         ...state,

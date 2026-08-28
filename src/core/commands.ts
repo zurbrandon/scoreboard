@@ -95,6 +95,7 @@ export type Command =
   | { type: 'soundPad.remove'; bankId: string; padId: string }
   | { type: 'soundPad.relabel'; bankId: string; padId: string; label: string }
   | { type: 'soundPad.reorder'; bankId: string; ids: string[] }
+  | { type: 'soundPad.move'; fromBankId: string; toBankId: string; padId: string } // drag a pad onto another bank's tab
   | { type: 'soundSlot.set'; slot: SoundSlotId; tag: string | null } // which tag a behavior draws from
   // Final-score sequence steps, dispatched by the reveal service on a timer.
   | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown

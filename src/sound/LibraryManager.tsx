@@ -28,6 +28,7 @@ export function LibraryManager({
   const [query, setQuery] = useState('')
   const [pinned, setPinned] = useState<string[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [tagging, setTagging] = useState(false)
   // Anchor for shift-click ranges — the row a range extends from.
   const anchor = useRef<number | null>(null)
 
@@ -38,6 +39,7 @@ export function LibraryManager({
 
   function clearSelection() {
     setSelectedIds(new Set())
+    setTagging(false) // nothing selected means nothing to tag
     anchor.current = null
   }
 
@@ -113,6 +115,36 @@ export function LibraryManager({
         </div>
       )}
 
+      {selected.length > 0 && (
+        <div className="selbar">
+          <span className="selbar__count">
+            {selected.length} selected
+          </span>
+          <div className="selbar__anchor">
+            <button className="pill" onClick={() => setTagging((v) => !v)}>
+              Add tag…
+            </button>
+            {tagging && (
+              <TagEditor selected={selected} allTags={tags} onClose={() => setTagging(false)} />
+            )}
+          </div>
+          {activeBank && (
+            <button
+              className="pill"
+              onClick={() => {
+                dispatch({ type: 'soundPad.add', bankId: activeBank.id, pads: makePads(selected) })
+                clearSelection()
+              }}
+            >
+              Add to “{activeBank.name}”
+            </button>
+          )}
+          <button className="pill" onClick={clearSelection}>
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="library__list">
         {tracks.length === 0 ? (
           <p className="sound__empty">
@@ -154,28 +186,6 @@ export function LibraryManager({
         )}
       </div>
 
-      {selected.length > 0 && (
-        <>
-          <TagEditor selected={selected} allTags={tags} onClear={clearSelection} />
-          {activeBank && (
-            <div className="tag-editor__row tag-editor__row--tags library__bankadd">
-              <button
-                className="pill"
-                onClick={() => {
-                  dispatch({
-                    type: 'soundPad.add',
-                    bankId: activeBank.id,
-                    pads: makePads(selected),
-                  })
-                  clearSelection()
-                }}
-              >
-                Add {selected.length} to “{activeBank.name}”
-              </button>
-            </div>
-          )}
-        </>
-      )}
     </div>
   )
 }

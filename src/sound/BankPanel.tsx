@@ -118,11 +118,27 @@ export function BankPanel({
             className={`banks__tab${bank.id === active?.id ? ' banks__tab--active' : ''}`}
             onClick={() => onSelectBank(bank.id)}
             onDoubleClick={() => setRenamingBank(bank.id)}
-            // Dragging onto a tab switches to it, so you can drop into a bank
-            // you aren't looking at.
+            title="Double-click to rename"
             onDragOver={(e) => {
               e.preventDefault()
-              onSelectBank(bank.id) // drop into a bank you aren't looking at
+              // Dragging a PAD onto a tab moves it to that bank, so the active
+              // bank must not change under the drag — the pad still belongs to
+              // the bank it came from until it lands.
+              if (!e.dataTransfer.types.includes(PAD_DRAG_TYPE)) onSelectBank(bank.id)
+            }}
+            onDrop={(e) => {
+              if (!e.dataTransfer.types.includes(PAD_DRAG_TYPE)) return
+              e.preventDefault()
+              e.stopPropagation()
+              if (active && dragPadId && bank.id !== active.id) {
+                dispatch({
+                  type: 'soundPad.move',
+                  fromBankId: active.id,
+                  toBankId: bank.id,
+                  padId: dragPadId,
+                })
+              }
+              endDrag()
             }}
           >
             {renamingBank === bank.id ? (
@@ -143,32 +159,29 @@ export function BankPanel({
               <>
                 <span>{bank.name}</span>
                 <span className="banks__count">{bank.pads.length}</span>
+                {bank.id === active?.id && (
+                  <button
+                    className="banks__delete"
+                    title="Delete this bank"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // A bank can hold forty pads; deleting one by mis-click
+                      // would be a bad afternoon.
+                      const ok =
+                        bank.pads.length === 0 ||
+                        window.confirm(`Delete “${bank.name}” and its ${bank.pads.length} pads?`)
+                      if (ok) dispatch({ type: 'soundBank.remove', id: bank.id })
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
               </>
             )}
           </div>
         ))}
         <button className="banks__tab banks__tab--add" onClick={addBank} title="New bank">
           +
-        </button>
-      </div>
-
-      <div className="banks__toolbar">
-        <button className="pill" onClick={() => setRenamingBank(active!.id)}>
-          Rename bank
-        </button>
-        <button
-          className="pill"
-          onClick={() => {
-            if (!active) return
-            // A bank can hold forty pads; deleting one by mis-click would be a
-            // bad afternoon.
-            const ok =
-              active.pads.length === 0 ||
-              window.confirm(`Delete "${active.name}" and its ${active.pads.length} pads?`)
-            if (ok) dispatch({ type: 'soundBank.remove', id: active.id })
-          }}
-        >
-          Delete bank
         </button>
       </div>
 

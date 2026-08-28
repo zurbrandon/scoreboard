@@ -1,8 +1,11 @@
-// The bulk-tagging bar. It only exists while something is selected, because
-// tagging is the one thing this window does that changes stored data — it should
-// be visibly a mode you entered, not a control sitting armed all the time.
+// Tagging the current selection, as a popover on the button that opens it.
+//
+// This used to be a bar pinned to the bottom of the window — far from the rows
+// it acted on, and easy to miss entirely. A popover puts the tags under the
+// hand that asked for them: open it, the tags you already have are right there,
+// click to apply or remove, type to filter or to make a new one.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SoundTrackInfo } from '../shared/bridge'
 import { normalizeTag } from '../shared/soundTags'
 import { suggestTags, tagsForSelection } from './search'
@@ -10,79 +13,96 @@ import { suggestTags, tagsForSelection } from './search'
 export function TagEditor({
   selected,
   allTags,
-  onClear,
+  onClose,
 }: {
   selected: SoundTrackInfo[]
   allTags: string[]
-  onClear: () => void
+  onClose: () => void
 }) {
   const [input, setInput] = useState('')
+  const boxRef = useRef<HTMLDivElement>(null)
   const bridge = window.showboard
   const { all, some } = tagsForSelection(selected)
-  const suggestions = suggestTags(allTags, input, all)
+  const applied = new Set([...all, ...some])
+  const suggestions = suggestTags(allTags, input)
+  const typed = normalizeTag(input)
+  // Offer to create only what doesn't exist — otherwise the popover shows "add
+  // rap" above an existing "rap" row, which is two ways to do one thing.
+  const isNew = typed !== null && !allTags.includes(typed)
 
-  function apply(raw: string) {
-    const tag = normalizeTag(raw)
-    if (!tag || !bridge) return
-    bridge.setSoundTags(selected.map((t) => t.id), [tag], [])
+  // Click-away and Escape close it, the way every other popover behaves.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!boxRef.current?.contains(e.target as Node)) onClose()
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  const ids = selected.map((t) => t.id)
+
+  function toggle(tag: string) {
+    if (!bridge) return
+    // A tag on only some of the selection applies to all of them first — the
+    // useful move when you've selected a batch that's partly tagged already.
+    if (all.includes(tag)) bridge.setSoundTags(ids, [], [tag])
+    else bridge.setSoundTags(ids, [tag], [])
+  }
+
+  function create() {
+    if (!typed || !bridge) return
+    bridge.setSoundTags(ids, [typed], [])
     setInput('')
   }
 
-  function remove(tag: string) {
-    bridge?.setSoundTags(selected.map((t) => t.id), [], [tag])
-  }
-
   return (
-    <div className="tag-editor">
-      <div className="tag-editor__row">
-        <span className="tag-editor__count">
-          {selected.length} selected
-        </span>
-        <input
-          className="tag-editor__input"
-          value={input}
-          placeholder="Add a tag…"
-          list="sound-tag-suggestions"
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') apply(input)
-            if (e.key === 'Escape') setInput('')
-          }}
-        />
-        <datalist id="sound-tag-suggestions">
-          {suggestions.map((tag) => (
-            <option key={tag} value={tag} />
-          ))}
-        </datalist>
-        <button className="pill" disabled={normalizeTag(input) === null} onClick={() => apply(input)}>
-          Add tag
-        </button>
-        <button className="pill" onClick={onClear}>
-          Clear selection
-        </button>
+    <div className="tagpop" ref={boxRef}>
+      <div className="tagpop__head">
+        Tagging {selected.length} song{selected.length === 1 ? '' : 's'}
       </div>
-
-      {(all.length > 0 || some.length > 0) && (
-        <div className="tag-editor__row tag-editor__row--tags">
-          {all.map((tag) => (
-            <button key={tag} className="sound__tag sound__tag--removable" onClick={() => remove(tag)}>
-              {tag} ✕
-            </button>
-          ))}
-          {/* Partial tags read as partial: removing one shouldn't quietly imply
-              it was on everything selected. */}
-          {some.map((tag) => (
+      <input
+        className="tagpop__input"
+        value={input}
+        autoFocus
+        placeholder="Filter or add a tag…"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') create()
+        }}
+      />
+      <div className="tagpop__list">
+        {isNew && (
+          <button className="tagpop__row tagpop__row--new" onClick={create}>
+            <span className="tagpop__check">+</span>
+            Create “{typed}”
+          </button>
+        )}
+        {suggestions.map((tag) => {
+          const onAll = all.includes(tag)
+          const onSome = some.includes(tag)
+          return (
             <button
               key={tag}
-              className="sound__tag sound__tag--partial"
-              title="On some of the selected songs"
-              onClick={() => remove(tag)}
+              className={`tagpop__row${applied.has(tag) ? ' tagpop__row--on' : ''}`}
+              onClick={() => toggle(tag)}
+              title={onAll ? 'On all selected — click to remove' : onSome ? 'On some — click to apply to all' : 'Click to apply'}
             >
-              {tag} ✕
+              <span className="tagpop__check">{onAll ? '✓' : onSome ? '–' : ''}</span>
+              {tag}
             </button>
-          ))}
-        </div>
-      )}
+          )
+        })}
+        {suggestions.length === 0 && !isNew && (
+          <div className="tagpop__none">No tags yet — type one and press Enter.</div>
+        )}
+      </div>
     </div>
   )
 }

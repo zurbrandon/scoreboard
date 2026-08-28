@@ -1042,3 +1042,61 @@ describe('tag pads', () => {
     expect(s.soundTagCueNonce).toBe(2)
   })
 })
+
+describe('moving a pad between banks', () => {
+  const twoBanks = () =>
+    run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundBank.add', id: 'b2', name: 'two' },
+      {
+        type: 'soundPad.add',
+        bankId: 'b1',
+        pads: [
+          { id: 'p1', kind: 'track', trackId: '/a', label: 'A' },
+          { id: 'p2', kind: 'track', trackId: '/b', label: 'B' },
+        ],
+      },
+    )
+
+  it('takes the pad out of one bank and appends it to the other', () => {
+    const s = reduce(twoBanks(), {
+      type: 'soundPad.move',
+      fromBankId: 'b1',
+      toBankId: 'b2',
+      padId: 'p1',
+    })
+    expect(s.soundBanks[0].pads.map((p) => p.id)).toEqual(['p2'])
+    expect(s.soundBanks[1].pads.map((p) => p.id)).toEqual(['p1'])
+  })
+
+  it('carries the pad whole, including the mode of a tag pad', () => {
+    const start = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundBank.add', id: 'b2', name: 'two' },
+      {
+        type: 'soundPad.add',
+        bankId: 'b1',
+        pads: [{ id: 'p1', kind: 'tag', tag: 'house', mode: 'continuous', label: 'HOUSE' }],
+      },
+    )
+    const s = reduce(start, { type: 'soundPad.move', fromBankId: 'b1', toBankId: 'b2', padId: 'p1' })
+    expect(s.soundBanks[1].pads[0]).toEqual({
+      id: 'p1',
+      kind: 'tag',
+      tag: 'house',
+      mode: 'continuous',
+      label: 'HOUSE',
+    })
+  })
+
+  it('does nothing when the pad or bank is unknown, rather than losing the pad', () => {
+    const start = twoBanks()
+    expect(reduce(start, { type: 'soundPad.move', fromBankId: 'b1', toBankId: 'b2', padId: 'nope' })).toEqual(start)
+    expect(reduce(start, { type: 'soundPad.move', fromBankId: 'b1', toBankId: 'zzz', padId: 'p1' }).soundBanks[0].pads).toHaveLength(2)
+  })
+
+  it('is a no-op when dropped on its own bank', () => {
+    const start = twoBanks()
+    expect(reduce(start, { type: 'soundPad.move', fromBankId: 'b1', toBankId: 'b1', padId: 'p1' })).toEqual(start)
+  })
+})
