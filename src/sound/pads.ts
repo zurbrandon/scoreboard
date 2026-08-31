@@ -12,6 +12,9 @@ export function makePads(tracks: readonly SoundTrackInfo[]): SoundPad[] {
     id: newId('pad'),
     kind: 'track',
     trackId: track.id,
+    // Carried so the pad can be found again on a machine where the library sits
+    // at a different path. See relinkPads.
+    trackName: track.name,
     label: track.name,
   }))
 }
@@ -30,3 +33,4 @@ export function tracksByIds(
 export function makeTagPad(tag: string, mode: SoundPadMode): SoundPad {
   return { id: newId('pad'), kind: 'tag', tag, mode, label: tag }
 }
+

@@ -57,6 +57,9 @@ const bridge: ShowboardBridge = {
   },
 
   openSoundWindow: () => ipcRenderer.send('showboard:openSoundWindow'),
+  exportBoardFile: (suggestedName, contents) =>
+    ipcRenderer.invoke('showboard:exportBoardFile', suggestedName, contents) as Promise<boolean>,
+  importBoardFile: () => ipcRenderer.invoke('showboard:importBoardFile') as Promise<string | null>,
   chooseSoundFolder: () => ipcRenderer.send('showboard:chooseSoundFolder'),
   requestSoundLibrary: () => ipcRenderer.send('showboard:requestSoundLibrary'),
   setSoundTags: (paths, add, remove) =>

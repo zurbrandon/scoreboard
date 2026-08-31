@@ -1755,6 +1755,45 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   align-content: start;
 }
 .banks__grid--drop { background: color-mix(in srgb, var(--accent) 7%, transparent); outline: 2px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: -8px; }
+/* The board picker sits between the search field and Library. Narrow by
+   default — the board's name matters less than the pads, and the search field
+   should keep the room. */
+.sound__boards { flex: none; width: 168px; }
+/* Result of an export/import, shown in the menu rather than as a dialog — there's
+   nothing to decide, and a sheet for "that worked" is a click you didn't need. */
+.tpl__notice { padding: 4px 8px 2px; font-size: var(--fs-micro); color: var(--muted); }
+.tpl__name:disabled { opacity: 0.4; cursor: default; }
+.tpl__name:disabled:hover { background: none; }
+.sound__boards .tpl__menu { right: 0; left: auto; }
+
+/* A pad is a card with two faces: the button on the front, its settings on the
+   back. The cell is the grid item and owns the perspective; .pad-flip is what
+   actually turns. Only transform animates — this window is often on a projector
+   feed's machine mid-show, and it has to stay cheap. */
+.pad-cell {
+  position: relative;
+  perspective: 900px;
+}
+/* Flipped, the card claims the row beneath it. A pad is 84px of button, which
+   is the right size to hit and the wrong size to edit in. */
+.pad-cell--editing { grid-row: span 2; z-index: 2; }
+.pad-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  /* Duration mirrored by PAD_FLIP_MS in BankPanel.tsx. */
+  transition: transform 420ms cubic-bezier(0.4, 0.05, 0.2, 1);
+}
+.pad-cell--editing .pad-flip { transform: rotateY(180deg); }
+/* Scoped to the flip so these beat .pad's own `position: relative`, which is
+   defined below and would otherwise win on source order. */
+.pad-flip > .pad-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+.pad-flip > .pad-face--back { transform: rotateY(180deg); cursor: default; }
 /* Chunky on purpose: these get hit fast, mid-show, without looking closely. */
 .pad {
   position: relative;
@@ -1763,43 +1802,146 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   justify-content: center;
   text-align: center;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-xl);
   background: var(--panel-2);
-  border: 1px solid #2c3346;
+  border: 1px solid var(--line);
   cursor: pointer;
   user-select: none;
   overflow: hidden;
 }
 .pad:hover { border-color: var(--accent); }
 .pad:active { background: color-mix(in srgb, var(--accent) 22%, var(--panel-2)); }
-.pad__label { font-size: 13px; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-.pad__rename { width: 90%; background: transparent; border: none; border-bottom: 1px solid var(--accent); color: var(--text); font-family: inherit; font-size: 13px; text-align: center; }
-.pad__rename:focus { outline: none; }
-.pad__remove {
+.pad__label { font-size: var(--fs-base); font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.pad__cog {
   position: absolute;
   top: 4px;
   right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   border: none;
   background: transparent;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--fs-base);
+  cursor: pointer;
   opacity: 0;
+  transition: opacity 120ms ease, transform 220ms ease;
 }
-.pad:hover .pad__remove { opacity: 1; }
-.pad__remove:hover { background: var(--red); color: #fff; }
+.pad-cell:hover .pad__cog, .pad__cog:focus-visible { opacity: 1; }
+/* A quarter turn on hover — the same gesture the whole card is about to make. */
+.pad__cog:hover { background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--text); transform: rotate(90deg); }
+/* ---- the back of a pad -------------------------------------------------- */
+/* Denser than the front on purpose: the front is for hitting without looking,
+   this is for reading. */
+.pad-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 8px 9px;
+  border-radius: var(--r-xl);
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  text-align: left;
+  cursor: default;
+  overflow: hidden;
+}
+.pad-edit__name {
+  flex: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  padding: 2px 0;
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+.pad-edit__name:focus { outline: none; border-bottom-color: var(--accent); }
+/* The label is a show cue, so the face alone stops saying where the sound comes
+   from. This is the line that answers it. */
+.pad-edit__source {
+  flex: none;
+  margin: 0;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pad-edit__modes { display: flex; gap: 4px; }
+.pad-edit__mode {
+  flex: 1;
+  padding: 3px 4px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pad-edit__mode:hover { border-color: var(--accent); color: var(--text); }
+.pad-edit__mode--on {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+  color: var(--text);
+}
+/* Pinned to the bottom so Remove is in the same place on every pad, whether or
+   not the pad has a mode row above it. */
+.pad-edit__row { display: flex; align-items: center; gap: 4px; }
+.pad-edit__bank + .pad-edit__row { margin-top: 0; }
+.pad-edit__source + .pad-edit__row, .pad-edit__modes + .pad-edit__row { margin-top: auto; }
+.pad-edit__bank {
+  /* Pushed to the bottom together with the buttons under it, so Remove sits in
+     the same place whether or not the pad has a mode row. */
+  margin-top: auto;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 4px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+}
+.pad-edit__remove { flex: 1; justify-content: center; }
+.pad-edit__remove,
+.pad-edit__done {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pad-edit__remove:hover { background: var(--red); border-color: var(--red); color: #fff; }
+.pad-edit__done { font-size: var(--fs-sm); padding: 3px 6px; }
+.pad-edit__done:hover { border-color: var(--accent); color: var(--accent); }
 /* A pad whose file has gone missing says so rather than failing silently. */
 .pad--missing { border-style: dashed; opacity: 0.55; cursor: not-allowed; }
-.pad__missing { position: absolute; bottom: 6px; font-size: 10px; color: var(--red); }
+.pad__missing { position: absolute; bottom: 6px; font-size: var(--fs-micro); color: var(--red); }
 /* ---------------------------------------------------------------- Now playing */
 .now-playing {
   flex: none;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 18px;
+  padding: 13px 18px;
   background: var(--panel);
   /* Pinned to the bottom of the window, the way a music player's transport is. */
   border-top: 1px solid var(--line);

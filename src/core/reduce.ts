@@ -7,6 +7,27 @@ import type { AppState, Slide, SlideDeck, SoundPad, TeamId, TeamState } from './
 import { emptySlideshowSlide, emptyImageSlide, emptyTextSlide, logoSlide, reactionSlide, showSlide } from './state'
 import { determineWinner } from './winner'
 
+// Ignoring an unrecognized command is the right behaviour (see the default case
+// below), but doing it silently costs an afternoon: the symptom is a button that
+// does nothing, with no clue that main is running an older reducer than the
+// window that dispatched. So say it once per command type.
+//
+// Not gated behind a dev flag — core can't detect one portably (it's bundled by
+// both Vite and esbuild, and Electron's own isDev comes from app.isPackaged,
+// which isn't reachable here). It doesn't need to be: this only fires when
+// something is genuinely mismatched, it's capped at one line per type, and a
+// packaged build that hits it has a real version mismatch worth recording.
+const warnedCommands = new Set<string>()
+
+function warnUnrecognized(type: string): void {
+  if (warnedCommands.has(type)) return
+  warnedCommands.add(type)
+  console.warn(
+    `[core] ignoring unrecognized command "${type}". This reducer is older than whatever dispatched it — ` +
+      'in dev that means the Electron main bundle is stale: `npm run electron:build`, then relaunch.',
+  )
+}
+
 // Map over the Slides deck, replacing the slide with matching id.
 function updateSlide(state: AppState, id: string, fn: (s: Slide) => Slide): AppState {
   return {
@@ -532,6 +553,23 @@ function baseReduce(state: AppState, command: Command): AppState {
         ),
       }
 
+    // Only tag pads have a mode. Aimed at a track pad this does nothing rather
+    // than growing a `mode` field the pad's own kind says it can't have.
+    case 'soundPad.setMode':
+      return {
+        ...state,
+        soundBanks: state.soundBanks.map((b) =>
+          b.id === command.bankId
+            ? {
+                ...b,
+                pads: b.pads.map((p) =>
+                  p.id === command.padId && p.kind === 'tag' ? { ...p, mode: command.mode } : p,
+                ),
+              }
+            : b,
+        ),
+      }
+
     case 'soundPad.reorder':
       return {
         ...state,
@@ -545,6 +583,49 @@ function baseReduce(state: AppState, command: Command): AppState {
           return { ...b, pads: [...ordered, ...b.pads.filter((p) => !seen.has(p.id))] }
         }),
       }
+
+    // --- saved boards --------------------------------------------------------
+    // Loading replaces every bank in one command: a board swapped tab-by-tab
+    // would briefly be half one preset and half another, and the operator can
+    // click a pad at any moment.
+    case 'soundBoard.load':
+      return { ...state, soundBanks: command.banks, activeBoard: command.activeId }
+
+    case 'soundBoard.saveNew':
+      return {
+        ...state,
+        savedBoards: [...state.savedBoards, { id: command.id, name: command.name, banks: command.banks }],
+        // Saving is also a way of saying "this is what I'm on now".
+        activeBoard: command.id,
+      }
+
+    case 'soundBoard.update':
+      return {
+        ...state,
+        savedBoards: state.savedBoards.map((b) =>
+          b.id === command.id ? { ...b, banks: command.banks } : b,
+        ),
+      }
+
+    case 'soundBoard.rename':
+      return {
+        ...state,
+        savedBoards: state.savedBoards.map((b) =>
+          b.id === command.id ? { ...b, name: command.name } : b,
+        ),
+      }
+
+    // Deleting the board you're on leaves the pads alone — they're yours now.
+    // Only the "you're on X" marker goes, since X no longer exists.
+    case 'soundBoard.remove':
+      return {
+        ...state,
+        savedBoards: state.savedBoards.filter((b) => b.id !== command.id),
+        activeBoard: state.activeBoard === command.id ? null : state.activeBoard,
+      }
+
+    case 'soundBoard.setActive':
+      return { ...state, activeBoard: command.id }
 
     case 'soundSlot.set':
       return { ...state, soundSlots: { ...state.soundSlots, [command.slot]: command.tag } }
@@ -624,8 +705,10 @@ function baseReduce(state: AppState, command: Command): AppState {
 
     // An unrecognized command (e.g. a newer renderer talking to an older main
     // process) must NEVER poison the state by returning undefined. Ignore it and
-    // keep the current state (Principles: fail gracefully, never crash).
+    // keep the current state (Principles: fail gracefully, never crash) — but
+    // leave a trace, or the only symptom is a control that quietly does nothing.
     default:
+      warnUnrecognized((command as Command).type)
       return state
   }
 }

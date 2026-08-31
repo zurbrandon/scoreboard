@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundBank, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -94,8 +94,16 @@ export type Command =
   | { type: 'soundPad.add'; bankId: string; pads: SoundPad[] } // append; many at once, since dropping in a selection of forty is the point
   | { type: 'soundPad.remove'; bankId: string; padId: string }
   | { type: 'soundPad.relabel'; bankId: string; padId: string; label: string }
+  | { type: 'soundPad.setMode'; bankId: string; padId: string; mode: SoundPadMode } // tag pads only: one song, or keep going
   | { type: 'soundPad.reorder'; bankId: string; ids: string[] }
   | { type: 'soundPad.move'; fromBankId: string; toBankId: string; padId: string } // drag a pad onto another bank's tab
+  // Saved boards: the soundboard's presets, mirroring the template.* commands.
+  | { type: 'soundBoard.load'; banks: SoundBank[]; activeId: string | null } // replace every bank at once, so the board can never be half-swapped
+  | { type: 'soundBoard.saveNew'; id: string; name: string; banks: SoundBank[] }
+  | { type: 'soundBoard.update'; id: string; banks: SoundBank[] }
+  | { type: 'soundBoard.rename'; id: string; name: string }
+  | { type: 'soundBoard.remove'; id: string }
+  | { type: 'soundBoard.setActive'; id: string | null }
   | { type: 'soundSlot.set'; slot: SoundSlotId; tag: string | null } // which tag a behavior draws from
   // Final-score sequence steps, dispatched by the reveal service on a timer.
   | { type: 'finale.countdown'; value: number } // enter/advance the 3·2·1 countdown

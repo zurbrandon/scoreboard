@@ -2,13 +2,14 @@
 // and whatever was playing stops. That's the whole interaction, and everything
 // here is in service of finding the right button fast during a show.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from '../store/react'
-import type { SoundBank, SoundPad } from '../core/state'
+import type { SoundBank } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
-import { MdLocalOffer } from 'react-icons/md'
+import { MdLocalOffer, MdTune } from 'react-icons/md'
 import { newId } from '../shared/ids'
 import { makePads, tracksByIds } from './pads'
+import { PadEditor } from './PadEditor'
 
 /** Payload for a drag out of the library list. */
 export const DRAG_TYPE = 'application/x-showboard-tracks'
@@ -16,6 +17,8 @@ export const DRAG_TYPE = 'application/x-showboard-tracks'
  *  tell "reorder what's here" from "add something new" during dragover, where
  *  the data itself can't be read yet — only its types. */
 const PAD_DRAG_TYPE = 'application/x-showboard-pad'
+/** How long a pad takes to turn over. Kept in step with .pad-flip's transition. */
+const PAD_FLIP_MS = 420
 
 export function BankPanel({
   banks,
@@ -30,7 +33,12 @@ export function BankPanel({
 }) {
   const dispatch = useDispatch()
   const [renamingBank, setRenamingBank] = useState<string | null>(null)
-  const [renamingPad, setRenamingPad] = useState<string | null>(null)
+  // Which pad is flipped over. One at a time — opening another closes the first,
+  // so the board never has two half-finished edits on it.
+  const [editingPadId, setEditingPadId] = useState<string | null>(null)
+  // The editor outlives the flip by one transition, or closing a pad would show
+  // a blank card spinning back rather than the pad turning over.
+  const [editorFor, setEditorFor] = useState<string | null>(null)
   const [dropActive, setDropActive] = useState(false)
   // Which pad is being dragged, and where it would land. Held as "the pad we're
   // hovering, and which side" rather than an index, so it survives the list
@@ -79,15 +87,21 @@ export function BankPanel({
     setRenamingBank(null)
   }
 
-  function commitPadLabel(bankId: string, pad: SoundPad, value: string) {
-    dispatch({
-      type: 'soundPad.relabel',
-      bankId,
-      padId: pad.id,
-      label: value.trim() || pad.label,
-    })
-    setRenamingPad(null)
+  function openEditor(padId: string) {
+    setEditingPadId(padId)
+    setEditorFor(padId)
   }
+
+  // Let the closed editor sit on the hidden face until the card has finished
+  // turning, then drop it. On a timer rather than transitionend: that event goes
+  // missing when the window is backgrounded or animations are suppressed, and a
+  // stale editor left mounted would skip its own open — the name would stop
+  // arriving selected.
+  useEffect(() => {
+    if (editingPadId || !editorFor) return
+    const t = window.setTimeout(() => setEditorFor(null), PAD_FLIP_MS + 40)
+    return () => window.clearTimeout(t)
+  }, [editingPadId, editorFor])
 
   function addTracks(trackIds: string[]) {
     if (!active || trackIds.length === 0) return
@@ -228,8 +242,9 @@ export function BankPanel({
             // a button that quietly does nothing.
             const taggedCount =
               pad.kind === 'tag' ? tracks.filter((t) => t.tags.includes(pad.tag)).length : 0
-            const missing =
-              pad.kind === 'tag' ? taggedCount === 0 : !tracks.some((t) => t.id === pad.trackId)
+            const track = pad.kind === 'track' ? tracks.find((t) => t.id === pad.trackId) : undefined
+            const missing = pad.kind === 'tag' ? taggedCount === 0 : !track
+            const editing = editingPadId === pad.id
             const fire = () => {
               if (missing) return
               if (pad.kind === 'tag') dispatch({ type: 'sound.playTag', tag: pad.tag, mode: pad.mode })
@@ -238,11 +253,12 @@ export function BankPanel({
             return (
               <div
                 key={pad.id}
-                className={`pad${missing ? ' pad--missing' : ''}${pad.kind === 'tag' ? ' pad--tag' : ''}${
-                  dragPadId === pad.id ? ' pad--dragging' : ''
+                className={`pad-cell${editing ? ' pad-cell--editing' : ''}${
+                  dragPadId === pad.id ? ' pad-cell--dragging' : ''
                 }`}
-                // Not draggable mid-rename, or the text can't be selected.
-                draggable={renamingPad !== pad.id}
+                // Not draggable while flipped, or the text in the name field
+                // can't be selected.
+                draggable={!editing}
                 onDragStart={(e) => {
                   e.dataTransfer.setData(PAD_DRAG_TYPE, pad.id)
                   e.dataTransfer.effectAllowed = 'move'
@@ -258,59 +274,88 @@ export function BankPanel({
                   const box = e.currentTarget.getBoundingClientRect()
                   setDropTarget({ id: pad.id, before: e.clientX < box.left + box.width / 2 })
                 }}
-                onClick={fire}
-                onDoubleClick={() => setRenamingPad(pad.id)}
-                title={
-                  pad.kind === 'tag'
-                    ? `${taggedCount} song${taggedCount === 1 ? '' : 's'} tagged “${pad.tag}”`
-                    : missing
-                      ? `Missing file: ${pad.trackId}`
-                      : pad.trackId
-                }
               >
-                {pad.kind === 'tag' && (
-                  <span className="pad__badge" title="Plays from a tag">
-                    <MdLocalOffer />
-                  </span>
-                )}
-                {renamingPad === pad.id ? (
-                  <input
-                    className="pad__rename"
-                    defaultValue={pad.label}
-                    autoFocus
-                    onFocus={(e) => e.target.select()}
-                    onClick={(e) => e.stopPropagation()}
-                    onBlur={(e) => commitPadLabel(active.id, pad, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitPadLabel(active.id, pad, e.currentTarget.value)
-                      if (e.key === 'Escape') setRenamingPad(null)
-                    }}
-                  />
-                ) : (
-                  <span className="pad__label">{pad.label}</span>
-                )}
-                {/* The mode is the difference between "a run-in" and "house
-                    music", so it belongs on the face, not in a tooltip. */}
-                {pad.kind === 'tag' && !missing && (
-                  <span className="pad__meta">
-                    {pad.mode === 'continuous' ? 'keeps playing' : 'random'} · {taggedCount}
-                  </span>
-                )}
-                {missing && (
-                  <span className="pad__missing">
-                    {pad.kind === 'tag' ? 'nothing tagged' : 'file missing'}
-                  </span>
-                )}
-                <button
-                  className="pad__remove"
-                  title="Remove pad"
-                  onClick={(e) => {
-                    e.stopPropagation() // removing a pad must never also fire it
-                    dispatch({ type: 'soundPad.remove', bankId: active.id, padId: pad.id })
-                  }}
-                >
-                  ✕
-                </button>
+                <div className="pad-flip">
+                  <div
+                    className={`pad pad-face pad-face--front${missing ? ' pad--missing' : ''}${
+                      pad.kind === 'tag' ? ' pad--tag' : ''
+                    }`}
+                    onClick={fire}
+                    onDoubleClick={() => openEditor(pad.id)}
+                    title={
+                      pad.kind === 'tag'
+                        ? `${taggedCount} song${taggedCount === 1 ? '' : 's'} tagged “${pad.tag}”`
+                        : missing
+                          ? `Missing file: ${pad.trackId}`
+                          : pad.trackId
+                    }
+                  >
+                    {pad.kind === 'tag' && (
+                      <span className="pad__badge" title="Plays from a tag">
+                        <MdLocalOffer />
+                      </span>
+                    )}
+                    <span className="pad__label">{pad.label}</span>
+                    {/* The mode is the difference between "a run-in" and "house
+                        music", so it belongs on the face, not in a tooltip. */}
+                    {pad.kind === 'tag' && !missing && (
+                      <span className="pad__meta">
+                        {pad.mode === 'continuous' ? 'keeps playing' : 'random'} · {taggedCount}
+                      </span>
+                    )}
+                    {missing && (
+                      <span className="pad__missing">
+                        {pad.kind === 'tag' ? 'nothing tagged' : 'file missing'}
+                      </span>
+                    )}
+                    {/* Where the ✕ used to be. Removing a pad was a single
+                        stray click on the button you were reaching for; now it's
+                        behind the card, next to the other things you'd want. */}
+                    <button
+                      className="pad__cog"
+                      title="Edit this pad"
+                      aria-label={`Edit ${pad.label}`}
+                      onClick={(e) => {
+                        e.stopPropagation() // editing a pad must never also fire it
+                        openEditor(pad.id)
+                      }}
+                    >
+                      <MdTune />
+                    </button>
+                  </div>
+
+                  <div className="pad pad-face pad-face--back" aria-hidden={!editing}>
+                    {editorFor === pad.id && (
+                      <PadEditor
+                        pad={pad}
+                        bank={active}
+                        banks={banks}
+                        taggedCount={taggedCount}
+                        trackName={track?.name ?? null}
+                        onRename={(label) =>
+                          dispatch({ type: 'soundPad.relabel', bankId: active.id, padId: pad.id, label })
+                        }
+                        onSetMode={(mode) =>
+                          dispatch({ type: 'soundPad.setMode', bankId: active.id, padId: pad.id, mode })
+                        }
+                        onMoveToBank={(toBankId) => {
+                          setEditingPadId(null)
+                          dispatch({
+                            type: 'soundPad.move',
+                            fromBankId: active.id,
+                            toBankId,
+                            padId: pad.id,
+                          })
+                        }}
+                        onRemove={() => {
+                          setEditingPadId(null)
+                          dispatch({ type: 'soundPad.remove', bankId: active.id, padId: pad.id })
+                        }}
+                        onClose={() => setEditingPadId(null)}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             )
           })

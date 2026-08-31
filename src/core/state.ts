@@ -301,6 +301,12 @@ export interface SoundTrackPad {
   id: string
   kind: 'track'
   trackId: string
+  /** The song's name (its filename, less the extension) as it was when the pad
+   *  was made. `trackId` is an absolute path, so a board saved on one machine
+   *  points at nothing on another; this is the half that survives the trip, and
+   *  it's what relinkPads() matches on. Optional: pads written before boards
+   *  existed don't have it, and they're still perfectly good local pads. */
+  trackName?: string
   /** What the button reads. Defaults to the song's name, but a pad is a show
    *  cue — "SHOOT OUT" is more use mid-show than the filename. */
   label: string
@@ -350,11 +356,42 @@ export function normSoundBanks(v: unknown): SoundBank[] {
           })
         } else if (typeof pr.trackId === 'string') {
           // Pads written before tag pads existed have no `kind`; they're songs.
-          pads.push({ id: pr.id, kind: 'track', trackId: pr.trackId, label })
+          const pad: SoundTrackPad = { id: pr.id, kind: 'track', trackId: pr.trackId, label }
+          if (typeof pr.trackName === 'string' && pr.trackName) pad.trackName = pr.trackName
+          pads.push(pad)
         }
       }
     }
     out.push({ id: r.id, name: r.name, pads })
+  }
+  return out
+}
+
+// --- Saved boards (a soundboard preset) --------------------------------------
+// The soundboard's answer to SavedTemplate: a named snapshot of every bank, so
+// an operator can keep "Tuesday night" and "corporate gig" and switch between
+// them. Stored in persisted state rather than in code, so saving one needs no
+// rebuild — and like a slide template, loading one stamps out fresh copies:
+// editing the board afterwards never writes back to the board it came from.
+//
+// A board is the whole set of tabs, not one tab, because that's the unit people
+// mean by "my setup".
+export interface SavedBoard {
+  id: string
+  name: string
+  banks: SoundBank[]
+}
+
+export function normSavedBoards(v: unknown): SavedBoard[] {
+  if (!Array.isArray(v)) return []
+  const out: SavedBoard[] = []
+  for (const b of v) {
+    if (!b || typeof b !== 'object') continue
+    const r = b as Record<string, unknown>
+    if (typeof r.id !== 'string' || typeof r.name !== 'string') continue
+    // Banks go through the same normalizer as the live board, so a hand-edited
+    // or older file can't put a shape in a preset that the board itself rejects.
+    out.push({ id: r.id, name: r.name, banks: normSoundBanks(r.banks) })
   }
   return out
 }
@@ -504,6 +541,14 @@ export interface AppState {
   /** The soundboard's tabs of pads. Persisted; per-machine, since pads point at
    *  absolute file paths. See SoundBank. */
   soundBanks: SoundBank[]
+  /** Named soundboard presets the operator can load and re-save. Persisted, and
+   *  empty on first run — unlike slide templates there's nothing worth seeding,
+   *  since a useful board depends on this machine's library. See SavedBoard. */
+  savedBoards: SavedBoard[]
+  /** Which saved board the soundboard was last loaded from, or null if it was
+   *  built by hand or from a code built-in. Lets the picker say "you're on X"
+   *  and offer Update once the board has diverged. Persisted. */
+  activeBoard: string | null
   /** Which tag each automatic music moment draws from. See SoundSlots. */
   soundSlots: SoundSlots
   /** Non-null while presenting a deck as a cue stack (Show/Games). Transient. */
@@ -621,6 +666,8 @@ export function createInitialState(): AppState {
     activeTemplate: { show: null, games: null },
     savedSlideshows: [],
     soundBanks: [],
+    savedBoards: [],
+    activeBoard: null,
     soundSlots: { runOut: null, runIn: null, captain: null, drumroll: null },
     presentation: null,
     revealPhase: 'idle',

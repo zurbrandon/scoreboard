@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync } 
 import { Readable } from 'node:stream'
 
 import { reduce } from '../src/core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
+import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type {
   BumperTrackInfo,
@@ -102,6 +102,8 @@ function loadState(): AppState {
         savedTemplates: normSavedTemplates(parsed.savedTemplates),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         soundBanks: normSoundBanks(parsed.soundBanks),
+        savedBoards: normSavedBoards(parsed.savedBoards),
+        activeBoard: typeof parsed.activeBoard === 'string' ? parsed.activeBoard : null,
         soundSlots: normSoundSlots(parsed.soundSlots),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
@@ -539,6 +541,48 @@ function registerIpc() {
   ipcMain.on('showboard:requestTracks', () => pushTracks())
 
   ipcMain.on('showboard:openSoundWindow', () => createSoundWindow())
+
+  // Boards to and from disk. Main is a courier here — it moves text and never
+  // parses it, so what a board file *is* stays defined in one place, in the
+  // renderer (src/sound/boards.ts).
+  //
+  // The dialog hangs off whichever window asked, not the operator: these are
+  // driven from the soundboard window, and a sheet attached to a window behind
+  // it reads as the app having frozen.
+  ipcMain.handle('showboard:exportBoardFile', async (event, suggestedName: string, contents: string) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return false
+    const result = await dialog.showSaveDialog(win, {
+      title: 'Export soundboard',
+      defaultPath: suggestedName,
+      filters: [{ name: 'Showboard soundboard', extensions: ['json'] }],
+    })
+    if (result.canceled || !result.filePath) return false
+    try {
+      writeFileSync(result.filePath, contents, 'utf-8')
+      return true
+    } catch (err) {
+      console.warn('[main] could not write board file:', err)
+      return false
+    }
+  })
+
+  ipcMain.handle('showboard:importBoardFile', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Import soundboard',
+      properties: ['openFile'],
+      filters: [{ name: 'Showboard soundboard', extensions: ['json'] }],
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    try {
+      return readFileSync(result.filePaths[0], 'utf-8')
+    } catch (err) {
+      console.warn('[main] could not read board file:', err)
+      return null
+    }
+  })
 
   // Straight through to the soundboard window and nowhere else — this is the
   // one message that fires continuously, so it must not reach the projector.

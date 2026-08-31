@@ -23,6 +23,8 @@ import { SearchResults } from './SearchResults'
 import { moveIndex, searchItems, type SearchItem } from './search'
 import { LibraryManager } from './LibraryManager'
 import { makePads, makeTagPad } from './pads'
+import { BoardPicker } from './BoardPicker'
+import { isTypingTarget } from '../shared/typingTarget'
 
 export function SoundApp() {
   const { tracks, tags, folder } = useSoundLibrary()
@@ -80,17 +82,38 @@ export function SoundApp() {
     if (e.key === 'Escape') closeSearch()
   }
 
-  // Escape closes the panel from anywhere, not just from the field. Clicking a
-  // result's + moves focus onto that button, and Escape has to keep working
-  // there or the way out of search depends on where you last clicked.
+  function openSearch() {
+    setSearchOpen(true)
+    searchRef.current?.focus()
+  }
+
+  // Both board shortcuts have to work from anywhere in the window rather than
+  // from the field, because clicking a result's + moves focus onto that button —
+  // and if the way out of search depended on where you last clicked, it wouldn't
+  // be a way out.
+  //
+  // "/" is the way in: hands are on the keyboard, the song you want isn't on a
+  // pad, and reaching for the mouse to click the field costs a beat you don't
+  // have mid-show. It's also an ordinary character, so it only counts as a
+  // shortcut when the keystroke isn't already headed into a text field — which
+  // is also why the toggle-closed half only fires when focus has moved off the
+  // field. With the caret in the search box, "/" is just a slash.
   useEffect(() => {
-    if (!searchOpen) return
+    if (managing) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeSearch()
+      if (e.key === 'Escape') {
+        if (searchOpen) closeSearch()
+        return
+      }
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTypingTarget(e.target)) return
+      e.preventDefault()
+      if (searchOpen) closeSearch()
+      else openSearch()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [searchOpen])
+  }, [managing, searchOpen])
 
   // The transport is pinned to the bottom and lives outside the mode switch, so
   // it's in the same place whichever surface you're on — including while
@@ -127,6 +150,7 @@ export function SoundApp() {
           }}
           onKeyDown={onSearchKey}
         />
+        <BoardPicker tracks={tracks} tags={tags} />
         <button className="pill" onClick={() => setManaging(true)}>
           Library
         </button>

@@ -116,6 +116,14 @@ export interface ShowboardBridge {
   reportSoundProgress(progress: SoundProgress): void
   /** Main → soundboard window: the reported progress, forwarded there alone. */
   onSoundProgress(callback: (progress: SoundProgress) => void): () => void
+
+  // Boards on disk. The renderer hands over text and gets text back; main never
+  // looks inside, so the file's shape stays defined in one place (boards.ts).
+  /** Write a board to a file the operator picks. Resolves true if they saved. */
+  exportBoardFile(suggestedName: string, contents: string): Promise<boolean>
+  /** Read a board file the operator picks. Resolves the raw text, or null if
+   *  they cancelled or it couldn't be read. */
+  importBoardFile(): Promise<string | null>
 }
 
 declare global {

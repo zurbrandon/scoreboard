@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows, normSoundBanks } from './state'
+import { describe, expect, it, vi } from 'vitest'
+import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows, normSavedBoards, normSoundBanks } from './state'
 import type { AppState, LogoSlide, ShowSlide, Slide, SoundPad, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
@@ -927,10 +927,25 @@ describe('scoreScale', () => {
 
 describe('robustness', () => {
   it('ignores an unrecognized command instead of returning undefined', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const before = createInitialState()
     // Simulates a newer renderer sending a command an older reducer never saw.
     const after = reduce(before, { type: 'something.unknown' } as unknown as Command)
     expect(after).toBe(before) // unchanged, never undefined
+    // ...but not in silence: a stale main bundle otherwise shows up only as a
+    // button that does nothing.
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn.mock.calls[0][0]).toContain('something.unknown')
+    warn.mockRestore()
+  })
+
+  it('warns once per command type, not once per dispatch', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const before = createInitialState()
+    // A dead button gets clicked more than once; the log shouldn't fill up.
+    for (let i = 0; i < 3; i++) reduce(before, { type: 'another.unknown' } as unknown as Command)
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockRestore()
   })
 })
 
@@ -1032,6 +1047,26 @@ describe('soundboard banks', () => {
     })
   })
 
+  it('switches a tag pad between one-and-done and house music', () => {
+    const tagPad = { id: 'p1', kind: 'tag', tag: 'run-in', mode: 'random', label: 'Run-in' } satisfies SoundPad
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [tagPad] },
+      { type: 'soundPad.setMode', bankId: 'b1', padId: 'p1', mode: 'continuous' },
+    )
+    expect(s.soundBanks[0].pads[0]).toEqual({ ...tagPad, mode: 'continuous' })
+  })
+
+  it('leaves a track pad alone when asked to set a mode it cannot have', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'b1', name: 'one' },
+      { type: 'soundPad.add', bankId: 'b1', pads: [pad('p1')] },
+      { type: 'soundPad.setMode', bankId: 'b1', padId: 'p1', mode: 'continuous' },
+    )
+    // A stray mode field would make the pad fail its own kind check on reload.
+    expect(s.soundBanks[0].pads[0]).toEqual(pad('p1'))
+  })
+
   it('reorders pads, keeping any the caller did not mention', () => {
     const s = run(
       { type: 'soundBank.add', id: 'b1', name: 'one' },
@@ -1049,6 +1084,93 @@ describe('soundboard banks', () => {
       { type: 'soundPad.remove', bankId: 'b1', padId: 'nope' },
     )
     expect(s.soundBanks[0].pads).toEqual([])
+  })
+})
+
+describe('saved soundboards', () => {
+  const pad = (id: string) => ({ id, kind: 'track', trackId: `/m/${id}.mp3`, label: id }) satisfies SoundPad
+  const banks = [{ id: 'b1', name: 'Act One', pads: [pad('p1')] }]
+
+  it('saves the board and marks it the one you are on', () => {
+    const s = run({ type: 'soundBoard.saveNew', id: 'sb1', name: 'Tuesday', banks })
+    expect(s.savedBoards).toEqual([{ id: 'sb1', name: 'Tuesday', banks }])
+    expect(s.activeBoard).toBe('sb1')
+  })
+
+  it('loads a board over the top of whatever was there', () => {
+    const s = run(
+      { type: 'soundBank.add', id: 'old', name: 'Old' },
+      { type: 'soundBoard.load', banks, activeId: 'sb1' },
+    )
+    // Replaced wholesale — never the old tabs plus the new ones.
+    expect(s.soundBanks).toEqual(banks)
+    expect(s.activeBoard).toBe('sb1')
+  })
+
+  it('editing the board after loading never writes back to the preset', () => {
+    const s = run(
+      { type: 'soundBoard.saveNew', id: 'sb1', name: 'Tuesday', banks },
+      { type: 'soundBoard.load', banks, activeId: 'sb1' },
+      { type: 'soundPad.remove', bankId: 'b1', padId: 'p1' },
+    )
+    expect(s.soundBanks[0].pads).toEqual([])
+    expect(s.savedBoards[0].banks[0].pads).toEqual([pad('p1')]) // preset untouched
+  })
+
+  it('updates and renames a saved board', () => {
+    const s = run(
+      { type: 'soundBoard.saveNew', id: 'sb1', name: 'Tuesday', banks },
+      { type: 'soundBoard.rename', id: 'sb1', name: 'Corporate' },
+      { type: 'soundBoard.update', id: 'sb1', banks: [] },
+    )
+    expect(s.savedBoards[0]).toEqual({ id: 'sb1', name: 'Corporate', banks: [] })
+  })
+
+  it('deleting the board you are on keeps your pads and only drops the marker', () => {
+    const s = run(
+      { type: 'soundBoard.saveNew', id: 'sb1', name: 'Tuesday', banks },
+      { type: 'soundBoard.load', banks, activeId: 'sb1' },
+      { type: 'soundBoard.remove', id: 'sb1' },
+    )
+    expect(s.savedBoards).toEqual([])
+    expect(s.activeBoard).toBeNull()
+    expect(s.soundBanks).toEqual(banks) // the pads on screen are yours now
+  })
+
+  it('deleting a different board leaves the marker alone', () => {
+    const s = run(
+      { type: 'soundBoard.saveNew', id: 'sb1', name: 'One', banks },
+      { type: 'soundBoard.saveNew', id: 'sb2', name: 'Two', banks },
+      { type: 'soundBoard.setActive', id: 'sb1' },
+      { type: 'soundBoard.remove', id: 'sb2' },
+    )
+    expect(s.activeBoard).toBe('sb1')
+  })
+})
+
+describe('normSavedBoards', () => {
+  it('drops junk and runs banks through the same check as the live board', () => {
+    const boards = normSavedBoards([
+      { id: 'ok', name: 'Good', banks: [{ id: 'b1', name: 'A', pads: [{ id: 'p1', trackId: '/m/a.mp3', label: 'A' }] }] },
+      { id: 'no-name' },
+      'nonsense',
+      { id: 'empty', name: 'Empty', banks: 'not an array' },
+    ])
+    expect(boards.map((b) => b.id)).toEqual(['ok', 'empty'])
+    // A pad with no `kind` predates tag pads and is a song pad.
+    expect(boards[0].banks[0].pads[0]).toEqual({ id: 'p1', kind: 'track', trackId: '/m/a.mp3', label: 'A' })
+    expect(boards[1].banks).toEqual([])
+  })
+
+  it('keeps trackName when it is there and omits it when it is not', () => {
+    const withName = normSoundBanks([
+      { id: 'b1', name: 'A', pads: [{ id: 'p1', kind: 'track', trackId: '/m/a.mp3', trackName: 'a', label: 'A' }] },
+    ])
+    expect(withName[0].pads[0]).toEqual({ id: 'p1', kind: 'track', trackId: '/m/a.mp3', trackName: 'a', label: 'A' })
+    const without = normSoundBanks([
+      { id: 'b1', name: 'A', pads: [{ id: 'p1', kind: 'track', trackId: '/m/a.mp3', label: 'A' }] },
+    ])
+    expect(without[0].pads[0]).not.toHaveProperty('trackName')
   })
 })
 
