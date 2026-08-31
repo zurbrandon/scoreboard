@@ -31,7 +31,33 @@
 /* A size container so scene lengths (cqw/cqh) resolve against the stage. On the
    real projector the stage fills the window, so cqw/cqh == vw/vh (no change);
    inside a small operator thumbnail the same scenes scale down faithfully. */
-.projector { height: 100%; background: #000; container: stage / size; }
+/* ---------------------------------------------------------------------------
+   THE AUDIENCE PALETTE. Pinned here on purpose.
+
+   The fence in this file's header covers RULES, but colors arrived through the
+   shared :root tokens in styles.css — so a palette pass on the operator was
+   silently repainting the ribbons, the Yay/Boo word, the team washes and the
+   finale. Ten rules in this file read these.
+
+   These values are the show's colors as tuned against a real projector. They
+   shadow the control surfaces' tokens for everything inside .projector, which
+   includes the operator's preview thumbnails — those should look like the
+   projector, not like the operator.
+
+   Change these only when the intent is to change what the AUDIENCE sees.
+   ------------------------------------------------------------------------- */
+.projector {
+  --blue: #2f6bff;
+  --blue-dim: #1b3a86;
+  --red: #e23b3b;
+  --red-dim: #7d2020;
+  --accent: #ffd23f;
+  --muted: #8b93a7;
+
+  height: 100%;
+  background: #000;
+  container: stage / size;
+}
 .scene-black { height: 100%; background: #000; }
 
 /* Reaction control slide (Yay Boo): neutral wordmark, then a full-color flash. */

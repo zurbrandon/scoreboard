@@ -5,7 +5,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, Reorder, useDragControls } from 'motion/react'
-import { MdScoreboard, MdViewCarousel, MdSportsEsports } from 'react-icons/md'
+import { MdScoreboard, MdViewCarousel, MdSportsEsports, MdAutoAwesome, MdClose } from 'react-icons/md'
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
@@ -693,7 +693,7 @@ function EffectsFab() {
               exit={{ rotate: 135, scale: 0.3, opacity: 0 }}
               transition={{ duration: 0.2, ease: [0.2, 1.2, 0.4, 1] }}
             >
-              {open ? '✕' : '✨'}
+              {open ? <MdClose /> : <MdAutoAwesome />}
             </motion.span>
           </AnimatePresence>
         </button>

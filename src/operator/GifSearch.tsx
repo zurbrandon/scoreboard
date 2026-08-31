@@ -4,6 +4,7 @@
 // showing. Stays open so you can swap GIFs; click-away closes.
 
 import { useEffect, useRef, useState } from 'react'
+import { MdClose, MdGifBox } from 'react-icons/md'
 import { AnimatePresence, motion } from 'motion/react'
 import { useAppState, useDispatch } from '../store/react'
 import { giphyReady, searchGifs, type Gif } from '../services/giphy'
@@ -110,7 +111,7 @@ export function GifSearch() {
             exit={{ rotate: 135, scale: 0.3, opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.2, 1.2, 0.4, 1] }}
           >
-            {open ? '✕' : '🖼️'}
+            {open ? <MdClose /> : <MdGifBox />}
           </motion.span>
         </AnimatePresence>
       </button>
