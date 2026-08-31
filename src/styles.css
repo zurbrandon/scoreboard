@@ -57,7 +57,8 @@
          to reuse rather than to add a seventh. ---------------------------- */
   --t-hero: 34px;             /* the +1 buttons: the one control that must never be missed */
   --t-action: 22px;           /* Show score, −1, and live values you read at a glance */
-  --t-glyph: var(--fs-xl);    /* a lone + or − : sizing an icon, not type */
+  --t-glyph: var(--fs-xl);    /* a lone character — a + or −, a slide number —
+                                 sized for recognition rather than reading */
   --t-control: var(--fs-md);  /* every button label */
   --t-body: var(--fs-sm);     /* prose, hints, readouts */
   --t-label: var(--fs-tiny);  /* uppercase captions, always 700 + 0.08em */
@@ -670,7 +671,7 @@ button { font-family: inherit; cursor: pointer; }
 /* Selected: the rail's border goes accent to match the card's, so the whole
    fused unit highlights as one. */
 .slide-row__grip--active { border-color: var(--accent); }
-.slide-row__num { font-size: var(--fs-2xl); font-weight: 900; line-height: 1; color: var(--text); }
+.slide-row__num { font-size: var(--t-glyph); font-weight: 800; line-height: 1; color: var(--text); }
 .slide-row__dots { font-size: var(--fs-sm); opacity: 0.6; }
 .text-card {
   position: relative;
@@ -742,8 +743,8 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px dashed var(--line-strong);
   border-radius: var(--r-lg);
   color: var(--muted);
-  font-size: var(--fs-md);
-  font-weight: 600;
+  font-size: var(--t-control);
+  font-weight: 700;
   padding: 10px;
 }
 .add-card:hover { border-color: var(--accent); color: var(--text); }
@@ -762,8 +763,8 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px dashed #3a4560;
   background: var(--panel);
   color: var(--text);
-  font-size: var(--fs-md);
-  font-weight: 600;
+  font-size: var(--t-control);
+  font-weight: 700;
   cursor: pointer;
   text-align: left;
 }
