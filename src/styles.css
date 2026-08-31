@@ -50,6 +50,18 @@
   --fs-xl: 18px;
   --fs-2xl: 20px;
 
+  /* --- Type ROLES. The scale above is the primitive ramp; these name what a
+         size is FOR, which is what keeps a screen from drifting to eleven
+         sizes. A control surface read under pressure wants few, decisive
+         steps — if a new thing doesn't fit one of these six, that's a signal
+         to reuse rather than to add a seventh. ---------------------------- */
+  --t-hero: 34px;             /* the +1 buttons: the one control that must never be missed */
+  --t-action: 22px;           /* Show score, −1, and live values you read at a glance */
+  --t-glyph: var(--fs-xl);    /* a lone + or − : sizing an icon, not type */
+  --t-control: var(--fs-md);  /* every button label */
+  --t-body: var(--fs-sm);     /* prose, hints, readouts */
+  --t-label: var(--fs-tiny);  /* uppercase captions, always 700 + 0.08em */
+
   /* --- Radius scale ------------------------------------------------------- */
   --r-sm: 6px;
   --r-md: 8px;       /* the default card/button radius */
@@ -101,7 +113,11 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   justify-content: space-between;
 }
-.operator__header h1 { font-size: var(--fs-xl); margin: 0; color: var(--muted); font-weight: 600; }
+/* The wordmark is app identity, not a control, so it reads off the primitive
+   scale rather than one of the --t-* roles. Weight tracks the roles' 700 —
+   there is no perceptible 600/700 difference in muted grey at this size, and
+   one fewer weight in the system is worth more than the distinction. */
+.operator__header h1 { font-size: var(--fs-xl); margin: 0; color: var(--muted); font-weight: 700; }
 .operator__header-right { display: flex; gap: 10px; }
 
 .pill {
@@ -176,21 +192,21 @@ button { font-family: inherit; cursor: pointer; }
 }
 .pot--armed { border-style: solid; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
 .pot__main { display: flex; align-items: center; gap: 12px; }
-.pot__cap { font-size: var(--fs-sm); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.pot__cap { font-size: var(--t-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .pot--armed .pot__cap { color: var(--accent); }
 .pot__stepper { display: flex; align-items: center; gap: 8px; }
 .pot__step {
   width: 32px; height: 32px; border-radius: 9px; cursor: pointer;
   border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
-  font-size: var(--fs-xl); font-weight: 800; line-height: 1;
+  font-size: var(--t-glyph); font-weight: 800; line-height: 1;
 }
 .pot__step:hover { border-color: var(--accent); }
-.pot__value { font-size: 24px; font-weight: 900; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.pot__value { font-size: var(--t-action); font-weight: 800; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
 .pot__quick { display: flex; gap: 6px; }
 .pot__chip {
   padding: 6px 10px; border-radius: var(--r-md); cursor: pointer; font-family: inherit;
   border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
-  font-size: var(--fs-base); font-weight: 800;
+  font-size: var(--t-control); font-weight: 800;
 }
 .pot__chip:hover { border-color: var(--accent); }
 .pot__clear {
@@ -273,7 +289,7 @@ button { font-family: inherit; cursor: pointer; }
   justify-content: center;
   gap: 3px;
 }
-.team-control__cap { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.team-control__cap { font-size: var(--t-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .team-control__pendinginput {
   width: 100%;
   background: var(--panel-2);
@@ -293,8 +309,8 @@ button { font-family: inherit; cursor: pointer; }
 .team-control__buttons { display: flex; flex-direction: column; gap: 6px; }
 .team-btn { width: 100%; border: none; border-radius: var(--r-lg); color: #fff; font-weight: 800; line-height: 1; }
 .team-btn:active { transform: translateY(1px); }
-.team-btn--inc { font-size: 34px; padding: 20px 0; }
-.team-btn--dec { font-size: 22px; padding: 11px 0; background: #333a4d; }
+.team-btn--inc { font-size: var(--t-hero); padding: 20px 0; }
+.team-btn--dec { font-size: var(--t-action); padding: 11px 0; background: #333a4d; }
 .team-control--blue .team-btn--inc { background: var(--blue); }
 .team-control--red .team-btn--inc { background: var(--red); }
 /* Big-step mode (modifier held): ring the buttons so it's obvious a click = 10. */
@@ -303,7 +319,7 @@ button { font-family: inherit; cursor: pointer; }
 /* small buttons (audience) */
 .btn { border: none; border-radius: var(--r-lg); color: #fff; font-weight: 800; line-height: 1; background: var(--panel-2); }
 .btn:active { transform: translateY(1px); }
-.btn--sm { font-size: var(--fs-2xl); padding: 6px 14px; }
+.btn--sm { font-size: var(--t-glyph); padding: 6px 14px; }
 
 .operator__center {
   display: flex;
@@ -402,7 +418,7 @@ button { font-family: inherit; cursor: pointer; }
 .operator__extras { display: flex; gap: 24px; flex-wrap: wrap; }
 .extra { display: flex; align-items: center; gap: 10px; background: var(--panel); border-radius: var(--r-xl); padding: 10px 16px; }
 .extra__label { color: var(--muted); font-size: var(--fs-md); }
-.extra__value { font-size: 22px; min-width: 32px; text-align: center; }
+.extra__value { font-size: var(--t-action); font-weight: 800; min-width: 32px; text-align: center; }
 .extra__checkbox { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-base); }
 
 /* audience row: editable label + score controls + show/hide switch */
@@ -440,7 +456,7 @@ button { font-family: inherit; cursor: pointer; }
 .section-head {
   margin: 6px 0 -2px;
   color: var(--muted);
-  font-size: var(--fs-sm);
+  font-size: var(--t-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -914,8 +930,8 @@ button { font-family: inherit; cursor: pointer; }
   border: none;
   border-radius: 7px;
   color: var(--muted);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  font-size: var(--t-body);
+  font-weight: 700;
   padding: 7px 6px;
   white-space: nowrap;
 }
@@ -948,8 +964,8 @@ button { font-family: inherit; cursor: pointer; }
   border: none;
   border-radius: var(--r-sm);
   color: var(--muted);
-  font-size: var(--fs-base);
-  font-weight: 600;
+  font-size: var(--t-control);
+  font-weight: 700;
   padding: 8px 6px;
 }
 .phase-seg:hover { color: var(--text); }
@@ -1206,8 +1222,8 @@ button { font-family: inherit; cursor: pointer; }
   background: radial-gradient(120% 120% at 50% 35%, #0c1017, #000);
   color: var(--muted);
   font-weight: 700;
-  font-size: var(--fs-sm);
-  letter-spacing: 0.12em;
+  font-size: var(--t-label);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .deck-black.is-active { color: #fff; box-shadow: 0 0 22px rgba(255, 255, 255, 0.22), inset 0 0 0 2px rgba(255, 255, 255, 0.5); }
@@ -1215,7 +1231,7 @@ button { font-family: inherit; cursor: pointer; }
    sees what "blank" will actually show. */
 .deck-black--logo { flex-direction: column; gap: 4px; padding: 8px 10px; }
 .deck-black__logo { max-width: 100%; max-height: 40px; object-fit: contain; }
-.deck-black__label { font-size: var(--fs-micro); letter-spacing: 0.1em; }
+.deck-black__label { font-size: var(--t-label); letter-spacing: 0.08em; }
 /* Same anchor slot, but it's Stop while presenting: keep the black-screen look,
    tint the label red so it reads as the exit. */
 .deck-black--stop { color: var(--red); border-color: #52272b; }
@@ -1228,7 +1244,7 @@ button { font-family: inherit; cursor: pointer; }
   background: linear-gradient(#ffe27a, var(--accent-deep));
   color: #221a00;
   font-weight: 800;
-  font-size: 22px;
+  font-size: var(--t-action);
   box-shadow: 0 10px 28px -12px rgba(255, 210, 63, 0.6);
 }
 .deck-primary:active { transform: scale(0.99); }
@@ -1241,7 +1257,7 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--panel-2);
   color: var(--muted);
   font-weight: 700;
-  font-size: var(--fs-md);
+  font-size: var(--t-control);
 }
 .deck-mini:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
 .deck-mini:disabled { opacity: 0.4; cursor: default; }
@@ -1289,7 +1305,7 @@ button { font-family: inherit; cursor: pointer; }
   border: none; /* the container + dividers draw the lines */
   background: var(--panel);
   color: var(--text);
-  font-size: var(--fs-base);
+  font-size: var(--t-control);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -1297,8 +1313,10 @@ button { font-family: inherit; cursor: pointer; }
 .split__seg + .split__seg { border-left: 1px solid var(--line); } /* the dividers */
 .split__seg > span { font-size: var(--fs-lg); line-height: 1; }
 /* The captain labels are all-caps (CAP / CAPS), which reads chunkier than the
-   mixed-case Out/In at the same size — nudge them down so they match visually. */
-.split--cap .split__seg { font-size: var(--fs-tiny); letter-spacing: 0.04em; }
+   mixed-case Out/In at the same size — nudge them down so they match visually.
+   A deliberate optical step, not a stray size: it tracks one notch under
+   --t-control, so it stays correct if the control size ever moves. */
+.split--cap .split__seg { font-size: calc(var(--t-control) - 2px); letter-spacing: 0.04em; }
 .split__seg:active { filter: brightness(0.92); }
 /* Per-segment hover tint (and a resting color hint for the team captains, so the
    blue / red / both read at a glance without hovering). */
@@ -1435,9 +1453,9 @@ button { font-family: inherit; cursor: pointer; }
    the armed Reveal button — so a mismatch reads at a glance. */
 .deck__onair { display: flex; align-items: baseline; justify-content: center; gap: 7px; font-size: var(--fs-sm); letter-spacing: 0.04em; max-width: 460px; }
 .deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); align-self: center; flex: none; }
-.deck__onair-lead { color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.deck__onair-lead { color: var(--muted); font-size: var(--t-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .deck__onair-sep { color: #3a4258; }
-.deck__onair-item { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck__onair-item { color: var(--text); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deck__onair--drift .deck__onair-dot { background: var(--accent); box-shadow: 0 0 8px rgba(255, 210, 63, 0.6); }
 .deck__onair--drift .deck__onair-item { color: var(--accent); }
 /* Overlay-effect buttons — a little strip below the reveal deck for fun. */
@@ -1587,7 +1605,7 @@ button { font-family: inherit; cursor: pointer; }
   border-bottom: 1px solid #232a3c;
   background: var(--panel);
 }
-.sound__topbar h1 { font-size: var(--fs-xl); margin: 0; color: var(--muted); font-weight: 600; }
+.sound__topbar h1 { font-size: var(--fs-xl); margin: 0; color: var(--muted); font-weight: 700; } /* see .operator__header h1 */
 .sound__folder { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sound__status { color: var(--muted); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sound__body { flex: 1; overflow-y: auto; padding: 14px 18px; }
