@@ -96,12 +96,17 @@ export type SearchItem =
 export function searchItems(
   tracks: readonly SoundTrackInfo[],
   query: string,
+  pinnedTags: readonly string[] = [],
   tagLimit = 8,
 ): SearchItem[] {
-  if (query.trim().length === 0) {
+  // Nothing asked for yet: offer the tags as a way in. Once anything narrows the
+  // library — typed or pinned — the answer is songs, because that's what you
+  // came for. Tags and songs are therefore never mixed in one list, which is
+  // what lets the search surface draw both as the same kind of button.
+  if (query.trim().length === 0 && pinnedTags.length === 0) {
     return topTags(tracks, tagLimit).map(({ tag, count }) => ({ kind: 'tag', tag, count }))
   }
-  return filterTracks(tracks, query).map((track) => ({ kind: 'track', track }))
+  return filterTracks(tracks, query, pinnedTags).map((track) => ({ kind: 'track', track }))
 }
 
 /** Move a highlight by `delta`, wrapping at both ends so holding Down cycles

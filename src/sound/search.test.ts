@@ -106,6 +106,27 @@ describe('suggestTags', () => {
   })
 })
 
+describe('searchItems with pinned tags', () => {
+  it('offers tags only while nothing has narrowed the library', () => {
+    expect(searchItems(LIBRARY, '').every((i) => i.kind === 'tag')).toBe(true)
+  })
+
+  it('switches to songs as soon as a tag is pinned, with no query typed', () => {
+    const items = searchItems(LIBRARY, '', ['rap'])
+    expect(items.every((i) => i.kind === 'track')).toBe(true)
+    expect(items).toHaveLength(2)
+  })
+
+  it('ANDs a pinned tag with what is typed', () => {
+    const items = searchItems(LIBRARY, 'slow', ['rap'])
+    expect(items.map((i) => (i.kind === 'track' ? i.track.name : i.tag))).toEqual(['Slow Jam'])
+  })
+
+  it('ANDs pinned tags with each other, so pinning drills in', () => {
+    expect(searchItems(LIBRARY, '', ['rap', 'high energy'])).toHaveLength(1)
+  })
+})
+
 describe('topTags', () => {
   it('ranks by how many songs carry the tag', () => {
     expect(topTags(LIBRARY).map((t) => t.tag)).toEqual([

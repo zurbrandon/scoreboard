@@ -2,9 +2,12 @@
 //
 //   • The board — pads, always there, owning the space. This is what a show
 //     touches, and ninety percent of the time the song you want is already on it.
-//   • Search — a drop-down over the board for the other ten percent: the one
-//     specific song you need right now. Click a result and it plays; + puts it on
-//     a bank for later.
+//   • Search — one of the tabs, for the other ten percent: the one specific
+//     song you need right now. Results are pads too, so the window has one
+//     interaction model instead of a list sitting on top of a grid. Tap a song
+//     and it plays; drag it onto a bank's tab to keep it. Search used to be a
+//     hero field above the board, which gave the most prominent real estate in
+//     the window to the thing you need least often.
 //
 // Tagging lives behind the Library button, in its own full-window mode, because
 // it's an hour of work you do once and never during a show.
@@ -19,10 +22,9 @@ import { useAppState, useDispatch } from '../store/react'
 import { useSoundLibrary } from './useSoundLibrary'
 import { BankPanel } from './BankPanel'
 import { NowPlaying } from './NowPlaying'
-import { SearchResults } from './SearchResults'
+import { SearchGrid } from './SearchGrid'
 import { moveIndex, searchItems, type SearchItem } from './search'
 import { LibraryManager } from './LibraryManager'
-import { makePads, makeTagPad } from './pads'
 import { BoardPicker } from './BoardPicker'
 import { isTypingTarget } from '../shared/typingTarget'
 
@@ -34,6 +36,10 @@ export function SoundApp() {
   const [managing, setManaging] = useState(false)
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  // Tapping a tag PINS it rather than overwriting the query, so tags AND
+  // together and tapping two of them drills in. filterTracks already worked
+  // this way for the Library; search just never used it.
+  const [pinned, setPinned] = useState<string[]>([])
   // Which bank the + on a search result drops onto. Lifted out of the board so
   // search can target it; falls back to the first bank so a deleted one can't
   // leave the panel pointing at nothing.
@@ -43,21 +49,25 @@ export function SoundApp() {
   const [activeIndex, setActiveIndex] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const items = useMemo(() => searchItems(tracks, query), [tracks, query])
+  const items = useMemo(() => searchItems(tracks, query, pinned), [tracks, query, pinned])
 
   const activeBank = banks.find((b) => b.id === activeBankId) ?? banks[0] ?? null
 
   function closeSearch() {
     setSearchOpen(false)
     setQuery('')
+    setPinned([])
     setActiveIndex(0)
     searchRef.current?.blur()
   }
 
-  // A tag narrows the search to that tag; a song plays and gets out of the way.
+  // A tag narrows; a song plays and gets out of the way. Firing a song closes
+  // search and puts you back on the board you came from — as a tab, search would
+  // otherwise cost two extra taps on the commonest case, which is the one thing
+  // the old drop-down did better by auto-closing.
   function activate(item: SearchItem) {
     if (item.kind === 'tag') {
-      setQuery(item.tag)
+      setPinned((p) => (p.includes(item.tag) ? p : [...p, item.tag]))
       setActiveIndex(0)
       searchRef.current?.focus()
       return
@@ -80,6 +90,11 @@ export function SoundApp() {
       return
     }
     if (e.key === 'Escape') closeSearch()
+    if (e.key === 'Backspace' && query === '' && pinned.length > 0) {
+      // An empty field and a Backspace means "undo the last narrowing", the way
+      // any chip field behaves.
+      setPinned((p) => p.slice(0, -1))
+    }
   }
 
   function openSearch() {
@@ -137,19 +152,6 @@ export function SoundApp() {
     <div className="sound">
       <header className="sound__topbar">
         <h1>Sound</h1>
-        <input
-          ref={searchRef}
-          className="sound__search sound__search--hero"
-          value={query}
-          placeholder="Search for a song…"
-          onFocus={() => setSearchOpen(true)}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setSearchOpen(true)
-            setActiveIndex(0) // new results, start from the top
-          }}
-          onKeyDown={onSearchKey}
-        />
         <BoardPicker tracks={tracks} tags={tags} />
         <button className="pill" onClick={() => setManaging(true)}>
           Library
@@ -162,32 +164,38 @@ export function SoundApp() {
           tracks={tracks}
           activeBankId={activeBank?.id ?? null}
           onSelectBank={setActiveBankId}
-        />
-
-        {searchOpen && (
-          <>
-            {/* Clicking anywhere off the panel closes it, so getting back to the
-                pads is never a hunt for a close button. */}
-            <div className="results__scrim" onClick={closeSearch} />
-            <SearchResults
+          searchActive={searchOpen}
+          onOpenSearch={openSearch}
+          onCloseSearch={closeSearch}
+          searchField={
+            <input
+              ref={searchRef}
+              className="banks__search"
+              value={query}
+              placeholder="Search for a song…"
+              autoFocus
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setActiveIndex(0) // new results, start from the top
+              }}
+              onKeyDown={onSearchKey}
+            />
+          }
+          searchGrid={
+            <SearchGrid
               items={items}
               query={query}
+              pinned={pinned}
               activeIndex={activeIndex}
-              activeBank={activeBank}
               onActivate={activate}
               onHover={setActiveIndex}
-              onAddTagPad={(tag, mode) => {
-                if (!activeBank) return
-                dispatch({ type: 'soundPad.add', bankId: activeBank.id, pads: [makeTagPad(tag, mode)] })
-              }}
-              onAddToBank={(trackId) => {
-                const track = tracks.find((t) => t.id === trackId)
-                if (!activeBank || !track) return
-                dispatch({ type: 'soundPad.add', bankId: activeBank.id, pads: makePads([track]) })
-              }}
+              onUnpin={(tag) => setPinned((p) => p.filter((t) => t !== tag))}
             />
-          </>
-        )}
+          }
+          // What a drop produces is decided (and tested) in drops.ts; this just
+          // puts it on the bank that was dropped on.
+          onAddPadsToBank={(bankId, pads) => dispatch({ type: 'soundPad.add', bankId, pads })}
+        />
       </div>
 
       <NowPlaying />

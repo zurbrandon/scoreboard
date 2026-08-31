@@ -4,19 +4,18 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from '../store/react'
-import type { SoundBank } from '../core/state'
+import type { SoundBank, SoundPad } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
-import { MdLocalOffer, MdTune } from 'react-icons/md'
+import { MdLocalOffer, MdSearch, MdTune } from 'react-icons/md'
 import { newId } from '../shared/ids'
 import { makePads, tracksByIds } from './pads'
+import { PAD_DRAG_TYPE, DRAG_TYPE, readDrop } from './drops'
 import { PadEditor } from './PadEditor'
 
-/** Payload for a drag out of the library list. */
-export const DRAG_TYPE = 'application/x-showboard-tracks'
-/** Payload for dragging a pad within its bank. A distinct type so the grid can
- *  tell "reorder what's here" from "add something new" during dragover, where
- *  the data itself can't be read yet — only its types. */
-const PAD_DRAG_TYPE = 'application/x-showboard-pad'
+// The drag types and what a drop MEANS live in drops.ts, next to each other and
+// under test — this window can't dispatch in the browser dev build, so that
+// decision is otherwise only observable by running Electron.
+export { DRAG_TYPE, TAG_DRAG_TYPE } from './drops'
 /** How long a pad takes to turn over. Kept in step with .pad-flip's transition. */
 const PAD_FLIP_MS = 420
 
@@ -25,11 +24,26 @@ export function BankPanel({
   tracks,
   activeBankId,
   onSelectBank,
+  searchActive,
+  onOpenSearch,
+  onCloseSearch,
+  searchField,
+  searchGrid,
+  onAddPadsToBank,
 }: {
   banks: SoundBank[]
   tracks: SoundTrackInfo[]
   activeBankId: string | null
   onSelectBank: (id: string) => void
+  /** Search is one of the tabs. While it's the selected one the board's grid
+   *  gives way to the results, and the bank tabs slide over to make room for
+   *  the field — the movement is the signal that this tab isn't like the rest. */
+  searchActive: boolean
+  onOpenSearch: () => void
+  onCloseSearch: () => void
+  searchField: React.ReactNode
+  searchGrid: React.ReactNode
+  onAddPadsToBank: (bankId: string, pads: SoundPad[]) => void
 }) {
   const dispatch = useDispatch()
   const [renamingBank, setRenamingBank] = useState<string | null>(null)
@@ -40,6 +54,11 @@ export function BankPanel({
   // a blank card spinning back rather than the pad turning over.
   const [editorFor, setEditorFor] = useState<string | null>(null)
   const [dropActive, setDropActive] = useState(false)
+  // Which bank tab a drag is currently over. Drop-on-tab REPLACED hover-to-
+  // switch: a tab you can't see the inside of has to be a target in its own
+  // right, and switching under a drag would tear the search grid out from
+  // under the thing being dragged.
+  const [dropBankId, setDropBankId] = useState<string | null>(null)
   // Which pad is being dragged, and where it would land. Held as "the pad we're
   // hovering, and which side" rather than an index, so it survives the list
   // reshuffling underneath as the preview updates.
@@ -113,8 +132,8 @@ export function BankPanel({
     return (
       <div className="banks banks--empty">
         <p className="sound__empty">
-          Banks are tabs of pads — "high energy beats", "musical numbers". Make one, then
-          search for songs and use + to put them here.
+          Banks are tabs of pads — "high energy beats", "musical numbers". Make one,
+          then search and drag songs onto its tab.
         </p>
         <button className="pill" onClick={addBank}>
           New bank
@@ -125,34 +144,69 @@ export function BankPanel({
 
   return (
     <div className="banks">
-      <div className="banks__tabs">
+      {/* nowrap while the field is open: with enough banks, pushing them right
+          would WRAP one onto a second row and shove the grid down — a reflow,
+          not the sideways slide this is meant to be. */}
+      <div className={`banks__tabs${searchActive ? ' banks__tabs--searching' : ''}`}>
+        <button
+          className={`banks__tab banks__tab--search${searchActive ? ' banks__tab--active' : ''}`}
+          title={searchActive ? 'Close search (Esc)' : 'Search for a song (/)'}
+          aria-label={searchActive ? 'Close search' : 'Search for a song'}
+          aria-expanded={searchActive}
+          onClick={() => (searchActive ? onCloseSearch() : onOpenSearch())}
+        >
+          <MdSearch />
+        </button>
+        {searchActive && <div className="banks__field">{searchField}</div>}
         {banks.map((bank) => (
           <div
             key={bank.id}
-            className={`banks__tab${bank.id === active?.id ? ' banks__tab--active' : ''}`}
-            onClick={() => onSelectBank(bank.id)}
+            className={[
+              'banks__tab',
+              bank.id === active?.id && !searchActive ? 'banks__tab--active' : '',
+              dropBankId === bank.id ? 'banks__tab--drop' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => {
+              if (searchActive) onCloseSearch()
+              onSelectBank(bank.id)
+            }}
             onDoubleClick={() => setRenamingBank(bank.id)}
             title="Double-click to rename"
             onDragOver={(e) => {
               e.preventDefault()
-              // Dragging a PAD onto a tab moves it to that bank, so the active
-              // bank must not change under the drag — the pad still belongs to
-              // the bank it came from until it lands.
-              if (!e.dataTransfer.types.includes(PAD_DRAG_TYPE)) onSelectBank(bank.id)
+              e.dataTransfer.dropEffect = e.dataTransfer.types.includes(PAD_DRAG_TYPE)
+                ? 'move'
+                : 'copy'
+              setDropBankId(bank.id)
             }}
+            onDragLeave={() => setDropBankId((id) => (id === bank.id ? null : id))}
             onDrop={(e) => {
-              if (!e.dataTransfer.types.includes(PAD_DRAG_TYPE)) return
               e.preventDefault()
               e.stopPropagation()
-              if (active && dragPadId && bank.id !== active.id) {
-                dispatch({
-                  type: 'soundPad.move',
-                  fromBankId: active.id,
-                  toBankId: bank.id,
-                  padId: dragPadId,
-                })
+              setDropBankId(null)
+              const drop = readDrop(
+                [...e.dataTransfer.types],
+                (t) => e.dataTransfer.getData(t),
+                tracks,
+              )
+              if (!drop) return
+              if (drop.kind === 'movePad') {
+                if (active && dragPadId && bank.id !== active.id) {
+                  dispatch({
+                    type: 'soundPad.move',
+                    fromBankId: active.id,
+                    toBankId: bank.id,
+                    padId: dragPadId,
+                  })
+                }
+                endDrag()
+                return
               }
-              endDrag()
+              // Songs or a tag out of search. The tab stays put and search stays
+              // open, so the same result can go to a second bank next.
+              if (drop.pads.length) onAddPadsToBank(bank.id, drop.pads)
             }}
           >
             {renamingBank === bank.id ? (
@@ -199,6 +253,9 @@ export function BankPanel({
         </button>
       </div>
 
+      {searchActive ? (
+        searchGrid
+      ) : (
       <div
         className={`banks__grid${dropActive ? ' banks__grid--drop' : ''}`}
         onDragOver={(e) => {
@@ -234,7 +291,7 @@ export function BankPanel({
         }}
       >
         {pads.length === 0 ? (
-          <p className="sound__empty">Search for a song and use + to add it here.</p>
+          <p className="sound__empty">Open search, then drag songs or tags onto this tab.</p>
         ) : (
           preview.map((pad) => {
             // A tag pad is unavailable when nothing carries its tag (yet); a song
@@ -361,6 +418,7 @@ export function BankPanel({
           })
         )}
       </div>
+      )}
     </div>
   )
 }
