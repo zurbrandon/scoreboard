@@ -11,6 +11,10 @@ import { OperatorApp } from './operator/OperatorApp'
 import { ProjectorApp } from './projector/ProjectorApp'
 import { SoundApp } from './sound/SoundApp'
 import './styles.css'
+// The projector's visual language is a separate stylesheet on purpose — see the
+// header in that file. Loaded for every window, not just the projector one: the
+// operator renders the same scenes inside its preview thumbnails.
+import './projector/projector.css'
 
 // One build serves all three windows. The view is chosen by ?view=projector or
 // ?view=sound. Default is the operator (the technician's control surface).
