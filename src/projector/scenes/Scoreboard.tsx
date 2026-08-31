@@ -7,7 +7,13 @@ import { type CSSProperties, useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { useAppState } from '../../store/react'
 import { determineWinner } from '../../core/winner'
-import { formatScore } from '../../core/score'
+import {
+  FINALE_FIT_CHARS,
+  FINALE_TIE_FIT_CHARS,
+  PANEL_FIT_CHARS,
+  formatScore,
+  scoreScale,
+} from '../../core/score'
 import { sideOf, teamOnSide, type Side } from '../../core/sides'
 import type { TeamId } from '../../core/state'
 import { logoSrc } from './LogoScene'
@@ -120,6 +126,7 @@ function FinaleOverlay() {
   const color = winner === 'blue' ? '#2f6bff' : winner === 'red' ? '#e23b3b' : '#ffd23f'
   const winName = winner === 'blue' ? blueName : winner === 'red' ? redName : ''
   const winScore = winner === 'blue' ? blueScore : redScore
+  const tieLine = `${formatScore(blueScore)} – ${formatScore(redScore)}`
 
   const pop = { type: 'spring', stiffness: 300, damping: 15, mass: 0.8 } as const
   const rise = { type: 'spring', stiffness: 260, damping: 20 } as const
@@ -143,11 +150,12 @@ function FinaleOverlay() {
           </motion.div>
           <motion.div
             className="finale__score"
+            style={scoreScaleStyle(tieLine, FINALE_TIE_FIT_CHARS)}
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ ...pop, delay: 0.12 }}
           >
-            {formatScore(blueScore)} – {formatScore(redScore)}
+            {tieLine}
           </motion.div>
         </>
       ) : (
@@ -170,6 +178,7 @@ function FinaleOverlay() {
           </motion.div>
           <motion.div
             className="finale__score"
+            style={scoreScaleStyle(formatScore(winScore), FINALE_FIT_CHARS)}
             initial={{ scale: 0.4, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ ...pop, delay: 0.2 }}
@@ -271,6 +280,7 @@ function TeamPanel({ team, side }: { team: TeamId; side: Side }) {
   )
 
   const shownScore = useAnimatedNumber(liveScore)
+  const scoreText = formatScore(shownScore)
   const isLeading = leader === team
   // Transient emphasis during the reveal sequence only.
   const revealing = revealPhase === 'revealing'
@@ -299,10 +309,20 @@ function TeamPanel({ team, side }: { team: TeamId; side: Side }) {
             the class restarts its CSS animation). Do NOT key this on the reveal
             phase: a key that flips at reveal start/end remounts the div and
             resets useAnimatedNumber, making the score flash on and off. */}
-        <div className={`team-panel__score ${isWinner ? 'team-panel__score--pop' : ''}`}>
-          {formatScore(shownScore)}
+        <div
+          className={`team-panel__score ${isWinner ? 'team-panel__score--pop' : ''}`}
+          style={scoreScaleStyle(scoreText, PANEL_FIT_CHARS)}
+        >
+          {scoreText}
         </div>
       </div>
     </section>
   )
+}
+
+// Hands the stepped-down size to CSS as a multiplier on the readout's base font
+// size (see --score-scale in styles.css), so each readout keeps its own base
+// size in one place and only the step lives here.
+function scoreScaleStyle(text: string, fitChars: number): CSSProperties {
+  return { ['--score-scale' as string]: scoreScale(text, fitChars) } as CSSProperties
 }

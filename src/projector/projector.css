@@ -761,7 +761,11 @@
   font-weight: 400; /* Geist Pixel is single-weight; heavier faux-bolds and merges the dots */
   font-synthesis: none; /* never let the browser synthesize bold/italic */
   font-variant-numeric: tabular-nums;
-  font-size: 15cqw;
+  /* --score-scale steps the size down for long scores (a joke score in the
+     millions); see scoreScale() in core/score.ts. Deliberately NOT transitioned:
+     easing font-size would re-raster this big glowing text every frame, the same
+     trap as the winner glow below. It snaps at the length boundary instead. */
+  font-size: calc(15cqw * var(--score-scale, 1));
   line-height: 0.9;
   color: #eafcff;
   text-shadow:
@@ -897,7 +901,12 @@
 .finale__score {
   font-family: 'Geist Pixel', 'Courier New', monospace;
   font-synthesis: none;
-  font-size: 20cqw;
+  font-size: calc(20cqw * var(--score-scale, 1)); /* see .team-panel__score */
+  /* The tie readout ("42 – 39") is the one score line with spaces in it, so it
+     is the one that could break across two lines. --score-scale already keeps it
+     inside the takeover; nowrap makes sure a miss shows up as one long line
+     rather than silently stacking the two scores. */
+  white-space: nowrap;
   line-height: 0.9;
   color: #eafcff;
   text-shadow: 0 0 2cqw rgba(255, 255, 255, 0.9), 0 0 6cqw var(--win), 0 0 12cqw var(--win);

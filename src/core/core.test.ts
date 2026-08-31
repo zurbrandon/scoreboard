@@ -5,7 +5,13 @@ import { reduce } from './reduce'
 import { determineWinner } from './winner'
 import { sideOf, teamOnSide } from './sides'
 import { pickBumper } from './bumper'
-import { formatScore } from './score'
+import {
+  FINALE_FIT_CHARS,
+  FINALE_TIE_FIT_CHARS,
+  PANEL_FIT_CHARS,
+  formatScore,
+  scoreScale,
+} from './score'
 import type { Command } from './commands'
 
 // Small helper: run a list of commands from the initial state.
@@ -821,6 +827,101 @@ describe('formatScore', () => {
     expect(formatScore(3.5)).toBe('3.5')
     expect(formatScore(0.1 + 0.2)).toBe('0.3') // not "0.30000000000000004"
     expect(formatScore(-2.5)).toBe('-2.5')
+  })
+})
+
+describe('scoreScale', () => {
+  // Measured off the real projector render. Geist Pixel has no tabular figures,
+  // so digits differ in width; "8" is the widest at 0.646em, which is the worst
+  // case every fit budget is set against.
+  const EM = { digit: 0.646, dash: 0.494, space: 0.38 }
+  // Worst-case width of a readout, in cqw: every character as wide as an "8".
+  const widestAt = (text: string, base: number, fitChars: number) =>
+    text.length * EM.digit * base * scoreScale(text, fitChars)
+  // Actual width of a tie line, whose dash and spaces are narrower than digits.
+  const tieWidthAt = (a: string, b: string, base: number) => {
+    const line = `${a} – ${b}`
+    const em = (a.length + b.length) * EM.digit + EM.dash + 2 * EM.space
+    return em * base * scoreScale(line, FINALE_TIE_FIT_CHARS)
+  }
+
+  const LED_FACE = 44.1 // cqw available on the team panel's LED screen
+  const PANEL_BASE = 15 // cqw, .team-panel__score
+  const WINNER_POP = 1.09 // the reveal grows the winning score this much
+  const TAKEOVER = 100 // cqw available to the finale
+  const FINALE_BASE = 20 // cqw, .finale__score
+
+  it('holds full size for every score a real game produces', () => {
+    // Nothing may shrink in normal play — an operator watching 7 -> 8 -> 9 must
+    // never see the digits twitch.
+    for (const text of ['0', '7', '42', '3.5', '-2.5', '100', '999', '1000']) {
+      expect(scoreScale(text, PANEL_FIT_CHARS)).toBe(1)
+    }
+  })
+
+  it('steps down once a joke score outgrows the LED face', () => {
+    // The show that prompted this: the score became a bit and ran to the
+    // millions. Five, six and seven digits each get their own held size.
+    expect(scoreScale('10000', PANEL_FIT_CHARS)).toBeCloseTo(0.8)
+    expect(scoreScale('100000', PANEL_FIT_CHARS)).toBeCloseTo(0.667, 3)
+    expect(scoreScale('1000000', PANEL_FIT_CHARS)).toBeCloseTo(0.571, 3)
+  })
+
+  it('never steps back up as a score gets longer', () => {
+    const lengths = ['1', '99', '999', '9999', '99999', '999999', '9999999', '99999999']
+    const scales = lengths.map((t) => scoreScale(t, PANEL_FIT_CHARS))
+    for (let i = 1; i < scales.length; i++) {
+      expect(scales[i]).toBeLessThanOrEqual(scales[i - 1])
+    }
+  })
+
+  it('gives one size per length, not a fit to the rendered width', () => {
+    // Every 5-digit score is the size of every other 5-digit score, so a
+    // count-up within a length never resizes mid-animation — even though "11111"
+    // is visibly narrower than "88888" in this face.
+    expect(scoreScale('10000', PANEL_FIT_CHARS)).toBe(scoreScale('99999', PANEL_FIT_CHARS))
+  })
+
+  it('keeps every score inside the LED face, winner pop included', () => {
+    for (const text of ['9', '99', '999', '9999', '99999', '999999', '9999999', '99999999.5']) {
+      const width = widestAt(text, PANEL_BASE, PANEL_FIT_CHARS)
+      expect(width * WINNER_POP).toBeLessThanOrEqual(LED_FACE)
+    }
+  })
+
+  it('fills the LED face without ever quite touching it', () => {
+    // Each step holds the readout at the same width, so a stepped-down score
+    // still reads as big — it does not shrink to a dot.
+    for (const text of ['9999', '99999', '9999999']) {
+      const fill = widestAt(text, PANEL_BASE, PANEL_FIT_CHARS) / LED_FACE
+      expect(fill).toBeGreaterThan(0.85)
+      expect(fill).toBeLessThan(1)
+    }
+  })
+
+  it('holds the finale at full size for a normal winning score, and steps a silly one', () => {
+    expect(scoreScale('42', FINALE_FIT_CHARS)).toBe(1)
+    expect(scoreScale('999999', FINALE_FIT_CHARS)).toBe(1)
+    expect(scoreScale('1000000', FINALE_FIT_CHARS)).toBeCloseTo(0.857, 3)
+    for (const text of ['9', '999999', '9999999', '99999999']) {
+      expect(widestAt(text, FINALE_BASE, FINALE_FIT_CHARS)).toBeLessThan(TAKEOVER)
+    }
+  })
+
+  it('keeps the finale tie line on one line, at full size for a normal tie', () => {
+    // A real tie is two short scores, and it must not shrink.
+    expect(scoreScale('42 – 39', FINALE_TIE_FIT_CHARS)).toBe(1)
+    expect(tieWidthAt('42', '39', FINALE_BASE)).toBeLessThan(TAKEOVER)
+    // Three digits each already overflows at full size, so it has to step down.
+    expect(scoreScale('999 – 999', FINALE_TIE_FIT_CHARS)).toBeLessThan(1)
+    // The widest line this scene can draw: two seven-digit scores.
+    expect(tieWidthAt('9999999', '9999999', FINALE_BASE)).toBeLessThan(TAKEOVER)
+  })
+
+  it('affords the tie line more characters than a bare score, because its dash is narrow', () => {
+    expect(FINALE_TIE_FIT_CHARS).toBeGreaterThan(FINALE_FIT_CHARS)
+    // ...and the finale has roughly twice the panel's room, so it holds longer.
+    expect(FINALE_FIT_CHARS).toBeGreaterThan(PANEL_FIT_CHARS)
   })
 })
 
