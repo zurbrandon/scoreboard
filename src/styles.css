@@ -44,6 +44,8 @@
   --blue-dim: #0a3d75;
   --red: #ff453a;
   --red-dim: #7d2521;
+  --both: #7a6bc0;        /* both captains at once: blue + red, and it matches the 💜 */
+  --both-dim: #5b5580;
 
   /* --- Type scale. Measured off the existing UI: 13px is the body size and
          12/14 flank it, 10/11 are label tiers, 16+ is display. -------------- */
@@ -571,7 +573,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .slidethumb__scene { position: absolute; inset: 0; }
 .slidethumb *, .slidethumb *::before, .slidethumb *::after { animation: none !important; transition: none !important; }
 /* Slideshow / empty placeholder — no live embed in a thumbnail. */
-.slidethumb__ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: var(--fs-sm); font-weight: 700; background: radial-gradient(120% 120% at 50% 0%, #141a2c, #05070d 72%); }
+.slidethumb__ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: var(--fs-sm); font-weight: 700; background: radial-gradient(120% 120% at 50% 0%, var(--panel-2), #05070d 72%); }
 
 /* Non-active row: a mini thumb on the left, number + name beside it. */
 .cuerow__thumb { flex: 0 0 auto; width: 96px; }
@@ -1287,7 +1289,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   box-shadow: inset 0 0 2vh rgba(0, 0, 0, 0.6);
 }
 .black-box__label { font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.5; }
-.black-box:hover { border-color: #6b7690; }
+.black-box:hover { border-color: var(--muted); }
 .black-box--active { border-color: #fff; color: #fff; box-shadow: 0 0 22px rgba(255, 255, 255, 0.28), inset 0 0 2vh rgba(0, 0, 0, 0.6); }
 .black-box--active .black-box__label { opacity: 0.85; }
 
@@ -1332,8 +1334,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .split__seg--blue:hover { background: color-mix(in srgb, var(--blue) 16%, var(--panel)); box-shadow: inset 0 -2px 0 var(--blue); }
 .split__seg--red { box-shadow: inset 0 -2px 0 var(--red-dim); }
 .split__seg--red:hover { background: color-mix(in srgb, var(--red) 16%, var(--panel)); box-shadow: inset 0 -2px 0 var(--red); }
-.split__seg--both { box-shadow: inset 0 -2px 0 #5b5580; }
-.split__seg--both:hover { background: color-mix(in srgb, #7a6bc0 16%, var(--panel)); box-shadow: inset 0 -2px 0 #a08fe0; }
+.split__seg--both { box-shadow: inset 0 -2px 0 var(--both-dim); }
+.split__seg--both:hover { background: color-mix(in srgb, var(--both) 16%, var(--panel)); box-shadow: inset 0 -2px 0 var(--both); }
 
 /* The corner FABs' icon. When a popover is open the icon becomes a white ✕; the
    spin in/out is driven by Motion (AnimatePresence) so it animates both ways. */
@@ -1442,7 +1444,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: var(--panel-2, #1b2233);
+  background: var(--panel-2);
   font-size: var(--fs-2xl);
   line-height: 1;
   display: flex;
@@ -1822,7 +1824,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   padding: 13px 20px;
   font-size: 17px;
   border-radius: var(--r-2xl);
-  border-color: #39415a;
+  border-color: var(--line-strong);
 }
 .sound__search--hero::placeholder { color: var(--muted); font-size: var(--fs-lg); }
 .sound__search--hero:focus {
@@ -1898,7 +1900,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   padding: 10px;
   border-radius: var(--r-xl);
   background: var(--panel-2);
-  border: 1px solid #39415a;
+  border: 1px solid var(--line-strong);
   box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.9);
 }
 .tagpop__head { font-size: var(--fs-tiny); color: var(--muted); padding: 0 2px 8px; }
