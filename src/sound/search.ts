@@ -86,31 +86,14 @@ export function topTags(
 /** One row in the search panel. Before anything is typed the rows are tag
  *  shortcuts; after, they're songs. Both are in one list so the keyboard can
  *  walk it without caring which mode it's in — type, arrow down, Enter. */
-export type SearchItem =
-  | { kind: 'tag'; tag: string; count: number }
-  | { kind: 'track'; track: SoundTrackInfo }
-
-/** What the panel should show for `query`. Computed here rather than in the
- *  component so the keyboard handler and the list render from the same list —
- *  otherwise Enter can activate a different row than the one highlighted. */
-export function searchItems(
-  tracks: readonly SoundTrackInfo[],
-  query: string,
-  pinnedTags: readonly string[] = [],
-  tagLimit = 8,
-): SearchItem[] {
-  // Nothing asked for yet: offer the tags as a way in. Once anything narrows the
-  // library — typed or pinned — the answer is songs, because that's what you
-  // came for. Tags and songs are therefore never mixed in one list, which is
-  // what lets the search surface draw both as the same kind of button.
-  if (query.trim().length === 0 && pinnedTags.length === 0) {
-    return topTags(tracks, tagLimit).map(({ tag, count }) => ({ kind: 'tag', tag, count }))
-  }
-  return filterTracks(tracks, query, pinnedTags).map((track) => ({ kind: 'track', track }))
-}
 
 /** Move a highlight by `delta`, wrapping at both ends so holding Down cycles
- *  rather than sticking at the bottom. Returns 0 for an empty list. */
+ *  rather than sticking at the bottom. Returns 0 for an empty list.
+ *
+ *  The search grid lays pads out in rows but walks them in READING ORDER, so
+ *  this stays a one-dimensional list: Down means "the next one", not "the one
+ *  directly below". Two-dimensional arrows sound nicer and are worse — you'd
+ *  have to think about geometry mid-show. */
 export function moveIndex(current: number, delta: number, length: number): number {
   if (length === 0) return 0
   return (((current + delta) % length) + length) % length

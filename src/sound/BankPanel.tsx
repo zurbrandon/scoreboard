@@ -148,16 +148,25 @@ export function BankPanel({
           would WRAP one onto a second row and shove the grid down — a reflow,
           not the sideways slide this is meant to be. */}
       <div className={`banks__tabs${searchActive ? ' banks__tabs--searching' : ''}`}>
-        <button
-          className={`banks__tab banks__tab--search${searchActive ? ' banks__tab--active' : ''}`}
-          title={searchActive ? 'Close search (Esc)' : 'Search for a song (/)'}
-          aria-label={searchActive ? 'Close search' : 'Search for a song'}
-          aria-expanded={searchActive}
-          onClick={() => (searchActive ? onCloseSearch() : onOpenSearch())}
+        {/* One pill that grows. Closed it's a search icon the size of any other
+            tab; open, the field lives INSIDE it, so the search state is the same
+            object having stretched rather than a second control appearing beside
+            it. The icon stays put through the change, which is what makes it
+            read as one thing widening. */}
+        <div
+          className={`banks__tab banks__tab--search${searchActive ? ' banks__tab--searchopen' : ''}`}
         >
-          <MdSearch />
-        </button>
-        {searchActive && <div className="banks__field">{searchField}</div>}
+          <button
+            className="banks__searchbtn"
+            title={searchActive ? 'Close search (Esc)' : 'Search for a song (/)'}
+            aria-label={searchActive ? 'Close search' : 'Search for a song'}
+            aria-expanded={searchActive}
+            onClick={() => (searchActive ? onCloseSearch() : onOpenSearch())}
+          >
+            <MdSearch />
+          </button>
+          {searchActive && searchField}
+        </div>
         {banks.map((bank) => (
           <div
             key={bank.id}

@@ -1,37 +1,43 @@
-// Search results, drawn as pads.
+// Search results: a row of tag filters, then the songs.
 //
-// The board is a grid of chunky buttons and search used to be a list of thin
-// rows sitting on top of it — two interaction models in one window, and the one
-// you reach for mid-show was the smaller-targeted one. So results are pads too:
-// same shape, same size, same tap.
+// Tags are a FILTER, not a destination. They sit as pills across the top the way
+// facets do on a shop: tap one to narrow, X it to widen again, tap two to narrow
+// twice (they AND together). That means this surface has one mode instead of two
+// — the grid is always songs — and the pills that narrow are the same pills you
+// clear, so there's nothing to learn twice.
 //
-// A pad here does exactly one thing, which is what lets it stay a single
-// control: a song plays, a tag narrows. Putting a song on a bank is a DRAG onto
-// that bank's tab — the target changes with every drop, which is precisely what
-// a drag is for and what a + button is bad at. Setting a tag pad's mode isn't
-// here at all; it happens on the pad once it's landed, on its back face.
+// The board is a grid of chunky pads, so results are pads too: same shape, same
+// tap. A pad here does exactly one thing, which is what keeps it a single
+// control — a song plays. Putting one on a bank is a DRAG onto that bank's tab,
+// because the target changes with every drop, which is what a drag is for and
+// what a + button is bad at. Tag pills drag too: dropping one makes a pad that
+// plays from that tag.
 
 import { useEffect, useRef } from 'react'
-import { MdLocalOffer } from 'react-icons/md'
-import type { SearchItem } from './search'
-import { DRAG_TYPE, TAG_DRAG_TYPE } from './BankPanel'
+import { MdClose, MdLocalOffer } from 'react-icons/md'
+import type { SoundTrackInfo } from '../shared/bridge'
+import { DRAG_TYPE, TAG_DRAG_TYPE } from './drops'
 
 export function SearchGrid({
-  items,
-  query,
+  songs,
+  tags,
   pinned,
+  query,
   activeIndex,
-  onActivate,
+  onPlay,
+  onTogglePin,
   onHover,
-  onUnpin,
 }: {
-  items: SearchItem[]
-  query: string
+  /** Already filtered by query + pinned tags. */
+  songs: SoundTrackInfo[]
+  /** Every tag worth offering, with how many songs it currently covers. */
+  tags: { tag: string; count: number }[]
   pinned: string[]
+  query: string
   activeIndex: number
-  onActivate: (item: SearchItem) => void
+  onPlay: (track: SoundTrackInfo) => void
+  onTogglePin: (tag: string) => void
   onHover: (index: number) => void
-  onUnpin: (tag: string) => void
 }) {
   const activeRef = useRef<HTMLButtonElement>(null)
   const narrowed = query.trim().length > 0 || pinned.length > 0
@@ -43,72 +49,61 @@ export function SearchGrid({
 
   return (
     <div className="searchgrid">
-      {pinned.length > 0 && (
-        <div className="searchgrid__pins">
-          {pinned.map((tag) => (
-            <button
-              key={tag}
-              className="searchgrid__pin"
-              title={`Stop narrowing by “${tag}”`}
-              onClick={() => onUnpin(tag)}
-            >
-              <MdLocalOffer />
-              {tag}
-              <span className="searchgrid__pin-x" aria-hidden="true">
-                ✕
-              </span>
-            </button>
-          ))}
+      {tags.length > 0 && (
+        <div className="searchgrid__tags">
+          {tags.map(({ tag, count }) => {
+            const on = pinned.includes(tag)
+            return (
+              <button
+                key={tag}
+                className={`tagpill${on ? ' tagpill--on' : ''}`}
+                title={on ? `Stop narrowing by “${tag}”` : `Narrow to “${tag}” — or drag onto a tab`}
+                onClick={() => onTogglePin(tag)}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(TAG_DRAG_TYPE, tag)
+                  e.dataTransfer.effectAllowed = 'copy'
+                }}
+              >
+                <MdLocalOffer className="tagpill__icon" />
+                <span className="tagpill__name">{tag}</span>
+                {on ? (
+                  <MdClose className="tagpill__x" />
+                ) : (
+                  <span className="tagpill__count">{count}</span>
+                )}
+              </button>
+            )
+          })}
         </div>
       )}
 
       <div className="searchgrid__hint">
-        {items.length === 0
+        {songs.length === 0
           ? narrowed
             ? `Nothing matches${query.trim() ? ` “${query.trim()}”` : ''}`
             : 'No songs in the library yet — open Library and pick your music folder'
-          : narrowed
-            ? `${items.length} song${items.length === 1 ? '' : 's'} · tap to play, drag onto a tab to keep`
-            : 'Tap a tag to narrow, or drag one onto a tab to make a pad'}
+          : `${songs.length} song${songs.length === 1 ? '' : 's'} · tap to play, drag onto a tab to keep`}
       </div>
 
       <div className="searchgrid__pads">
-        {items.map((item, index) => {
-          const active = index === activeIndex
-          const isTag = item.kind === 'tag'
-          const label = isTag ? item.tag : item.track.name
-          return (
-            <button
-              key={isTag ? `tag:${item.tag}` : item.track.id}
-              ref={active ? activeRef : null}
-              className={`pad pad--result${isTag ? ' pad--tag' : ''}${active ? ' pad--cued' : ''}`}
-              title={isTag ? `Narrow to “${item.tag}”` : `Play “${item.track.name}”`}
-              onMouseMove={() => onHover(index)}
-              onClick={() => onActivate(item)}
-              draggable
-              onDragStart={(e) => {
-                // Two payload types so a bank tab can tell "add these songs"
-                // from "make a pad that plays from this tag" without reading the
-                // data, which dragover isn't allowed to do.
-                if (isTag) e.dataTransfer.setData(TAG_DRAG_TYPE, item.tag)
-                else e.dataTransfer.setData(DRAG_TYPE, JSON.stringify([item.track.id]))
-                e.dataTransfer.effectAllowed = 'copy'
-              }}
-            >
-              {isTag && (
-                <span className="pad__badge" title="Plays from a tag">
-                  <MdLocalOffer />
-                </span>
-              )}
-              <span className="pad__label">{label}</span>
-              {isTag && (
-                <span className="pad__count">
-                  {item.count} song{item.count === 1 ? '' : 's'}
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {songs.map((track, index) => (
+          <button
+            key={track.id}
+            ref={index === activeIndex ? activeRef : null}
+            className={`pad pad--result${index === activeIndex ? ' pad--cued' : ''}`}
+            title={`Play “${track.name}”`}
+            onMouseMove={() => onHover(index)}
+            onClick={() => onPlay(track)}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData(DRAG_TYPE, JSON.stringify([track.id]))
+              e.dataTransfer.effectAllowed = 'copy'
+            }}
+          >
+            <span className="pad__label">{track.name}</span>
+          </button>
+        ))}
       </div>
     </div>
   )

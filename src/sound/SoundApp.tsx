@@ -23,7 +23,7 @@ import { useSoundLibrary } from './useSoundLibrary'
 import { BankPanel } from './BankPanel'
 import { NowPlaying } from './NowPlaying'
 import { SearchGrid } from './SearchGrid'
-import { moveIndex, searchItems, type SearchItem } from './search'
+import { filterTracks, moveIndex, topTags } from './search'
 import { LibraryManager } from './LibraryManager'
 import { BoardPicker } from './BoardPicker'
 import { isTypingTarget } from '../shared/typingTarget'
@@ -49,7 +49,16 @@ export function SoundApp() {
   const [activeIndex, setActiveIndex] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const items = useMemo(() => searchItems(tracks, query, pinned), [tracks, query, pinned])
+  const songs = useMemo(() => filterTracks(tracks, query, pinned), [tracks, query, pinned])
+  // Tag options are counted against what's ALREADY narrowed, so a pill tells you
+  // how many it would leave you with rather than how many exist in the library —
+  // and a pill that would leave you with nothing simply isn't offered. Pinned
+  // tags stay on the row regardless, or clearing one would be impossible.
+  const tagOptions = useMemo(() => {
+    const counts = topTags(songs, 40)
+    const missing = pinned.filter((t) => !counts.some((c) => c.tag === t)).map((tag) => ({ tag, count: 0 }))
+    return [...missing, ...counts].sort((a, b) => a.tag.localeCompare(b.tag))
+  }, [songs, pinned])
 
   const activeBank = banks.find((b) => b.id === activeBankId) ?? banks[0] ?? null
 
@@ -61,19 +70,20 @@ export function SoundApp() {
     searchRef.current?.blur()
   }
 
-  // A tag narrows; a song plays and gets out of the way. Firing a song closes
-  // search and puts you back on the board you came from — as a tab, search would
-  // otherwise cost two extra taps on the commonest case, which is the one thing
-  // the old drop-down did better by auto-closing.
-  function activate(item: SearchItem) {
-    if (item.kind === 'tag') {
-      setPinned((p) => (p.includes(item.tag) ? p : [...p, item.tag]))
-      setActiveIndex(0)
-      searchRef.current?.focus()
-      return
-    }
-    dispatch({ type: 'sound.play', id: item.track.id })
+  // A song plays and gets out of the way: firing one closes search and puts you
+  // back on the board you came from. As a tab, search would otherwise cost two
+  // extra taps on the commonest case, which is the one thing the old drop-down
+  // did better by auto-closing.
+  function playTrack(track: { id: string }) {
+    dispatch({ type: 'sound.play', id: track.id })
     closeSearch()
+  }
+
+  // A tag pill is a filter: on, off, and they AND together.
+  function togglePin(tag: string) {
+    setPinned((p) => (p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag]))
+    setActiveIndex(0)
+    searchRef.current?.focus()
   }
 
   function onSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -81,12 +91,12 @@ export function SoundApp() {
       // Stop the caret jumping to the ends of the text while arrowing the list.
       e.preventDefault()
       setSearchOpen(true)
-      setActiveIndex((i) => moveIndex(i, e.key === 'ArrowDown' ? 1 : -1, items.length))
+      setActiveIndex((i) => moveIndex(i, e.key === 'ArrowDown' ? 1 : -1, songs.length))
       return
     }
     if (e.key === 'Enter') {
-      const item = items[activeIndex]
-      if (item) activate(item)
+      const track = songs[activeIndex]
+      if (track) playTrack(track)
       return
     }
     if (e.key === 'Escape') closeSearch()
@@ -183,13 +193,14 @@ export function SoundApp() {
           }
           searchGrid={
             <SearchGrid
-              items={items}
-              query={query}
+              songs={songs}
+              tags={tagOptions}
               pinned={pinned}
+              query={query}
               activeIndex={activeIndex}
-              onActivate={activate}
+              onPlay={playTrack}
+              onTogglePin={togglePin}
               onHover={setActiveIndex}
-              onUnpin={(tag) => setPinned((p) => p.filter((t) => t !== tag))}
             />
           }
           // What a drop produces is decided (and tested) in drops.ts; this just

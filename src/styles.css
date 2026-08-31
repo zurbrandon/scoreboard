@@ -1617,6 +1617,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .sound__folder { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sound__status { color: var(--muted); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sound__body { flex: 1; overflow-y: auto; padding: 14px 18px; }
+.banks__grid .sound__empty { grid-column: 1 / -1; }
 .sound__empty { color: var(--muted); font-size: var(--fs-base); max-width: 52ch; line-height: 1.5; }
 .sound__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .sound__row {
@@ -1700,42 +1701,66 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
    off the edge instead, and nothing below ever moves. */
 .banks__tabs--searching { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
 .banks__tabs--searching::-webkit-scrollbar { display: none; }
-/* The search tab. Icon-sized when closed so it reads as a tool rather than a
-   destination, and it keeps the active treatment when it IS the surface. */
-.banks__tab--search {
+/* The search pill. Closed, it is exactly a tab-sized circle of icon — a tool
+   sitting among the destinations. Open, the SAME pill stretches and the field
+   lives inside it, so nothing new appears; one thing got wider. Only the pill's
+   own width animates, which is why the field is a plain borderless input: a
+   second border inside a growing pill reads as two objects. */
+.banks__tab.banks__tab--search {
   flex: none;
+  gap: 4px;
   justify-content: center;
-  min-width: 44px;
-  padding: 11px 12px;
-  font-size: var(--fs-lg);
+  padding: 0 4px;
   color: var(--muted);
+  /* Width, not max-width: the closed pill is square-ish and the open one takes
+     the room it needs, and the transition between them is the whole gesture. */
+  width: 46px;
+  transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 160ms ease,
+    background-color 160ms ease, color 160ms ease;
 }
-.banks__tab--search { font-size: var(--t-glyph); }
-.banks__tab--search:hover { color: var(--text); border-color: var(--accent); }
-/* Selected, it IS the surface, so it takes the accent rather than the quiet
-   panel treatment a bank tab gets — you should never wonder which tab you're on. */
-.banks__tab--search.banks__tab--active {
+.banks__tab.banks__tab--search:hover { color: var(--text); border-color: var(--line-strong); }
+.banks__searchbtn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: inherit;
+  font-size: var(--t-glyph);
+  cursor: pointer;
+}
+/* Open: the accent says this is the surface you're on, and the pill takes the
+   width. It stays a pill, so it is visibly the same control it was. */
+.banks__tab.banks__tab--searchopen {
+  width: min(340px, 42vw);
   color: var(--accent);
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--panel-2));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel-2));
 }
-.banks__field { flex: 1 1 auto; min-width: 120px; display: flex; align-items: stretch; padding-bottom: 4px; }
 .banks__search {
-  width: 100%;
-  padding: 9px 16px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--accent);
-  background: var(--panel-2);
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px 0 2px;
+  border: none;
+  background: transparent;
   color: var(--text);
   font-family: inherit;
   font-size: var(--t-control);
 }
 .banks__search:focus { outline: none; }
+.banks__search::placeholder { color: var(--muted); }
 /* A tab is a drop target in its own right now — you cannot see inside it from
    the search tab, so it has to say clearly that letting go here works. */
-.banks__tab--drop {
+/* Chained for the same reason as the search pill: .banks__tab is declared later
+   in this file, so a bare .banks__tab--drop silently lost to it and the drop
+   highlight rendered as nothing at all. */
+.banks__tab.banks__tab--drop {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, var(--panel-2));
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel-2));
   color: var(--text);
 }
 .banks__tab {
@@ -1743,16 +1768,18 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   align-items: center;
   gap: 7px;
   padding: 11px 16px;
-  border-radius: var(--r-md) var(--r-md) 0 0;
+  /* Pills, not folder tabs. A folder tab has to attach to the thing below it,
+     which is a lie here — the search pill is a tool, not a page. Detached pills
+     let the search one grow into a field without the seam breaking. */
+  border-radius: var(--r-pill);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-bottom: none;
   color: var(--muted);
   font-size: var(--fs-base);
   cursor: pointer;
   user-select: none;
 }
-.banks__tab--active { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+.banks__tab--active { background: var(--panel-3); color: var(--text); border-color: var(--line-strong); }
 .banks__tab--add { color: var(--accent); font-size: var(--fs-lg); padding: 11px 15px; }
 .banks__count { font-size: var(--fs-tiny); opacity: 0.6; }
 .banks__rename {
@@ -1960,23 +1987,36 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 /* Deliberately reuses .pad: the whole point is that a result and a board button
    are the same object, so the tap you already know works here too. */
 .searchgrid { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px; overflow-y: auto; }
-.searchgrid__pins { display: flex; flex-wrap: wrap; gap: 6px; }
-.searchgrid__pin {
+/* Tag filters. Facet pills, the way a shop does them: quiet when off, accent
+   with an X when on, and they AND together so tapping two narrows twice. Also a
+   drag source — dropping one on a bank tab makes a pad that plays from it. */
+.searchgrid__tags { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.tagpill {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 7px 12px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
-  color: var(--text);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
   font-family: inherit;
   font-size: var(--t-label);
   font-weight: 700;
   cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
 }
-.searchgrid__pin-x { color: var(--muted); }
-.searchgrid__pin:hover .searchgrid__pin-x { color: var(--danger); }
+.tagpill:hover { color: var(--text); border-color: var(--line-strong); }
+.tagpill--on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  color: var(--text);
+}
+.tagpill__icon { color: var(--muted); font-size: var(--t-body); }
+.tagpill--on .tagpill__icon { color: var(--accent); }
+.tagpill__count { color: var(--muted); font-weight: 700; }
+.tagpill__x { color: var(--accent); font-size: var(--t-body); }
+.tagpill--on:hover .tagpill__x { color: var(--danger); }
 .searchgrid__hint { flex: none; font-size: var(--t-body); color: var(--muted); }
 .searchgrid__pads {
   display: grid;
@@ -2117,7 +2157,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   border-radius: 4px;
 }
 .banks__delete:hover { color: var(--red); }
-.banks__tabs { padding: 10px 14px 0; border-bottom: 1px solid var(--line); }
+.banks__tabs { padding: 12px 14px; border-bottom: 1px solid var(--line); }
 
 /* Library rows: name, then its tags flowing straight after it, then the row's
    own actions on the right. Everything a row can do is on the row. */

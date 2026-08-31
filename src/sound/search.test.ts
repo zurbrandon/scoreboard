@@ -3,7 +3,6 @@ import {
   filterTracks,
   matchesQuery,
   moveIndex,
-  searchItems,
   suggestTags,
   tagsForSelection,
   topTags,
@@ -106,26 +105,6 @@ describe('suggestTags', () => {
   })
 })
 
-describe('searchItems with pinned tags', () => {
-  it('offers tags only while nothing has narrowed the library', () => {
-    expect(searchItems(LIBRARY, '').every((i) => i.kind === 'tag')).toBe(true)
-  })
-
-  it('switches to songs as soon as a tag is pinned, with no query typed', () => {
-    const items = searchItems(LIBRARY, '', ['rap'])
-    expect(items.every((i) => i.kind === 'track')).toBe(true)
-    expect(items).toHaveLength(2)
-  })
-
-  it('ANDs a pinned tag with what is typed', () => {
-    const items = searchItems(LIBRARY, 'slow', ['rap'])
-    expect(items.map((i) => (i.kind === 'track' ? i.track.name : i.tag))).toEqual(['Slow Jam'])
-  })
-
-  it('ANDs pinned tags with each other, so pinning drills in', () => {
-    expect(searchItems(LIBRARY, '', ['rap', 'high energy'])).toHaveLength(1)
-  })
-})
 
 describe('topTags', () => {
   it('ranks by how many songs carry the tag', () => {
@@ -151,27 +130,6 @@ describe('topTags', () => {
   })
 })
 
-describe('searchItems', () => {
-  it('offers tag shortcuts before anything is typed', () => {
-    const items = searchItems(LIBRARY, '')
-    expect(items.every((i) => i.kind === 'tag')).toBe(true)
-    expect(items[0]).toEqual({ kind: 'tag', tag: 'rap', count: 2 })
-  })
-
-  it('switches to songs once something is typed', () => {
-    const items = searchItems(LIBRARY, 'rap')
-    expect(items).toHaveLength(2)
-    expect(items.every((i) => i.kind === 'track')).toBe(true)
-  })
-
-  it('treats a whitespace-only query as untyped', () => {
-    expect(searchItems(LIBRARY, '   ')[0].kind).toBe('tag')
-  })
-
-  it('returns an empty list when nothing matches, so the panel can say so', () => {
-    expect(searchItems(LIBRARY, 'zzzz')).toEqual([])
-  })
-})
 
 describe('moveIndex', () => {
   it('walks down and up', () => {
