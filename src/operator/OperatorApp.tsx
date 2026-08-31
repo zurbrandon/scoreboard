@@ -504,7 +504,7 @@ export function OperatorApp() {
           ) : activeTab === 'games' ? (
             /* Games is pick-and-cut, not a queue: select a game, Show it, Blank,
                pick the next. The primary just reveals the selected slide. */
-            <button className="deck-primary" onClick={reveal} title="Reveal the selected game slide">
+            <button className="deck-primary" onClick={reveal} title="Show the selected game slide">
               Show slide
             </button>
           ) : isPresenting ? (
@@ -762,11 +762,11 @@ function ScoreboardConfig() {
         <div className="pot__main">
           <span className="pot__cap">Up for grabs</span>
           <div className="pot__stepper">
-            <button className="pot__step" aria-label="Remove a point from the pot" onClick={() => addPot(-1)}>
+            <button className="pot__step" aria-label="Remove a point from up for grabs" onClick={() => addPot(-1)}>
               −
             </button>
             <strong className="pot__value">{pot}</strong>
-            <button className="pot__step" aria-label="Add a point to the pot" onClick={() => addPot(1)}>
+            <button className="pot__step" aria-label="Add a point to up for grabs" onClick={() => addPot(1)}>
               +
             </button>
           </div>
@@ -1915,7 +1915,7 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
       <div className="show-cue" onClick={(e) => e.stopPropagation()}>
         <select
           className="show-cue__select"
-          aria-label="Reveal effect"
+          aria-label="Effect when shown"
           value={slide.cue?.effect ?? ''}
           onChange={(e) => setCueEffect(e.target.value)}
         >
@@ -1928,10 +1928,10 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
         </select>
         <select
           className="show-cue__select"
-          aria-label="Reveal music"
+          aria-label="Music when shown"
           value={musicValue}
           onChange={(e) => setCueMusic(e.target.value)}
-          title="Continue the current song, stop it, or start a specific one on reveal"
+          title="Continue the current song, stop it, or start a specific one when this slide is shown"
         >
           <option value="">⏸ Continue current music</option>
           <option value={CUE_SILENCE}>🔇 No music (fade out)</option>

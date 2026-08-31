@@ -24,7 +24,7 @@
 
   /* --- Lines. One border color does ~90% of the work in this UI. ---------- */
   --line: #2c3346;        /* the default 1px panel border */
-  --line-strong: #3a4358; /* dashed drop targets and empty slots, which need to read */
+  --line-strong: #3a4358; /* dashed affordances, empty slots, brighter hover lines */
 
   /* --- Meaning. Blue and red are the TEAMS, never UI state — a red button
          next to a red team panel is ambiguous, so state uses these. --------- */
@@ -345,7 +345,7 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
   transition: transform 0.08s ease, box-shadow 0.25s ease, color 0.2s ease, border-color 0.2s ease;
 }
-.live-btn:hover { border-color: #3a4560; color: var(--text); }
+.live-btn:hover { border-color: var(--line-strong); color: var(--text); }
 .live-btn:active { transform: scale(0.96); }
 .live-btn--on {
   border-color: #ff6166;
@@ -760,7 +760,7 @@ button { font-family: inherit; cursor: pointer; }
   gap: 8px;
   padding: 10px 12px;
   border-radius: var(--r-lg);
-  border: 1px dashed #3a4560;
+  border: 1px dashed var(--line-strong);
   background: var(--panel);
   color: var(--text);
   font-size: var(--t-control);
@@ -1076,8 +1076,8 @@ button { font-family: inherit; cursor: pointer; }
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: none;
   background: rgba(12, 14, 20, 0.75);
@@ -1455,7 +1455,7 @@ button { font-family: inherit; cursor: pointer; }
 .deck__onair { display: flex; align-items: baseline; justify-content: center; gap: 7px; font-size: var(--fs-sm); letter-spacing: 0.04em; max-width: 460px; }
 .deck__onair-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); align-self: center; flex: none; }
 .deck__onair-lead { color: var(--muted); font-size: var(--t-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-.deck__onair-sep { color: #3a4258; }
+.deck__onair-sep { color: var(--muted); } /* was #3a4258 at 1.93:1 — invisible, so it did no separating */
 .deck__onair-item { color: var(--text); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deck__onair--drift .deck__onair-dot { background: var(--accent); box-shadow: 0 0 8px rgba(255, 210, 63, 0.6); }
 .deck__onair--drift .deck__onair-item { color: var(--accent); }
@@ -1479,7 +1479,7 @@ button { font-family: inherit; cursor: pointer; }
   font-size: var(--fs-md);
   font-weight: 600;
 }
-.fx-trigger:hover { color: var(--text); border-color: #3a4560; }
+.fx-trigger:hover { color: var(--text); border-color: var(--line-strong); }
 .fx-trigger--open { color: var(--text); border-color: var(--accent); background: var(--panel); }
 .fx-drawer {
   position: absolute;
