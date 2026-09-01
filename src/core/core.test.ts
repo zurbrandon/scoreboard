@@ -1,5 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createInitialState, templateSkeleton, normSavedTemplates, normSavedSlideshows, normSavedBoards, normSoundBanks } from './state'
+import {
+  createInitialState,
+  defaultSavedTemplates,
+  normActiveTemplate,
+  normSavedBoards,
+  normSavedSlideshows,
+  normSavedTemplates,
+  normSoundBanks,
+  reactionSlide,
+  showSlide,
+  templateSkeleton,
+} from './state'
 import type { AppState, LogoSlide, ShowSlide, Slide, SoundPad, TextSlide } from './state'
 import { reduce } from './reduce'
 import { determineWinner } from './winner'
@@ -538,7 +549,7 @@ describe('saved templates', () => {
 
   it('save / update / rename / remove a template', () => {
     const slides: Slide[] = [{ id: 'a', type: 'show', deck: 'show', beat: 'logo', name: '', roster: '' }]
-    let s = run({ type: 'template.saveNew', id: 'mine', deck: 'show', name: 'My show', slides })
+    let s = run({ type: 'template.saveNew', id: 'mine', name: 'My show', slides })
     expect(s.savedTemplates.find((t) => t.id === 'mine')?.name).toBe('My show')
 
     const slides2: Slide[] = [...slides, { id: 'b', type: 'show', deck: 'show', beat: 'players', name: '', roster: '' }]
@@ -922,6 +933,61 @@ describe('scoreScale', () => {
     expect(FINALE_TIE_FIT_CHARS).toBeGreaterThan(FINALE_FIT_CHARS)
     // ...and the finale has roughly twice the panel's room, so it holds longer.
     expect(FINALE_FIT_CHARS).toBeGreaterThan(PANEL_FIT_CHARS)
+  })
+})
+
+describe('templates cover a whole show', () => {
+  it('reads the per-deck active pointer a previous build persisted', () => {
+    // Templates used to be scoped to one deck, so this was { show, games }.
+    // The show slot was the only one ever populated, so it's the one that
+    // carries over — the operator stays on the template they were already on.
+    expect(normActiveTemplate({ show: 'std', games: null })).toBe('std')
+    expect(normActiveTemplate({ show: null, games: null })).toBeNull()
+    expect(normActiveTemplate('std')).toBe('std') // already migrated
+    expect(normActiveTemplate(undefined)).toBeNull()
+    expect(normActiveTemplate(42)).toBeNull()
+  })
+
+  it('drops the deck off a template saved when templates had one', () => {
+    const [first] = normSavedTemplates([
+      { id: 't1', deck: 'games', name: 'Old one', slides: [] },
+    ])
+    expect(first).toEqual({ id: 't1', name: 'Old one', slides: [] })
+    expect('deck' in first).toBe(false)
+  })
+
+  it('saving captures both decks and puts you on it', () => {
+    const slides: Slide[] = [
+      { ...showSlide('a', 'logo', 'show') },
+      { ...reactionSlide('b', 'games') },
+    ]
+    const after = run({ type: 'template.saveNew', id: 'mine', name: 'My show', slides })
+    const saved = after.savedTemplates.find((t) => t.id === 'mine')
+    expect(saved?.slides.map((s) => s.deck)).toEqual(['show', 'games'])
+    expect(after.activeTemplate).toBe('mine') // saving means you're on it
+  })
+
+  it('deleting the template you are on leaves you on nothing', () => {
+    const after = run(
+      { type: 'template.saveNew', id: 'mine', name: 'My show', slides: [] },
+      { type: 'template.remove', id: 'mine' },
+    )
+    expect(after.activeTemplate).toBeNull()
+    expect(after.savedTemplates.find((t) => t.id === 'mine')).toBeUndefined()
+  })
+
+  it('deleting a different template leaves your pointer alone', () => {
+    const after = run(
+      { type: 'template.saveNew', id: 'keep', name: 'Keep', slides: [] },
+      { type: 'template.saveNew', id: 'drop', name: 'Drop', slides: [] },
+      { type: 'template.setActive', id: 'keep' },
+      { type: 'template.remove', id: 'drop' },
+    )
+    expect(after.activeTemplate).toBe('keep')
+  })
+
+  it('ships only whole-show built-ins, with no deck of their own', () => {
+    for (const t of defaultSavedTemplates()) expect('deck' in t).toBe(false)
   })
 })
 

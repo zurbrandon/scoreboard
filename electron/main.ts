@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync } 
 import { Readable } from 'node:stream'
 
 import { reduce } from '../src/core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
+import { createInitialState, migrateSlides, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type {
   BumperTrackInfo,
@@ -100,6 +100,7 @@ function loadState(): AppState {
         slides,
         // Seeded on first run (when absent), then editable + persisted.
         savedTemplates: normSavedTemplates(parsed.savedTemplates),
+        activeTemplate: normActiveTemplate(parsed.activeTemplate),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         soundBanks: normSoundBanks(parsed.soundBanks),
         savedBoards: normSavedBoards(parsed.savedBoards),

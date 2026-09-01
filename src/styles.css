@@ -120,8 +120,15 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .operator__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
 }
+/* The show picker takes the slack between the title and the settings icon. It
+   was full-width inside a tab; in the top bar it's one control among three, so
+   it's bounded rather than greedy — a long template name ellipsizes instead of
+   pushing the settings button off the edge. */
+.operator__header .tpl { flex: 1; min-width: 0; max-width: 22rem; }
+.operator__header .tpl__button { padding: 7px 11px; border-style: solid; }
+.operator__header-right { margin-left: auto; }
 /* The wordmark is app identity, not a control, so it reads off the primitive
    scale rather than one of the --t-* roles. Weight tracks the roles' 700 —
    there is no perceptible 600/700 difference in muted grey at this size, and
@@ -794,6 +801,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   top: 100%;
   left: 0;
   right: 0;
+  /* The menu is free to be wider than the button that opens it. In the top bar
+     the button is bounded so it can't shove the settings icon off the edge, and
+     inheriting that width clipped every template name to "ComedySportz —". */
+  min-width: 23rem;
   z-index: 30;
   display: flex;
   flex-direction: column;

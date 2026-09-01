@@ -227,8 +227,11 @@ export function defaultShowBeats(): ShowSlide[] {
 // live deck never changes a saved template; only an explicit save/update does.
 export interface SavedTemplate {
   id: string
-  deck: SlideDeck
   name: string
+  /** Slides for the WHOLE show — both decks. Each slide carries its own `deck`,
+   *  so which tabs a template covers is derived from its contents rather than
+   *  declared: a template with no games slides simply leaves that tab alone when
+   *  applied, instead of emptying it. */
   slides: Slide[]
 }
 
@@ -262,13 +265,28 @@ export function defaultSavedTemplates(): SavedTemplate[] {
     showSlide('tpl-simple-players', 'players', 'show'),
   ]
   return [
-    { id: 'std', deck: 'show', name: 'ComedySportz — Standard show', slides: std },
-    { id: 'simple', deck: 'show', name: 'ComedySportz — Simple', slides: simple },
+    { id: 'std', name: 'ComedySportz — Standard show', slides: std },
+    { id: 'simple', name: 'ComedySportz — Simple', slides: simple },
   ]
 }
 
 // Normalize persisted saved templates; fall back to the seed on first run (when
 // the field is absent) or if the stored value is unusable.
+/**
+ * The active template used to be one id PER DECK — `{ show: 'std', games: null }`
+ * — because templates were per-deck. Now there's one, so a persisted object is
+ * read as its `show` entry: that was the only slot ever populated, and it keeps
+ * the operator on the template they were already on across the upgrade.
+ */
+export function normActiveTemplate(v: unknown): string | null {
+  if (typeof v === 'string') return v
+  if (v && typeof v === 'object') {
+    const show = (v as Record<string, unknown>).show
+    return typeof show === 'string' ? show : null
+  }
+  return null
+}
+
 export function normSavedTemplates(v: unknown): SavedTemplate[] {
   if (!Array.isArray(v)) return defaultSavedTemplates()
   const out: SavedTemplate[] = []
@@ -276,11 +294,13 @@ export function normSavedTemplates(v: unknown): SavedTemplate[] {
     if (!t || typeof t !== 'object') continue
     const r = t as Record<string, unknown>
     if (typeof r.id !== 'string' || typeof r.name !== 'string') continue
-    const deck = asDeck(r.deck)
     const slides = Array.isArray(r.slides)
       ? (r.slides.map(normSlide).filter((s): s is Slide => s !== null) as Slide[])
       : []
-    out.push({ id: r.id, deck, name: r.name, slides })
+    // A template saved when templates were per-deck has no deck of its own any
+    // more; its slides already carry theirs, so it simply becomes a template
+    // that covers the one tab it always covered.
+    out.push({ id: r.id, name: r.name, slides })
   }
   return out
 }
@@ -534,7 +554,8 @@ export interface AppState {
   /** Which saved template each deck was last loaded from (per deck), or null if
    *  built from a code built-in / hand-built. Lets the picker show "you're on X"
    *  and offer Update when the deck has diverged. Persisted. */
-  activeTemplate: Record<SlideDeck, string | null>
+  /** The whole-show template the operator is currently on. */
+  activeTemplate: string | null
   /** Curated, named slideshows the operator picks from when building a slideshow
    *  slide (managed in Settings). Persisted. See SavedSlideshow. */
   savedSlideshows: SavedSlideshow[]
@@ -663,7 +684,7 @@ export function createInitialState(): AppState {
       live: null,
     },
     savedTemplates: defaultSavedTemplates(),
-    activeTemplate: { show: null, games: null },
+    activeTemplate: null,
     savedSlideshows: [],
     soundBanks: [],
     savedBoards: [],

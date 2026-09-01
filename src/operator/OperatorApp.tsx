@@ -389,6 +389,10 @@ export function OperatorApp() {
       <div className="operator__topbar">
       <header className="operator__header">
         <h1>Showboard</h1>
+        {/* What show is this? Above the tabs because it sets up more than one of
+            them — a template stamps both the Show beats and the Games queue, so
+            it can't belong to either tab. */}
+        <TemplatePicker />
         <div className="operator__header-right">
           {!window.showboard && (
             <button className="pill" onClick={openProjector}>
@@ -966,12 +970,68 @@ const deckSignature = (slides: Slide[]): string => slides.map(skeletonSig).join(
 // is currently on; open it to load another, save the deck as a new one, or — for
 // the active template, only once the deck has diverged — Update it (with a confirm).
 // Rename / delete live inline per row. Replaces the old <select> + manager popover.
-function TemplatePicker({ deck }: { deck: SlideDeck }) {
+// Which game is set up on the Games tab. Deliberately NOT a template: these are
+// individual games ("Four Things", "Spelling Bee"), and picking one replaces the
+// games queue — exactly what it did when this shared the template picker. Kept
+// separate because "which game" and "which show" are different questions.
+function GamePicker() {
   const dispatch = useDispatch()
-  const savedTemplates = useAppState((s) => s.savedTemplates).filter((t) => t.deck === deck)
-  const activeId = useAppState((s) => s.activeTemplate[deck])
-  const deckSlides = useAppState((s) => s.slides.items).filter((s) => s.deck === deck)
-  const builtins = deck === 'games' ? GAMES : SHOW_BUILTINS
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    window.addEventListener('pointerdown', onDown)
+    return () => window.removeEventListener('pointerdown', onDown)
+  }, [open])
+
+  function load(b: (typeof GAMES)[number]) {
+    dispatch({ type: 'slide.clearDeck', deck: 'games' })
+    const ids: string[] = []
+    b.build(() => {
+      const id = newSlideId('game')
+      ids.push(id)
+      return id
+    }).forEach(dispatch)
+    if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
+    setOpen(false)
+  }
+
+  return (
+    <div className="tpl" ref={rootRef}>
+      <button className={`tpl__button ${open ? 'tpl__button--open' : ''}`} onClick={() => setOpen((o) => !o)}>
+        <span className="tpl__button-label">Start from a game…</span>
+        <span className="tpl__chev" aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="tpl__menu">
+          <div className="tpl__label">Games</div>
+          {GAMES.map((b) => (
+            <div key={b.id} className="tpl__row">
+              <button className="tpl__name" onClick={() => load(b)} title={`Set up ${b.label}`}>
+                <span className="tpl__check" aria-hidden />
+                {b.label}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TemplatePicker() {
+  const dispatch = useDispatch()
+  const savedTemplates = useAppState((s) => s.savedTemplates)
+  const activeId = useAppState((s) => s.activeTemplate)
+  // The whole show, both tabs — a template is no longer one deck's worth.
+  const allSlides = useAppState((s) => s.slides.items)
+  const builtins = SHOW_BUILTINS
 
   const [open, setOpen] = useState(false)
   const [newName, setNewName] = useState('')
@@ -990,34 +1050,46 @@ function TemplatePicker({ deck }: { deck: SlideDeck }) {
   }, [open])
 
   const activeTpl = savedTemplates.find((t) => t.id === activeId) ?? null
-  const dirty = activeTpl ? deckSignature(deckSlides) !== deckSignature(activeTpl.slides) : false
+  const dirty = activeTpl ? deckSignature(allSlides) !== deckSignature(activeTpl.slides) : false
 
-  // Snapshot the current deck as a reusable skeleton with fresh, template-scoped ids.
-  const capture = (): Slide[] => deckSlides.map((s) => ({ ...templateSkeleton(s), id: newSlideId('tpl') }))
+  // Snapshot the WHOLE show as a reusable skeleton with fresh, template-scoped
+  // ids. Slides keep their own deck, which is what makes one template able to
+  // set up both tabs.
+  const capture = (): Slide[] => allSlides.map((s) => ({ ...templateSkeleton(s), id: newSlideId('tpl') }))
 
   function loadSaved(t: SavedTemplate) {
-    const clones: Slide[] = t.slides.map((s) => ({ ...s, id: newSlideId(deck === 'show' ? 'show' : 'game') }))
-    dispatch({ type: 'slide.clearDeck', deck })
-    dispatch({ type: 'slide.addMany', deck, slides: clones })
-    dispatch({ type: 'template.setActive', deck, id: t.id })
+    // Only the tabs this template actually has slides for are replaced. A
+    // Show-only template therefore leaves the Games tab as you left it, instead
+    // of emptying a tab it has nothing to say about.
+    const covered = new Set<SlideDeck>(t.slides.map((s) => s.deck))
+    for (const deck of covered) {
+      const clones: Slide[] = t.slides
+        .filter((s) => s.deck === deck)
+        .map((s) => ({ ...s, id: newSlideId(deck === 'show' ? 'show' : 'game') }))
+      dispatch({ type: 'slide.clearDeck', deck })
+      dispatch({ type: 'slide.addMany', deck, slides: clones })
+    }
+    dispatch({ type: 'template.setActive', id: t.id })
     setOpen(false)
   }
   function loadBuiltin(b: (typeof builtins)[number]) {
-    dispatch({ type: 'slide.clearDeck', deck })
+    // The built-ins here are whole-show starting points, so they own the Show
+    // tab and say nothing about Games.
+    dispatch({ type: 'slide.clearDeck', deck: 'show' })
     const ids: string[] = []
     b.build(() => {
-      const id = newSlideId(deck === 'show' ? 'show' : 'game')
+      const id = newSlideId('show')
       ids.push(id)
       return id
     }).forEach(dispatch)
     if (ids[0]) dispatch({ type: 'slide.select', id: ids[0] })
-    dispatch({ type: 'template.setActive', deck, id: null })
+    dispatch({ type: 'template.setActive', id: null })
     setOpen(false)
   }
   const saveNew = () => {
     const name = newName.trim()
     if (!name) return
-    dispatch({ type: 'template.saveNew', id: newSlideId('tpl'), deck, name, slides: capture() })
+    dispatch({ type: 'template.saveNew', id: newSlideId('tpl'), name, slides: capture() })
     setNewName('')
   }
 
@@ -1122,7 +1194,7 @@ function TemplatePicker({ deck }: { deck: SlideDeck }) {
             <input
               className="tpl__input"
               value={newName}
-              placeholder="Save current deck as…"
+              placeholder="Save this show as…"
               aria-label="New template name"
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && saveNew()}
@@ -1317,7 +1389,11 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
   return (
     <div className="cards">
-      {!pres && <TemplatePicker deck={deck} />}
+      {/* The whole-show template picker moved to the top bar — it sets up both
+          tabs, so it can't live inside one of them. What stays here is the Games
+          tab's own thing: choosing which GAME is set up, which is a different
+          job from choosing a show. */}
+      {!pres && deck === 'games' && <GamePicker />}
 
       {/* Transport (Start / Prev / Next / Stop) lives in the footer now, so it's
           tab-specific and thumb-reachable. */}

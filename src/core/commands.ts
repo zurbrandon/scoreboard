@@ -61,11 +61,11 @@ export type Command =
   | { type: 'slide.addMany'; deck: SlideDeck; slides: Slide[] } // append pre-built slides (already have fresh ids) + select the first — used to stamp a template
   // Saved deck templates (persisted, editable): stamp one into a deck, or save /
   // update / rename / delete from the current deck.
-  | { type: 'template.saveNew'; id: string; deck: SlideDeck; name: string; slides: Slide[] }
+  | { type: 'template.saveNew'; id: string; name: string; slides: Slide[] } // whole show: slides from both decks
   | { type: 'template.update'; id: string; slides: Slide[] }
   | { type: 'template.rename'; id: string; name: string }
   | { type: 'template.remove'; id: string }
-  | { type: 'template.setActive'; deck: SlideDeck; id: string | null } // mark which template a deck is currently loaded from
+  | { type: 'template.setActive'; id: string | null } // which whole-show template the operator is on
   // Curated named slideshows (managed in Settings; picked on a slideshow slide).
   | { type: 'slideshow.save'; id: string; name: string; url: string }
   | { type: 'slideshow.update'; id: string; name: string; url: string }

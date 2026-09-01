@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, migrateSlides, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
@@ -89,6 +89,9 @@ function loadPersisted(): AppState {
         // shapes, incl. the retired Pre-show queue).
         slides: migrateSlides(parsed, fresh),
         savedTemplates: normSavedTemplates(parsed.savedTemplates), // seeded first run, then persisted
+        // Was one id per deck before templates covered a whole show; same
+        // migration the Electron loader does, so the two paths agree.
+        activeTemplate: normActiveTemplate(parsed.activeTemplate),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         soundBanks: normSoundBanks(parsed.soundBanks),

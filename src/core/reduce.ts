@@ -201,14 +201,14 @@ function baseReduce(state: AppState, command: Command): AppState {
         },
       }
     case 'template.saveNew':
-      // Saving becomes the deck's active template — you're now "on" it.
+      // Saving becomes the active template — you're now "on" it.
       return {
         ...state,
         savedTemplates: [
           ...state.savedTemplates,
-          { id: command.id, deck: command.deck, name: command.name, slides: command.slides },
+          { id: command.id, name: command.name, slides: command.slides },
         ],
-        activeTemplate: { ...state.activeTemplate, [command.deck]: command.id },
+        activeTemplate: command.id,
       }
     case 'template.update':
       return {
@@ -224,16 +224,16 @@ function baseReduce(state: AppState, command: Command): AppState {
           t.id === command.id ? { ...t, name: command.name } : t,
         ),
       }
-    case 'template.remove': {
-      // Clear the active pointer on any deck that pointed at the deleted template.
-      const activeTemplate = { ...state.activeTemplate }
-      for (const deck of Object.keys(activeTemplate) as (keyof typeof activeTemplate)[]) {
-        if (activeTemplate[deck] === command.id) activeTemplate[deck] = null
+    case 'template.remove':
+      return {
+        ...state,
+        savedTemplates: state.savedTemplates.filter((t) => t.id !== command.id),
+        // Deleting the one you're on leaves you on nothing, rather than pointing
+        // at a template that no longer exists.
+        activeTemplate: state.activeTemplate === command.id ? null : state.activeTemplate,
       }
-      return { ...state, savedTemplates: state.savedTemplates.filter((t) => t.id !== command.id), activeTemplate }
-    }
     case 'template.setActive':
-      return { ...state, activeTemplate: { ...state.activeTemplate, [command.deck]: command.id } }
+      return { ...state, activeTemplate: command.id }
     case 'slideshow.save':
       return {
         ...state,
