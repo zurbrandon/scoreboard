@@ -407,7 +407,10 @@ export function BankPanel({
                     </button>
                   </div>
 
-                  <div className="pad pad-face pad-face--back" aria-hidden={!editing}>
+                  {/* Not a .pad: the editor draws its own surface, and stacking one inside
+                      the other made a box in a box that spent 24px of width and a
+                      row of height on nothing. This is only the flip wrapper. */}
+                  <div className="pad-face pad-face--back" aria-hidden={!editing}>
                     {editorFor === pad.id && (
                       <PadEditor
                         pad={pad}

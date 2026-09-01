@@ -11,7 +11,7 @@ import type { SoundBank, SoundPad, SoundPadMode } from '../core/state'
 
 const MODES: { mode: SoundPadMode; name: string; hint: string }[] = [
   { mode: 'random', name: 'One song', hint: 'plays one, then stops' },
-  { mode: 'continuous', name: 'Keeps playing', hint: 'on through the tag' },
+  { mode: 'continuous', name: 'Keeps playing', hint: 'rolls on through the tag' },
 ]
 
 export function PadEditor({
