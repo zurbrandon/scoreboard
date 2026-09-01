@@ -375,6 +375,13 @@ export function BankPanel({
                         {pad.mode === 'continuous' ? 'keeps playing' : 'random'} · {taggedCount}
                       </span>
                     )}
+                    {/* Same tertiary line for a song pad, showing what it is
+                        rather than what it's called — the label is often renamed
+                        to something short, and the tags are what say why it's on
+                        this board. */}
+                    {pad.kind === 'track' && track && track.tags.length > 0 && (
+                      <span className="pad__meta">{track.tags.join(' · ')}</span>
+                    )}
                     {missing && (
                       <span className="pad__missing">
                         {pad.kind === 'tag' ? 'nothing tagged' : 'file missing'}

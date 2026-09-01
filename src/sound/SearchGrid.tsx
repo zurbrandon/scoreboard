@@ -102,6 +102,13 @@ export function SearchGrid({
             }}
           >
             <span className="pad__label">{track.name}</span>
+            {/* What this song IS, under what it's called. Tertiary on purpose:
+                you read the name to find the song and the tags to tell two
+                near-identical names apart, which is a second glance, not the
+                first one. */}
+            {track.tags.length > 0 && (
+              <span className="pad__meta">{track.tags.join(' · ')}</span>
+            )}
           </button>
         ))}
       </div>

@@ -17,6 +17,7 @@
 // time and lets this window be moved or closed mid-show without cutting it.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { MdClose } from 'react-icons/md'
 import { useAppState, useDispatch } from '../store/react'
 
 import { useSoundLibrary } from './useSoundLibrary'
@@ -70,13 +71,13 @@ export function SoundApp() {
     searchRef.current?.blur()
   }
 
-  // A song plays and gets out of the way: firing one closes search and puts you
-  // back on the board you came from. As a tab, search would otherwise cost two
-  // extra taps on the commonest case, which is the one thing the old drop-down
-  // did better by auto-closing.
+  // Playing does NOT close search. A search is often a set rather than a single
+  // shot — you look up "rap beats", fire one, and want the next from the same
+  // handful a minute later. Closing would make that a re-search every time, so
+  // search behaves like the tab it looks like and stays put until you leave it
+  // (Esc, or picking another tab).
   function playTrack(track: { id: string }) {
     dispatch({ type: 'sound.play', id: track.id })
-    closeSearch()
   }
 
   // A tag pill is a filter: on, off, and they AND together.
@@ -178,18 +179,38 @@ export function SoundApp() {
           onOpenSearch={openSearch}
           onCloseSearch={closeSearch}
           searchField={
-            <input
-              ref={searchRef}
-              className="banks__search"
-              value={query}
-              placeholder="Search for a song…"
-              autoFocus
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setActiveIndex(0) // new results, start from the top
-              }}
-              onKeyDown={onSearchKey}
-            />
+            <>
+              <input
+                ref={searchRef}
+                className="banks__search"
+                value={query}
+                placeholder="Search for a song…"
+                autoFocus
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setActiveIndex(0) // new results, start from the top
+                }}
+                onKeyDown={onSearchKey}
+              />
+              {/* Clears the text only, not the tag pills — those are visibly on
+                  and carry their own ✕. Search is live, so there's no Enter to
+                  undo; this is the only way back to an empty field without
+                  holding Backspace. */}
+              {query !== '' && (
+                <button
+                  className="banks__clear"
+                  title="Clear the search text"
+                  aria-label="Clear the search text"
+                  onClick={() => {
+                    setQuery('')
+                    setActiveIndex(0)
+                    searchRef.current?.focus()
+                  }}
+                >
+                  <MdClose />
+                </button>
+              )}
+            </>
           }
           searchGrid={
             <SearchGrid
