@@ -1792,16 +1792,21 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   font-size: var(--fs-base);
 }
 .banks__rename:focus { outline: none; }
-.banks__grid {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px;
+/* ONE definition of the pad grid, shared by the board and the search results.
+   These must never drift: a result you drag onto a tab should be exactly the
+   thing it is about to become, so it has to be the same size and shape as the
+   pads already there. They were two copies of this rule and the search copy
+   lost its row height, which made results half-height. */
+.banks__grid,
+.searchgrid__pads {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   grid-auto-rows: 84px;
   gap: 10px;
   align-content: start;
 }
+/* The board is its own scroll container; for search that's .searchgrid. */
+.banks__grid { flex: 1; overflow-y: auto; padding: 14px; }
 .banks__grid--drop { background: color-mix(in srgb, var(--accent) 7%, transparent); outline: 2px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: -8px; }
 /* The board picker sits between the search field and Library. Narrow by
    default — the board's name matters less than the pads, and the search field
@@ -2018,15 +2023,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .tagpill__x { color: var(--accent); font-size: var(--t-body); }
 .tagpill--on:hover .tagpill__x { color: var(--danger); }
 .searchgrid__hint { flex: none; font-size: var(--t-body); color: var(--muted); }
-.searchgrid__pads {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  align-content: start;
-}
+
 /* A result carries no controls of its own — one tap, one meaning. Adding is a
    drag onto a tab, which is why there is no + here to find. */
-.pad--result { cursor: pointer; }
 /* The keyboard's current pad. Named --cued rather than --active because the
    board already uses active to mean "this bank", and this is "Enter fires me". */
 .pad--cued { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
