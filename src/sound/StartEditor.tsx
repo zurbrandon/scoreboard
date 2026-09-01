@@ -10,9 +10,10 @@
 // nudged rather than redone.
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { MdContentCut } from 'react-icons/md'
+import { MdFlag, MdPlayArrow, MdStop } from 'react-icons/md'
 import type { SoundProgress, SoundTrackInfo } from '../shared/bridge'
 import { formatTimecode, parseTimecode } from '../shared/timecode'
+import { useDispatch } from '../store/react'
 
 const SILENT: SoundProgress = { name: '', trackId: '', position: 0, duration: 0, playing: false }
 
@@ -28,8 +29,12 @@ export function StartEditor({
 }) {
   const [text, setText] = useState(track.startAt ? formatTimecode(track.startAt) : '')
   const [progress, setProgress] = useState<SoundProgress>(SILENT)
+  // Where the thumb sits mid-drag, so the four-a-second position stream doesn't
+  // yank it back under the finger. Same trick as the now-playing bar.
+  const [scrub, setScrub] = useState<number | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const bridge = window.showboard
+  const dispatch = useDispatch()
 
   // Only THIS song's playhead is worth capturing. Auditioning something else
   // while this is open shouldn't offer to stamp the wrong song's position.
@@ -60,13 +65,19 @@ export function StartEditor({
   // doesn't parse is a half-typed value, and saving is held until it does.
   const valid = text.trim() === '' || parsed !== null
 
+  function commitScrub() {
+    if (scrub === null) return
+    dispatch({ type: 'sound.seek', seconds: scrub })
+    setScrub(null)
+  }
+
   function save() {
     if (!bridge || !valid) return
     bridge.setSoundStart(track.id, text.trim() === '' ? null : parsed)
     onClose()
   }
 
-  const HEIGHT = 196
+  const HEIGHT = 250
   const below = anchor.bottom + HEIGHT < window.innerHeight
   const style: CSSProperties = {
     position: 'fixed',
@@ -97,20 +108,50 @@ export function StartEditor({
         onFocus={(e) => e.target.select()}
       />
 
-      {/* Enabled only while this song is the one sounding, and it says the
-          position it would stamp, so the button is its own preview. */}
+      {/* The transport lives IN here. It has to: the popover closes on a click
+          outside it, so a play button on the row — or the scrubber in the
+          now-playing bar — would dismiss the very thing you're aiming at. The
+          first cut of this shipped exactly that, a capture flow you couldn't
+          reach. Everything the job needs is now inside the box. */}
+      <div className="startpop__transport">
+        <button
+          className="startpop__play"
+          title={live ? 'Stop' : 'Play this song'}
+          onClick={() =>
+            live
+              ? dispatch({ type: 'sound.stop' })
+              : dispatch({ type: 'sound.play', id: track.id })
+          }
+        >
+          {live ? <MdStop /> : <MdPlayArrow />}
+        </button>
+        <input
+          className="startpop__scrub"
+          type="range"
+          min={0}
+          max={progress.duration > 0 ? progress.duration : 1}
+          step={0.1}
+          value={scrub ?? progress.position}
+          disabled={!live || progress.duration === 0}
+          aria-label="Find the spot"
+          onChange={(e) => setScrub(Number(e.target.value))}
+          onPointerUp={commitScrub}
+          onKeyUp={commitScrub}
+          onBlur={commitScrub}
+        />
+        <span className="startpop__clock">{formatTimecode(scrub ?? progress.position)}</span>
+      </div>
+
+      {/* Arms only while THIS song is sounding, and names the position it would
+          stamp — so the button previews itself rather than being a leap. */}
       <button
         className="startpop__grab"
         disabled={!live}
-        title={
-          live
-            ? 'Use where the song is right now'
-            : 'Play this song, then press this when it kicks in'
-        }
-        onClick={() => setText(formatTimecode(progress.position))}
+        title={live ? 'Use where the song is right now' : 'Press play, then catch the moment it kicks in'}
+        onClick={() => setText(formatTimecode(scrub ?? progress.position))}
       >
-        <MdContentCut />
-        {live ? `Start here — ${formatTimecode(progress.position)}` : 'Play it, then grab the spot'}
+        <MdFlag />
+        {live ? `Start here — ${formatTimecode(scrub ?? progress.position)}` : 'Press play to find the spot'}
       </button>
 
       <div className="startpop__row">

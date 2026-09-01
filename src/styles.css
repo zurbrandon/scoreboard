@@ -2216,6 +2216,33 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 /* A half-typed time is not an error to shout about — it just isn't savable yet,
    and Save is already disabled. A quiet red edge is enough of a "not yet". */
 .startpop__input[aria-invalid='true'] { border-color: var(--danger); }
+/* Audition transport, inside the popover because the flow needs it there. */
+.startpop__transport { display: flex; align-items: center; gap: 8px; }
+.startpop__play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-size: var(--t-body);
+}
+.startpop__play:hover { border-color: var(--accent); color: var(--accent); }
+.startpop__scrub { flex: 1; min-width: 0; accent-color: var(--accent); cursor: pointer; }
+.startpop__scrub:disabled { cursor: default; opacity: 0.45; }
+.startpop__clock {
+  flex: none;
+  min-width: 38px;
+  text-align: right;
+  font-size: var(--t-label);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .startpop__grab {
   display: flex;
   align-items: center;
