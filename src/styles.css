@@ -1830,6 +1830,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 /* Flipped, the card claims the row beneath it. A pad is 84px of button, which
    is the right size to hit and the wrong size to edit in. */
 .pad-cell--editing { grid-row: span 2; z-index: 2; }
+.pad-cell--editing-tall { grid-row: span 3; }
 .pad-flip {
   position: relative;
   width: 100%;
@@ -1892,10 +1893,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .pad-edit {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   height: 100%;
-  padding: 8px 9px;
+  padding: 10px;
   border-radius: var(--r-xl);
   background: var(--panel);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
@@ -1927,30 +1928,94 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pad-edit__modes { display: flex; gap: 4px; }
+/* Pinned to the bottom so Remove is in the same place on every pad, whether or
+   not the pad has a mode row above it. */
+.pad-edit__bank + .pad-edit__row { margin-top: 0; }
+.pad-edit__source + .pad-edit__row, .pad-edit__modes + .pad-edit__row { margin-top: auto; }
+/* --- the back of a pad -------------------------------------------------- */
+/* Two choices about what the pad will DO, so they stack: side by side they were
+   two clipped labels in half a pad's width, and you had to already know what
+   they meant to pick one. */
+.pad-edit__modes { display: flex; flex-direction: column; gap: 4px; }
 .pad-edit__mode {
-  flex: 1;
-  padding: 3px 4px;
+  /* Name over hint, not name beside hint: at 122px the hint beside the name
+     clipped to "plays o…", which is worse than no hint at all. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 8px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line);
   background: transparent;
   color: var(--muted);
   font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pad-edit__mode:hover { border-color: var(--line-strong); color: var(--text); }
+.pad-edit__mode--on {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+}
+.pad-edit__mode-name { flex: none; font-size: var(--fs-tiny); font-weight: 700; }
+.pad-edit__mode-hint {
+  max-width: 100%;
   font-size: var(--fs-micro);
+  color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Done is the wide one and Remove is not. The gap is real so the destructive
+   button is never the neighbour of the safe one under a quick finger, and the
+   two now differ in size, position AND colour rather than only in glyph. */
+/* Stacked, for the same reason the modes are: 150px of card cannot hold two
+   labelled buttons side by side without clipping one of them, which is how the
+   first attempt at this shipped "✓ Do". Done sits directly under the last field
+   where the eye lands; Remove goes below it, quieter and on its own line. */
+.pad-edit__row { display: flex; flex-direction: column; gap: 6px; }
+.pad-edit__remove,
+.pad-edit__done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
 }
-.pad-edit__mode:hover { border-color: var(--accent); color: var(--text); }
-.pad-edit__mode--on {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border-color: var(--accent);
-  color: var(--text);
+.pad-edit__remove {
+  /* Quieter than Done in every way: no fill, dimmer text, and it comes second.
+     Present enough to find, never the thing you hit on the way out. */
+  order: 2;
+  padding: 5px 10px;
+  border-color: transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--danger) 70%, var(--muted));
 }
-/* Pinned to the bottom so Remove is in the same place on every pad, whether or
-   not the pad has a mode row above it. */
-.pad-edit__row { display: flex; align-items: center; gap: 4px; }
-.pad-edit__bank + .pad-edit__row { margin-top: 0; }
-.pad-edit__source + .pad-edit__row, .pad-edit__modes + .pad-edit__row { margin-top: auto; }
+.pad-edit__remove:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+.pad-edit__done {
+  order: 1;
+  border-color: color-mix(in srgb, var(--green) 45%, transparent);
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+.pad-edit__done:hover {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 26%, transparent);
+}
+
 .pad-edit__bank {
   /* Pushed to the bottom together with the buttons under it, so Remove sits in
      the same place whether or not the pad has a mode row. */
@@ -1966,25 +2031,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   font-size: var(--fs-micro);
   cursor: pointer;
 }
-.pad-edit__remove { flex: 1; justify-content: center; }
-.pad-edit__remove,
-.pad-edit__done {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px 7px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  font-family: inherit;
-  font-size: var(--fs-micro);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.pad-edit__remove:hover { background: var(--red); border-color: var(--red); color: #fff; }
 .pad-edit__done { font-size: var(--fs-sm); padding: 3px 6px; }
-.pad-edit__done:hover { border-color: var(--accent); color: var(--accent); }
 /* A pad whose file has gone missing says so rather than failing silently. */
 .pad--missing { border-style: dashed; opacity: 0.55; cursor: not-allowed; }
 .pad__missing { position: absolute; bottom: 6px; font-size: var(--fs-micro); color: var(--red); }

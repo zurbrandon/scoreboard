@@ -326,8 +326,12 @@ export function BankPanel({
               <div
                 key={pad.id}
                 className={`pad-cell${editing ? ' pad-cell--editing' : ''}${
-                  dragPadId === pad.id ? ' pad-cell--dragging' : ''
-                }`}
+                  // A tag pad's editor carries the two stacked mode rows, so it
+                  // needs a row more than a song pad's does. Sizing the cell to
+                  // its contents isn't something CSS grid can do, so the span
+                  // has to be chosen here.
+                  editing && pad.kind === 'tag' ? ' pad-cell--editing-tall' : ''
+                }${dragPadId === pad.id ? ' pad-cell--dragging' : ''}`}
                 // Not draggable while flipped, or the text in the name field
                 // can't be selected.
                 draggable={!editing}

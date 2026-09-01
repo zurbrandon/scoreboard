@@ -9,6 +9,11 @@ import { useEffect, useRef, useState } from 'react'
 import { MdCheck, MdDeleteOutline } from 'react-icons/md'
 import type { SoundBank, SoundPad, SoundPadMode } from '../core/state'
 
+const MODES: { mode: SoundPadMode; name: string; hint: string }[] = [
+  { mode: 'random', name: 'One song', hint: 'plays one, then stops' },
+  { mode: 'continuous', name: 'Keeps playing', hint: 'on through the tag' },
+]
+
 export function PadEditor({
   pad,
   bank,
@@ -87,21 +92,21 @@ export function PadEditor({
           : (trackName ?? 'file missing')}
       </p>
 
+      {/* Stacked, not side by side. These are two sentences about what the pad
+          will DO, and squeezed into half a pad's width they were two truncated
+          labels you had to already know the meaning of. One per row leaves room
+          to say it, and reads as the pair of choices it is. */}
       {pad.kind === 'tag' && (
         <div className="pad-edit__modes" role="group" aria-label="How this pad picks">
-          {(['random', 'continuous'] as const).map((mode) => (
+          {MODES.map(({ mode, name, hint }) => (
             <button
               key={mode}
               className={`pad-edit__mode${pad.mode === mode ? ' pad-edit__mode--on' : ''}`}
               aria-pressed={pad.mode === mode}
               onClick={() => onSetMode(mode)}
-              title={
-                mode === 'random'
-                  ? 'Plays one song from the tag, then stops'
-                  : 'Keeps playing through the tag — house music'
-              }
             >
-              {mode === 'random' ? 'One song' : 'Keeps playing'}
+              <span className="pad-edit__mode-name">{name}</span>
+              <span className="pad-edit__mode-hint">{hint}</span>
             </button>
           ))}
         </div>
@@ -125,12 +130,19 @@ export function PadEditor({
         </select>
       )}
 
+      {/* Done is the big one. Remove had been the full-width button and Done an
+          icon that shrank to fit, which put the destructive action four times
+          the size of the safe one — and both drawn identically. Now they differ
+          in size, in position and in colour, and Remove sits at the far end so
+          the two aren't neighbours under a quick finger. */}
       <div className="pad-edit__row">
         <button className="pad-edit__remove" onClick={onRemove} title="Take this pad off the board">
-          <MdDeleteOutline /> Remove
+          <MdDeleteOutline />
+          <span>Remove</span>
         </button>
         <button className="pad-edit__done" onClick={close} title="Done (Enter)">
           <MdCheck />
+          <span>Done</span>
         </button>
       </div>
     </div>
