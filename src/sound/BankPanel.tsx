@@ -128,6 +128,12 @@ export function BankPanel({
     if (pads.length > 0) dispatch({ type: 'soundPad.add', bankId: active.id, pads })
   }
 
+  // Which tab READS as active, which is not the same as which bank is selected:
+  // while search is open the search pill is the active tab and no bank is. Derived
+  // once so the highlight and the delete ✕ can never disagree about it — they had
+  // their own copies of this test, and the ✕ stayed on the tab you'd left.
+  const activeTabId = searchActive ? null : (active?.id ?? null)
+
   if (banks.length === 0) {
     return (
       <div className="banks banks--empty">
@@ -172,7 +178,7 @@ export function BankPanel({
             key={bank.id}
             className={[
               'banks__tab',
-              bank.id === active?.id && !searchActive ? 'banks__tab--active' : '',
+              bank.id === activeTabId ? 'banks__tab--active' : '',
               dropBankId === bank.id ? 'banks__tab--drop' : '',
             ]
               .filter(Boolean)
@@ -236,7 +242,7 @@ export function BankPanel({
               <>
                 <span>{bank.name}</span>
                 <span className="banks__count">{bank.pads.length}</span>
-                {bank.id === active?.id && (
+                {bank.id === activeTabId && (
                   <button
                     className="banks__delete"
                     title="Delete this bank"
