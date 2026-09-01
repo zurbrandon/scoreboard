@@ -2178,6 +2178,98 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .pad-cell { transition: opacity 120ms ease; }
 
 
+/* Where a song starts, as a popover on the button that asks for it. Same shape
+   and same manners as .tagpop — it's the same kind of job. */
+.startpop {
+  z-index: 6;
+  width: 236px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-xl);
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.9);
+}
+.startpop__head {
+  font-size: var(--t-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.startpop__input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--t-action);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.startpop__input:focus { outline: none; border-color: var(--accent); }
+/* A half-typed time is not an error to shout about — it just isn't savable yet,
+   and Save is already disabled. A quiet red edge is enough of a "not yet". */
+.startpop__input[aria-invalid='true'] { border-color: var(--danger); }
+.startpop__grab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--t-label);
+  font-weight: 700;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.startpop__grab:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.startpop__grab:disabled {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+}
+.startpop__row { display: flex; align-items: center; gap: 8px; }
+.startpop__clear,
+.startpop__save {
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: var(--t-label);
+  font-weight: 700;
+  cursor: pointer;
+}
+.startpop__clear { flex: none; background: transparent; color: var(--muted); }
+.startpop__clear:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+.startpop__save {
+  flex: 1;
+  border-color: color-mix(in srgb, var(--green) 45%, transparent);
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+.startpop__save:hover:not(:disabled) { background: color-mix(in srgb, var(--green) 26%, transparent); }
+.startpop__clear:disabled,
+.startpop__save:disabled { opacity: 0.4; cursor: default; }
+
+/* A start time reads as a chip beside the tags, but not AS a tag — it's a
+   different kind of fact, so it borrows the accent rather than the tag grey. */
+.sound__tag--start {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
 /* The tag list as a popover on the button that asks for it. */
 .tagpop {
   z-index: 6;

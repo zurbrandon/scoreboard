@@ -44,6 +44,11 @@ export interface SoundTrackInfo {
   name: string
   url: string // a sbmedia:// URL the renderer can play
   tags: string[] // normalized (lowercased, collapsed) so casing can't fork a tag
+  /** Seconds into the file where this song should start, for one that doesn't
+   *  get going until a minute in. Absent means the top. A property of the SONG,
+   *  not of a pad: the same run-in starts in the same place wherever it's fired
+   *  from, which is why it rides with the tags rather than on the board. */
+  startAt?: number
 }
 
 export interface SoundLibraryUpdate {
@@ -58,6 +63,11 @@ export interface SoundLibraryUpdate {
 // wake the projector mid-animation for something only the soundboard displays.
 export interface SoundProgress {
   name: string
+  /** The playing track's id (its file path), so a surface that wants to act on
+   *  the song — setting where it starts, say — can tell WHICH song it is rather
+   *  than matching on a display name two files could share. Empty when nothing
+   *  is playing, or when what's playing isn't a sound-library track. */
+  trackId: string
   position: number // seconds
   duration: number // seconds; 0 while unknown (metadata still loading)
   playing: boolean
@@ -110,6 +120,9 @@ export interface ShowboardBridge {
   /** Add and/or remove tags across many tracks at once — the bulk gesture that
    *  makes curating a few hundred songs bearable. */
   setSoundTags(paths: string[], add: string[], remove: string[]): void
+  /** Set (or clear, with null) where a song starts. Stored beside its tags, so
+   *  it survives a rescan and applies wherever the song is fired from. */
+  setSoundStart(path: string, startAt: number | null): void
   onSoundLibrary(callback: (update: SoundLibraryUpdate) => void): () => void
   /** Operator → main: what's sounding. Only the operator window plays, so only
    *  it can report. */

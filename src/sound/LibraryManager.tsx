@@ -8,6 +8,8 @@ import type { SoundBank } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
 import { filterTracks } from './search'
 import { TagEditor } from './TagEditor'
+import { StartEditor } from './StartEditor'
+import { formatTimecode } from '../shared/timecode'
 import { makePads } from './pads'
 
 export function LibraryManager({
@@ -28,6 +30,9 @@ export function LibraryManager({
   const [query, setQuery] = useState('')
   const [pinned, setPinned] = useState<string[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  // Same shape as `tagging` below: which row's start-time popover is open, and
+  // where to hang it.
+  const [timing, setTiming] = useState<{ trackId: string; anchor: DOMRect } | null>(null)
   // Which row's tag popover is open, and where its button is — the popover is
   // positioned against the viewport, since the list it lives in scrolls.
   const [tagging, setTagging] = useState<{ trackId: string; anchor: DOMRect } | null>(null)
@@ -159,6 +164,14 @@ export function LibraryManager({
                   </button>
                   <span className="librow__name">{track.name}</span>
                   <span className="librow__tags">
+                    {/* Visible on the row, not just in the popover: which songs
+                        start late is exactly the thing you want to see while
+                        scanning the library, and it's invisible otherwise. */}
+                    {track.startAt !== undefined && (
+                      <span className="sound__tag sound__tag--start" title={`Starts at ${formatTimecode(track.startAt)}`}>
+                        ▶ {formatTimecode(track.startAt)}
+                      </span>
+                    )}
                     {track.tags.map((tag) => (
                       <span key={tag} className="sound__tag">
                         {tag}
@@ -195,7 +208,30 @@ export function LibraryManager({
                     >
                       Add tag{targets.length > 1 ? ` (${targets.length})` : ''}
                     </button>
+                    {/* Always this one row, never the selection: a start time
+                        belongs to one song, and "set them all to 1:10" is not a
+                        thing anyone means. */}
+                    <button
+                      className="librow__btn"
+                      title="Where this song starts"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const anchor = e.currentTarget.getBoundingClientRect()
+                        setTiming((open) =>
+                          open?.trackId === track.id ? null : { trackId: track.id, anchor },
+                        )
+                      }}
+                    >
+                      {track.startAt !== undefined ? formatTimecode(track.startAt) : 'Start'}
+                    </button>
                   </span>
+                  {timing?.trackId === track.id && (
+                    <StartEditor
+                      track={track}
+                      anchor={timing.anchor}
+                      onClose={() => setTiming(null)}
+                    />
+                  )}
                   {tagging?.trackId === track.id && (
                     <TagEditor
                       selected={targets}

@@ -64,6 +64,8 @@ const bridge: ShowboardBridge = {
   requestSoundLibrary: () => ipcRenderer.send('showboard:requestSoundLibrary'),
   setSoundTags: (paths, add, remove) =>
     ipcRenderer.send('showboard:setSoundTags', { paths, add, remove }),
+  setSoundStart: (path, startAt) =>
+    ipcRenderer.send('showboard:setSoundStart', { path, startAt }),
   onSoundLibrary: (callback) => {
     const listener = (_e: unknown, update: SoundLibraryUpdate) => callback(update)
     ipcRenderer.on('showboard:soundLibrary', listener)

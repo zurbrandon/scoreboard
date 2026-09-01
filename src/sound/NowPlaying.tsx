@@ -9,15 +9,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDispatch } from '../store/react'
 import type { SoundProgress } from '../shared/bridge'
+import { formatTimecode } from '../shared/timecode'
 
-const SILENT: SoundProgress = { name: '', position: 0, duration: 0, playing: false }
-
-function clock(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+const SILENT: SoundProgress = { name: '', trackId: '', position: 0, duration: 0, playing: false }
 
 export function NowPlaying() {
   const dispatch = useDispatch()
@@ -76,7 +70,7 @@ export function NowPlaying() {
       />
 
       <span className="now-playing__time">
-        {clock(position)} {duration > 0 && `/ ${clock(duration)}`}
+        {formatTimecode(position)} {duration > 0 && `/ ${formatTimecode(duration)}`}
       </span>
 
       <button className="pill" disabled={!playing} onClick={() => dispatch({ type: 'sound.stop' })}>

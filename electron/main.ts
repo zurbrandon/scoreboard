@@ -23,7 +23,7 @@ import type {
 } from '../src/shared/bridge'
 import type { MomentKind } from '../src/core/state'
 import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
-import { normalizeTags } from '../src/shared/soundTags'
+import { normalizeSoundMeta, normalizeTags, serializeSoundMeta, type SoundMeta } from '../src/shared/soundTags'
 import { AUDIO_EXTENSIONS, findAudioFiles, trackName } from '../src/shared/soundScan'
 import { parseByteRange } from '../src/shared/byteRange'
 
@@ -359,17 +359,20 @@ function pushTracks() {
 // (or adding songs to it) never loses them. Moving or renaming a file DOES
 // orphan its tags — a re-link pass is future work, not something to paper over
 // silently.
-let soundTags: Record<string, string[]> = {}
+let soundTags: Record<string, SoundMeta> = {}
 
-function loadSoundTags(): Record<string, string[]> {
+function loadSoundTags(): Record<string, SoundMeta> {
   try {
     const parsed = JSON.parse(readFileSync(soundTagsFile(), 'utf-8'))
     if (!parsed || typeof parsed !== 'object') return {}
     // Re-normalize on read: a hand-edited file shouldn't be able to introduce
-    // casing variants that fork a tag in the UI.
-    const out: Record<string, string[]> = {}
-    for (const [path, tags] of Object.entries(parsed)) {
-      if (Array.isArray(tags)) out[path] = normalizeTags(tags as unknown[])
+    // casing variants that fork a tag in the UI, or a start time that seeks
+    // somewhere impossible. Entries are read in either shape — see
+    // normalizeSoundMeta — so a file written before start times still loads.
+    const out: Record<string, SoundMeta> = {}
+    for (const [path, entry] of Object.entries(parsed)) {
+      const meta = normalizeSoundMeta(entry)
+      if (meta) out[path] = meta
     }
     return out
   } catch {
@@ -379,7 +382,12 @@ function loadSoundTags(): Record<string, string[]> {
 
 function saveSoundTags() {
   try {
-    writeFileSync(soundTagsFile(), JSON.stringify(soundTags))
+    const out: Record<string, unknown> = {}
+    for (const [path, meta] of Object.entries(soundTags)) {
+      const entry = serializeSoundMeta(meta)
+      if (entry) out[path] = entry
+    }
+    writeFileSync(soundTagsFile(), JSON.stringify(out))
   } catch (err) {
     console.warn('[main] failed to save sound tags:', err)
   }
@@ -393,7 +401,8 @@ function scanSoundFolder(folder: string): SoundTrackInfo[] {
     id: full,
     name: trackName(basename(full)),
     url: `sbmedia://audio/?p=${encodeURIComponent(full)}`,
-    tags: soundTags[full] ?? [],
+    tags: soundTags[full]?.tags ?? [],
+    startAt: soundTags[full]?.startAt,
   }))
 }
 
@@ -616,12 +625,39 @@ function registerIpc() {
       const removing = new Set(normalizeTags(Array.isArray(remove) ? remove : []))
       for (const path of paths) {
         if (typeof path !== 'string') continue
-        const next = new Set(soundTags[path] ?? [])
+        const current = soundTags[path]
+        const next = new Set(current?.tags ?? [])
         for (const tag of adding) next.add(tag)
         for (const tag of removing) next.delete(tag)
-        if (next.size > 0) soundTags[path] = [...next].sort()
-        else delete soundTags[path]
+        // A song with no tags still has a row here if it carries a start time.
+        if (next.size > 0 || current?.startAt !== undefined) {
+          soundTags[path] = { tags: [...next].sort(), ...(current?.startAt !== undefined ? { startAt: current.startAt } : {}) }
+        } else {
+          delete soundTags[path]
+        }
       }
+      saveSoundTags()
+      pushSoundLibrary()
+    },
+  )
+
+  // Where a song starts. Stored beside its tags because it belongs to the SONG:
+  // the same run-in starts in the same place whether it's fired from a pad, a
+  // tag run or a show cue. null clears it back to the top of the file.
+  ipcMain.on(
+    'showboard:setSoundStart',
+    (_event, { path, startAt }: { path: string; startAt: number | null }) => {
+      if (typeof path !== 'string' || path === '') return
+      const current = soundTags[path]
+      const meta: SoundMeta = {
+        tags: current?.tags ?? [],
+        ...(typeof startAt === 'number' && startAt > 0 ? { startAt } : {}),
+      }
+      // normalizeSoundMeta is the arbiter of "is this worth storing", so a
+      // cleared start time on an untagged song drops the row entirely.
+      const kept = normalizeSoundMeta(meta)
+      if (kept) soundTags[path] = kept
+      else delete soundTags[path]
       saveSoundTags()
       pushSoundLibrary()
     },

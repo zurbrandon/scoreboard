@@ -16,6 +16,9 @@ import type { SoundProgress } from '../shared/bridge'
 
 export interface LoadedTrack extends BumperTrack {
   url: string // object URL (browser) or sbmedia:// URL (Electron)
+  /** Seconds into the file where this song should start. Honoured by every play
+   *  path, since they all funnel through playLoadedTrack. */
+  startAt?: number
 }
 
 /** A sound-library track. Carries its tags, which is what lets a behavior's
@@ -83,6 +86,7 @@ export function createAudioController(store: Store): AudioController {
   // slide cue, a moment, or a pad. The now-playing bar shows all of them, since
   // "what am I hearing" doesn't care which button caused it.
   let currentName = ''
+  let currentId = ''
   // Who started what's sounding. The deck and the soundboard each take down what
   // they started: "cue to black" is a show gesture and shouldn't kill house
   // music a pad started, and the deck's STOP shouldn't even arm for it. The
@@ -139,6 +143,7 @@ export function createAudioController(store: Store): AudioController {
     currentIsMoment = false
     currentCueTrackId = null
     currentName = ''
+    currentId = ''
     currentSource = 'show'
     setPlaying(false)
   }
@@ -205,6 +210,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentId = track.id
       currentSource = 'show'
       applyVolume()
       // play() returns a promise that rejects under autoplay policy or decode
@@ -244,6 +250,7 @@ export function createAudioController(store: Store): AudioController {
       audio = new Audio(track.url)
       currentCueTrackId = id
       currentName = track.name
+      currentId = track.id
       currentSource = 'show'
       applyVolume()
       // Free the element when the song finishes on its own (no auto-fade to do it).
@@ -285,8 +292,27 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentId = track.id
       currentSource = source
       applyVolume()
+      // A song that doesn't get going until a minute in starts where it starts.
+      // Seeking has to wait for metadata — currentTime before the duration is
+      // known is silently dropped — but metadata always lands before the first
+      // sample is audible, so nothing is heard from the top on the way past.
+      const startAt = track.startAt ?? 0
+      if (startAt > 0) {
+        const el = audio
+        el.addEventListener(
+          'loadedmetadata',
+          () => {
+            // Guard the duration: a start time left over from a file that was
+            // replaced by a shorter one would otherwise seek past the end and
+            // play nothing at all.
+            if (Number.isFinite(el.duration) && startAt < el.duration) el.currentTime = startAt
+          },
+          { once: true },
+        )
+      }
       if (fade) scheduleFade()
       else audio.addEventListener('ended', () => releaseAudio(), { once: true })
       void audio.play().catch((err) => {
@@ -370,6 +396,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentId = track.id
       currentSource = 'show'
       applyVolume()
       void audio.play().catch((err) => {
@@ -396,6 +423,7 @@ export function createAudioController(store: Store): AudioController {
       fadeGain = 1
       audio = new Audio(track.url)
       currentName = track.name
+      currentId = track.id
       currentSource = 'show'
       applyVolume()
       // Free the element if the song finishes on its own (no auto-fade to do it).
@@ -539,6 +567,7 @@ export function createAudioController(store: Store): AudioController {
     getProgress() {
       return {
         name: currentName,
+        trackId: currentId,
         position: audio?.currentTime ?? 0,
         // duration is NaN until metadata loads; report 0 so the bar can say
         // "not yet" rather than rendering a NaN-wide fill.
