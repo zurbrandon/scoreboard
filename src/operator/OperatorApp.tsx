@@ -1509,6 +1509,19 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
             >
               Full-screen image
             </button>
+            {/* The same slide "Centred statement" makes, offered here too because
+                this is how you go looking for it: not "a text layout that can
+                have a picture" but "a picture with words on it". Both land on
+                the same card. */}
+            <button
+              className="slide-add__item"
+              onClick={() => {
+                dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'centered', deck })
+                setAddOpen(false)
+              }}
+            >
+              Image + centred text
+            </button>
             <button
               className="slide-add__item"
               onClick={() => {
@@ -1676,6 +1689,7 @@ function LogoSlideCard({ slide, selected }: { slide: LogoSlide; selected: boolea
         onClick={(e) => e.stopPropagation()}
         onCommit={(v) => dispatch({ type: 'slide.setWebsite', id: slide.id, website: v })}
       />
+      <SlideCueRow slide={slide} />
       <button
         className="logo-card__remove"
         aria-label={`Remove ${slide.name}`}
@@ -1778,6 +1792,29 @@ function ImageSlideCard({ slide, selected }: { slide: ImageSlide; selected: bool
           {busy ? 'Loading…' : 'Replace'}
         </button>
       )}
+      {/* Fill or fit. A full-screen image usually wants to fill, which is why
+          new ones do — but a poster or a screenshot you need all of wants to
+          fit, so it stays a choice rather than a rule. */}
+      {slide.src && (
+        <div className="fitpick" onClick={(e) => e.stopPropagation()}>
+          {([
+            { value: 'cover', label: 'Fill screen' },
+            { value: 'contain', label: 'Fit whole image' },
+          ] as const).map((opt) => (
+            <button
+              key={opt.value}
+              className={`fitpick__opt${
+                (slide.fit ?? 'contain') === opt.value ? ' fitpick__opt--on' : ''
+              }`}
+              aria-pressed={(slide.fit ?? 'contain') === opt.value}
+              onClick={() => dispatch({ type: 'slide.setImageFit', id: slide.id, fit: opt.value })}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <SlideCueRow slide={slide} />
       <button
         className="text-card__remove image-card__remove"
         aria-label="Remove slide"
@@ -1978,6 +2015,7 @@ function TextSlideCard({
         }}
       />
 
+      <SlideCueRow slide={slide} />
       <button
         className="logo-card__remove"
         aria-label="Remove slide"
@@ -2015,27 +2053,74 @@ function TextSlideCard({
 // it; Black stops it. (The old Pre-show tab, folded in as a slide type.)
 // A scripted show-intro beat in the deck: a labeled card with the beat's name,
 // plus its one editable field (a name, a roster, or nothing) inline.
-function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolean }) {
+// Effect + music for one slide, on every slide.
+//
+// This used to live only on the show beats, which made a cue feel like a
+// property of ComedySportz's scripted intros rather than of a slide. It isn't:
+// a card you made up yourself is exactly as likely to want a sting under it.
+// Both default to the do-nothing option, so adding this to every card adds a
+// capability without adding a decision.
+function SlideCueRow({ slide }: { slide: Slide }) {
   const dispatch = useDispatch()
-  const [confirming, setConfirming] = useState(false)
   const library = useAppState((s) => s.music.library)
-  const meta = SHOW_BEAT_META[slide.beat]
+  const cue = 'cue' in slide ? slide.cue : undefined
+
   // Merge the effect into the cue (''/none clears it; the reducer drops an empty cue).
   const setCueEffect = (value: string) =>
-    dispatch({ type: 'slide.setCue', id: slide.id, cue: { ...slide.cue, effect: value || undefined } })
+    dispatch({ type: 'slide.setCue', id: slide.id, cue: { ...cue, effect: value || undefined } })
   // Music is three-way: Continue (''), No music (stop), or a specific track.
   // Rebuild the cue so trackId and silence stay mutually exclusive.
   const setCueMusic = (value: string) => {
-    const base: { effect?: string } = { effect: slide.cue?.effect }
-    const cue =
-      value === CUE_SILENCE
-        ? { ...base, silence: true }
-        : value
-          ? { ...base, trackId: value }
-          : base
-    dispatch({ type: 'slide.setCue', id: slide.id, cue })
+    const base: { effect?: string } = { effect: cue?.effect }
+    const next =
+      value === CUE_SILENCE ? { ...base, silence: true } : value ? { ...base, trackId: value } : base
+    dispatch({ type: 'slide.setCue', id: slide.id, cue: next })
   }
-  const musicValue = slide.cue?.silence ? CUE_SILENCE : (slide.cue?.trackId ?? '')
+  const musicValue = cue?.silence ? CUE_SILENCE : (cue?.trackId ?? '')
+
+  return (
+    <div className="show-cue" onClick={(e) => e.stopPropagation()}>
+      <select
+        className="show-cue__select"
+        aria-label="Effect when shown"
+        value={cue?.effect ?? ''}
+        onChange={(e) => setCueEffect(e.target.value)}
+      >
+        <option value="">✨ No effect</option>
+        {CUE_EFFECT_OPTIONS.map((fx) => (
+          <option key={fx.kind} value={fx.kind}>
+            {fx.icon} {fx.title}
+          </option>
+        ))}
+      </select>
+      <select
+        className="show-cue__select"
+        aria-label="Music when shown"
+        value={musicValue}
+        onChange={(e) => setCueMusic(e.target.value)}
+        title="Continue the current song, stop it, or start a specific one when this slide is shown"
+      >
+        <option value="">⏸ Continue current music</option>
+        <option value={CUE_SILENCE}>🔇 No music (fade out)</option>
+        {library.map((t) => (
+          <option key={t.id} value={t.id}>
+            🎵 {t.name}
+          </option>
+        ))}
+        {library.length === 0 && (
+          <option value="" disabled>
+            — no tracks loaded —
+          </option>
+        )}
+      </select>
+    </div>
+  )
+}
+
+function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolean }) {
+  const dispatch = useDispatch()
+  const [confirming, setConfirming] = useState(false)
+  const meta = SHOW_BEAT_META[slide.beat]
   const teamCls = slide.beat.endsWith('blue') ? 'show-card--blue' : slide.beat.endsWith('red') ? 'show-card--red' : ''
   // The roster is stored as newline-joined names; the team beats edit it as four
   // positional slots (a 2×2 grid). Empty slots stay as blank lines so positions
@@ -2080,41 +2165,7 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
           ))}
         </div>
       )}
-      <div className="show-cue" onClick={(e) => e.stopPropagation()}>
-        <select
-          className="show-cue__select"
-          aria-label="Effect when shown"
-          value={slide.cue?.effect ?? ''}
-          onChange={(e) => setCueEffect(e.target.value)}
-        >
-          <option value="">✨ No effect</option>
-          {CUE_EFFECT_OPTIONS.map((fx) => (
-            <option key={fx.kind} value={fx.kind}>
-              {fx.icon} {fx.title}
-            </option>
-          ))}
-        </select>
-        <select
-          className="show-cue__select"
-          aria-label="Music when shown"
-          value={musicValue}
-          onChange={(e) => setCueMusic(e.target.value)}
-          title="Continue the current song, stop it, or start a specific one when this slide is shown"
-        >
-          <option value="">⏸ Continue current music</option>
-          <option value={CUE_SILENCE}>🔇 No music (fade out)</option>
-          {library.map((t) => (
-            <option key={t.id} value={t.id}>
-              🎵 {t.name}
-            </option>
-          ))}
-          {library.length === 0 && (
-            <option value="" disabled>
-              — no tracks loaded —
-            </option>
-          )}
-        </select>
-      </div>
+      <SlideCueRow slide={slide} />
       <button
         className="logo-card__remove"
         aria-label="Remove show beat"
@@ -2163,6 +2214,7 @@ function ReactionSlideCard({ slide, selected }: { slide: ReactionSlide; selected
         <span className="reaction-card__tag">🎭 Yay Boo</span>
         <span className="reaction-card__sub">Flash yay / boo per team, live</span>
       </div>
+      <SlideCueRow slide={slide} />
       <button
         className="logo-card__remove"
         aria-label="Remove slide"
@@ -2239,6 +2291,7 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
         onClick={(e) => e.stopPropagation()}
         onCommit={(v) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: v })}
       />
+      <SlideCueRow slide={slide} />
       <button
         className="logo-card__remove"
         aria-label="Remove slideshow slide"

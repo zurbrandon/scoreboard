@@ -1047,6 +1047,70 @@ describe('generic text slides', () => {
   })
 })
 
+describe('cues belong to every slide', () => {
+  it('keeps a cue on a text slide across a reload', () => {
+    // The bug this guards: cues were attached on load for show beats only, so a
+    // cue set on any other slide type vanished the next time you opened the app.
+    for (const type of ['text', 'image', 'logo', 'slideshow', 'reaction'] as const) {
+      const [slide] = normSavedTemplates([
+        {
+          id: 't',
+          name: 'n',
+          slides: [{ id: 's1', type, deck: 'show', cue: { effect: 'confetti', trackId: 'song-1' } }],
+        },
+      ])[0].slides
+      expect(slide.cue, `${type} lost its cue`).toEqual({ effect: 'confetti', trackId: 'song-1' })
+    }
+  })
+
+  it('still keeps one on a show beat', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'show', deck: 'show', beat: 'ref', cue: { silence: true } }] },
+    ])[0].slides
+    expect(slide.cue).toEqual({ silence: true })
+  })
+
+  it('leaves a slide with no cue cueless rather than storing an empty one', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show' }] },
+    ])[0].slides
+    expect(slide.cue).toBeUndefined()
+  })
+})
+
+describe('how an image meets the frame', () => {
+  it('fills the screen for a slide made now', () => {
+    const after = run({ type: 'slide.addImage', id: 'im', deck: 'show' })
+    const img = after.slides.items.find((s) => s.id === 'im')
+    expect(img?.type === 'image' && img.fit).toBe('cover')
+  })
+
+  it('letterboxes a slide saved before the choice existed', () => {
+    // Absent fit has to keep meaning contain, or every image slide already in a
+    // show would silently start cropping.
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'image', deck: 'show', src: 'data:x' }] },
+    ])[0].slides
+    expect(slide.type === 'image' && slide.fit).toBeUndefined()
+  })
+
+  it('round-trips an explicit choice', () => {
+    for (const fit of ['cover', 'contain'] as const) {
+      const [slide] = normSavedTemplates([
+        { id: 't', name: 'n', slides: [{ id: 's1', type: 'image', deck: 'show', src: 'data:x', fit }] },
+      ])[0].slides
+      expect(slide.type === 'image' && slide.fit).toBe(fit)
+    }
+  })
+
+  it('ignores a fit it does not recognise', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'image', deck: 'show', src: 'data:x', fit: 'stretch' }] },
+    ])[0].slides
+    expect(slide.type === 'image' && slide.fit).toBeUndefined()
+  })
+})
+
 describe('robustness', () => {
   it('ignores an unrecognized command instead of returning undefined', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

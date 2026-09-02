@@ -377,6 +377,16 @@ function baseReduce(state: AppState, command: Command): AppState {
       return updateSlide(state, command.id, (s) =>
         s.type === 'logo' ? { ...s, website: command.website } : s,
       )
+    case 'slide.setImageFit':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: state.slides.items.map((sl) =>
+            sl.id === command.id && sl.type === 'image' ? { ...sl, fit: command.fit } : sl,
+          ),
+        },
+      }
     case 'slide.setTextBg':
       return {
         ...state,

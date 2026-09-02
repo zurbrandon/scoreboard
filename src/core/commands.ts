@@ -47,6 +47,7 @@ export type Command =
   | { type: 'slide.setShowField'; id: string; field: 'name' | 'roster'; value: string } // show beat's name / roster
   | { type: 'slide.setCue'; id: string; cue: SlideCue } // bind a reveal cue (effect / music) to a slide
   | { type: 'slide.setImage'; id: string; src: string } // set an image slide's picture (data URL)
+  | { type: 'slide.setImageFit'; id: string; fit: 'cover' | 'contain' } // fill the screen, or letterbox it
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
   | { type: 'slide.setSlideshowUrl'; id: string; url: string } // slideshow slide's embed URL
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide

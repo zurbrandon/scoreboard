@@ -71,10 +71,18 @@ export type ShowBeat =
   | 'captain-blue' // the Blue captain — single name
   | 'captain-red' // the Red captain — single name
 
-export interface LogoSlide {
+/** What every slide has, whatever it renders. The cue lives here rather than on
+ *  the show beats alone: firing an effect or a music change belongs to the
+ *  MOMENT a slide goes up, not to the kind of slide it happens to be. A card you
+ *  invented is as likely to want a sting under it as a scripted intro is. */
+export interface SlideBase {
   id: string
-  type: 'logo'
   deck: SlideDeck
+  cue?: SlideCue
+}
+
+export interface LogoSlide extends SlideBase {
+  type: 'logo'
   name: string
   /** Bundled path like 'logos/comedysportz.png', or a data: URL (uploads). */
   src: string
@@ -84,20 +92,22 @@ export interface LogoSlide {
 
 // A full-screen image. `src` is a data: URL (dropped/uploaded/downloaded) or ''
 // when the slide is still empty (awaiting a drop).
-export interface ImageSlide {
-  id: string
+export interface ImageSlide extends SlideBase {
   type: 'image'
-  deck: SlideDeck
+  /** How the picture meets the frame. 'cover' fills the screen and crops the
+   *  overflow; 'contain' shows the whole image and letterboxes it on black.
+   *  ABSENT means contain — that was the only behaviour before this existed, so
+   *  a slide made earlier keeps looking exactly as it did. New slides are
+   *  created as 'cover', which is what a full-screen image usually wants. */
+  fit?: 'cover' | 'contain'
   src: string
 }
 
 // Text slide carries fields for every layout; only the ones its `template` uses
 // are rendered. `liveType`: when on and the slide is on air, edits mirror to the
 // projector in real time instead of waiting for a reveal.
-export interface TextSlide {
-  id: string
+export interface TextSlide extends SlideBase {
   type: 'text'
-  deck: SlideDeck
   template: TextTemplate
   /** Optional full-bleed background image (a data: URL), behind a scrim so the
    *  text stays readable over it. Works with any of the templates — "background
@@ -115,10 +125,8 @@ export interface TextSlide {
 // A slideshow slide holds one URL — typically a published Google Slides embed
 // link that auto-plays/loops. Revealing it plays it; Black stops it. This is the
 // old "Pre-show" folded in as just another slide type.
-export interface SlideshowSlide {
-  id: string
+export interface SlideshowSlide extends SlideBase {
   type: 'slideshow'
-  deck: SlideDeck
   url: string
 }
 
@@ -128,10 +136,8 @@ export interface SlideshowSlide {
 // color with the word. The live flash lives on AppState.reaction, not the slide,
 // so the slide stays a simple, reusable marker in the deck.
 export type ReactionKind = 'yay' | 'boo'
-export interface ReactionSlide {
-  id: string
+export interface ReactionSlide extends SlideBase {
   type: 'reaction'
-  deck: SlideDeck
 }
 
 // A cue a slide carries: fire this on Reveal (never on a silent update). `effect`
@@ -151,14 +157,11 @@ export interface SlideCue {
 // A scripted show-intro beat. `name` feeds the single-name beats (ref, single
 // captain); `roster` is one player per line for the team beats. Unused fields
 // stay empty — the beat decides what it renders. `cue` fires on Reveal.
-export interface ShowSlide {
-  id: string
+export interface ShowSlide extends SlideBase {
   type: 'show'
-  deck: SlideDeck
   beat: ShowBeat
   name: string
   roster: string
-  cue?: SlideCue
   // Set on the transient captain card fired from the deck's quick buttons: a
   // generic "{team} captain" intro that ignores any scripted captain name, so
   // the deck triggers don't depend on a Show slide existing. Never persisted.
@@ -199,7 +202,9 @@ export function emptyTextSlide(
   return { id, type: 'text', deck, template, theme, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
 }
 export function emptyImageSlide(id: string, src = '', deck: SlideDeck = 'show'): ImageSlide {
-  return { id, type: 'image', deck, src }
+  // New image slides fill the screen; see ImageSlide.fit for why absent means
+  // contain and only new ones get 'cover'.
+  return { id, type: 'image', deck, src, fit: 'cover' }
 }
 export function emptySlideshowSlide(id: string, url = '', deck: SlideDeck = 'show'): SlideshowSlide {
   return { id, type: 'slideshow', deck, url }
@@ -780,17 +785,31 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
 function normSlide(s: Record<string, unknown>): Slide | null {
   if (!s || typeof s !== 'object') return null
   const deck = asDeck(s.deck)
+  const built = buildSlide(s, deck)
+  if (!built) return null
+  // Every slide type can carry a cue, so it's attached once here rather than by
+  // whichever branch remembered to. It used to be attached for show beats only,
+  // which meant a cue set on a text or image slide vanished on reload.
+  const cue = normCue(s.cue)
+  return cue ? { ...built, cue } : built
+}
+
+function buildSlide(s: Record<string, unknown>, deck: SlideDeck): Slide | null {
   if (s.type === 'logo') {
     return logoSlide(String(s.id ?? rid('logo')), String(s.name ?? 'Logo'), String(s.src ?? ''), String(s.website ?? ''), deck)
   }
   if (s.type === 'text') return textSlideFrom(s)
-  if (s.type === 'image') return emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''), deck)
+  if (s.type === 'image') {
+    const img = emptyImageSlide(String(s.id ?? rid('image')), String(s.src ?? ''), deck)
+    // A slide persisted before `fit` existed has none, and must stay contained.
+    if (s.fit === 'cover' || s.fit === 'contain') return { ...img, fit: s.fit }
+    const { fit: _absent, ...contained } = img
+    return contained
+  }
   if (s.type === 'slideshow') return emptySlideshowSlide(String(s.id ?? rid('show')), String(s.url ?? ''), deck)
   if (s.type === 'reaction') return reactionSlide(String(s.id ?? rid('reaction')), deck)
   if (s.type === 'show') {
-    const slide = showSlide(String(s.id ?? rid('show')), asBeat(s.beat), deck, String(s.name ?? ''), String(s.roster ?? ''))
-    const cue = normCue(s.cue)
-    return cue ? { ...slide, cue } : slide
+    return showSlide(String(s.id ?? rid('show')), asBeat(s.beat), deck, String(s.name ?? ''), String(s.roster ?? ''))
   }
   return null
 }

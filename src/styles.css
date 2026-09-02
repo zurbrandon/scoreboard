@@ -913,6 +913,28 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   gap: 6px;
 }
 /* The background image on a text card: a thumbnail, a name, and a way out. */
+/* Fill-or-fit on an image card: two states, so a segmented pair rather than a
+   dropdown you have to open to read. */
+.fitpick { display: flex; gap: 4px; }
+.fitpick__opt {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--t-label);
+  font-weight: 700;
+  cursor: pointer;
+}
+.fitpick__opt:hover { border-color: var(--line-strong); color: var(--text); }
+.fitpick__opt--on {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+}
+
 .text-bg {
   display: flex;
   align-items: center;

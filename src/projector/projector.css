@@ -470,6 +470,14 @@
   max-height: 100%;
   object-fit: contain;
 }
+/* Filling the frame: the picture takes the whole stage and the overflow is
+   cropped, rather than sitting letterboxed on black. width/height at 100% (not
+   max-) so it grows to the frame as well as shrinking to it. */
+.scene-image--cover .scene-image__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .scene-image--reveal .scene-image__img {
   animation: reveal-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
