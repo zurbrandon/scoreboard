@@ -991,6 +991,62 @@ describe('templates cover a whole show', () => {
   })
 })
 
+describe('generic text slides', () => {
+  it('keeps the centred layout through a save/load round trip', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', template: 'centered' }] },
+    ])[0].slides
+    expect(slide.type === 'text' && slide.template).toBe('centered')
+  })
+
+  it('falls back to basic for a template it does not recognise', () => {
+    // A slide from a newer build, or a hand-edited file, must still render.
+    for (const bad of ['fancy', '', undefined, 7]) {
+      const [slide] = normSavedTemplates([
+        { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', template: bad }] },
+      ])[0].slides
+      expect(slide.type === 'text' && slide.template).toBe('basic')
+    }
+  })
+
+  it('sets and clears a background, and clearing drops the key', () => {
+    const after = run(
+      { type: 'slide.addText', id: 'tx', template: 'centered', deck: 'show' },
+      { type: 'slide.setTextBg', id: 'tx', src: 'data:image/png;base64,AAA' },
+    )
+    const withBg = after.slides.items.find((s) => s.id === 'tx')
+    expect(withBg?.type === 'text' && withBg.bg).toBe('data:image/png;base64,AAA')
+
+    const cleared = reduce(after, { type: 'slide.setTextBg', id: 'tx', src: '' })
+    const gone = cleared.slides.items.find((s) => s.id === 'tx')
+    // Absent, not '' — so "has a background" is one check everywhere downstream.
+    expect(gone && 'bg' in gone).toBe(false)
+  })
+
+  it('a background survives the trip through a template', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', template: 'basic', bg: 'data:x' }] },
+    ])[0].slides
+    expect(slide.type === 'text' && slide.bg).toBe('data:x')
+  })
+
+  it('drops an empty background rather than storing one', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', template: 'basic', bg: '' }] },
+    ])[0].slides
+    expect(slide.type === 'text' && 'bg' in slide).toBe(false)
+  })
+
+  it('leaves other slide types alone when a background is set at one', () => {
+    const after = run(
+      { type: 'slide.addImage', id: 'im', deck: 'show' },
+      { type: 'slide.setTextBg', id: 'im', src: 'data:x' },
+    )
+    const img = after.slides.items.find((s) => s.id === 'im')
+    expect(img && 'bg' in img).toBe(false) // an image slide has no background of its own
+  })
+})
+
 describe('robustness', () => {
   it('ignores an unrecognized command instead of returning undefined', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

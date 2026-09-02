@@ -47,7 +47,12 @@ export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
 // Each Text card renders with one of these layouts on the projector:
 //  - basic:     a headline + body line (the default)
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
-export type TextTemplate = 'basic' | 'quadrants'
+/** Layouts a text slide can take.
+ *  basic     — a headline with body copy under it (a clue, a rule)
+ *  centered  — one big statement, centred, with an optional smaller line
+ *  quadrants — a 2x2 grid of words */
+export type TextTemplate = 'basic' | 'centered' | 'quadrants'
+const TEXT_TEMPLATES: TextTemplate[] = ['basic', 'centered', 'quadrants']
 // Optional visual theme for a text slide (e.g. a game's look). Undefined = plain.
 export type TextTheme = 'spellingbee'
 
@@ -94,6 +99,10 @@ export interface TextSlide {
   type: 'text'
   deck: SlideDeck
   template: TextTemplate
+  /** Optional full-bleed background image (a data: URL), behind a scrim so the
+   *  text stays readable over it. Works with any of the templates — "background
+   *  image with words on it" is a layout, not a slide type of its own. */
+  bg?: string
   /** Optional visual theme (a game's look), e.g. 'spellingbee'. */
   theme?: TextTheme
   liveType: boolean
@@ -755,11 +764,16 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
     id: String(c.id ?? rid('text')),
     type: 'text',
     deck: asDeck(c.deck),
-    template: c.template === 'quadrants' ? 'quadrants' : 'basic',
+    template: TEXT_TEMPLATES.includes(c.template as TextTemplate)
+      ? (c.template as TextTemplate)
+      : 'basic',
     theme: c.theme === 'spellingbee' ? 'spellingbee' : undefined,
     liveType: wasLive ? true : Boolean(c.liveType),
     headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
     body: String(c.body ?? ''),
+    // Absent rather than '' when there's no background, so the slide's shape
+    // says "no background" instead of "a background that is the empty string".
+    ...(typeof c.bg === 'string' && c.bg !== '' ? { bg: c.bg } : {}),
     quads: normQuads(c.quads),
   }
 }

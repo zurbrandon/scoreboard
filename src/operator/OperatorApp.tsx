@@ -873,6 +873,7 @@ function ScoreboardConfig() {
 // Resolve a logo's stored src (bundled path or data: URL) for an <img>.
 const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
   { value: 'basic', label: 'Headline + body' },
+  { value: 'centered', label: 'Centred statement' },
   { value: 'quadrants', label: 'Four quadrants' },
 ]
 
@@ -1456,108 +1457,112 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
       {!pres && (addOpen ? (
         <div className="slide-add">
-          {deck === 'show' ? (
+          {/* Grouped by what a slide IS, not by which command makes it. The show
+              beats are scripted intros with their own art; everything under Text
+              is a layout you fill in; Media is a slide that's mostly a picture.
+              Laid out as a grid, because fifteen full-width rows was a list you
+              scrolled rather than a set you scanned. */}
+          {deck === 'show' && (
             <>
               <span className="slide-add__label">Show beats</span>
-              {SHOW_BEAT_ORDER.map((beat) => (
-                <button
-                  key={beat}
-                  className="slide-add__item"
-                  onClick={() => {
-                    dispatch({ type: 'slide.addShow', id: newSlideId('show'), beat, deck })
-                    setAddOpen(false)
-                  }}
-                >
-                  {SHOW_BEAT_META[beat].label}
-                </button>
-              ))}
-              <span className="slide-add__label">Other slides</span>
-              {LOGO_PRESETS.map((p) => (
-                <button
-                  key={p.name}
-                  className="slide-add__item"
-                  onClick={() => {
-                    dispatch({ type: 'slide.addLogo', id: newSlideId('logo'), name: p.name, src: p.src, deck })
-                    setAddOpen(false)
-                  }}
-                >
-                  {p.name} logo
-                </button>
-              ))}
-              <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
-                Upload logo…
-              </button>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
-                  setAddOpen(false)
-                }}
-              >
-                Image — drag one in
-              </button>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
-                  setAddOpen(false)
-                }}
-              >
-                Text — headline + body
-              </button>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
-                  setAddOpen(false)
-                }}
-              >
-                Slideshow — Google Slides link
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Games: only game-oriented slide templates — no show chrome. */}
-              <span className="slide-add__label">Game slides</span>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
-                  setAddOpen(false)
-                }}
-              >
-                Headline + subhead
-              </button>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'quadrants', deck })
-                  setAddOpen(false)
-                }}
-              >
-                Four quadrants
-              </button>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addReaction', id: newSlideId('reaction'), deck })
-                  setAddOpen(false)
-                }}
-              >
-                🎭 Yay Boo — reaction pad
-              </button>
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
-                  setAddOpen(false)
-                }}
-              >
-                Image — drag one in
-              </button>
+              <div className="slide-add__grid">
+                {SHOW_BEAT_ORDER.map((beat) => (
+                  <button
+                    key={beat}
+                    className="slide-add__item"
+                    onClick={() => {
+                      dispatch({ type: 'slide.addShow', id: newSlideId('show'), beat, deck })
+                      setAddOpen(false)
+                    }}
+                  >
+                    {SHOW_BEAT_META[beat].label}
+                  </button>
+                ))}
+              </div>
             </>
           )}
-          <button className="slide-add__cancel" onClick={() => setAddOpen(false)}>
+
+          <span className="slide-add__label">Text</span>
+          <div className="slide-add__grid">
+            {TEMPLATE_OPTIONS.map((t) => (
+              <button
+                key={t.value}
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: t.value, deck })
+                  setAddOpen(false)
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <span className="slide-add__label">Media</span>
+          <div className="slide-add__grid">
+            <button
+              className="slide-add__item"
+              onClick={() => {
+                dispatch({ type: 'slide.addImage', id: newSlideId('image'), deck })
+                setAddOpen(false)
+              }}
+            >
+              Full-screen image
+            </button>
+            <button
+              className="slide-add__item"
+              onClick={() => {
+                dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
+                setAddOpen(false)
+              }}
+            >
+              Google Slides link
+            </button>
+            {deck === 'show' && (
+              <>
+                {LOGO_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    className="slide-add__item"
+                    onClick={() => {
+                      dispatch({
+                        type: 'slide.addLogo',
+                        id: newSlideId('logo'),
+                        name: preset.name,
+                        src: preset.src,
+                        deck,
+                      })
+                      setAddOpen(false)
+                    }}
+                  >
+                    {preset.name} logo
+                  </button>
+                ))}
+                <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
+                  Upload a logo…
+                </button>
+              </>
+            )}
+          </div>
+
+          {deck === 'games' && (
+            <>
+              <span className="slide-add__label">Game slides</span>
+              <div className="slide-add__grid">
+                <button
+                  className="slide-add__item"
+                  onClick={() => {
+                    dispatch({ type: 'slide.addReaction', id: newSlideId('reaction'), deck })
+                    setAddOpen(false)
+                  }}
+                >
+                  🎭 Yay Boo — reaction pad
+                </button>
+              </div>
+            </>
+          )}
+
+        <button className="slide-add__cancel" onClick={() => setAddOpen(false)}>
             Cancel
           </button>
         </div>
@@ -1831,6 +1836,33 @@ function TextSlideCard({
 }) {
   const dispatch = useDispatch()
   const [confirming, setConfirming] = useState(false)
+  const [bgBusy, setBgBusy] = useState(false)
+  const [bgOver, setBgOver] = useState(false)
+  const bgInput = useRef<HTMLInputElement>(null)
+
+  // Same two sources the image card takes: a file off the desktop, or an image
+  // dragged out of a browser window.
+  async function ingestBg(dt: DataTransfer | File) {
+    setBgBusy(true)
+    try {
+      if (dt instanceof File) {
+        dispatch({ type: 'slide.setTextBg', id: slide.id, src: await fileToImageSrc(dt) })
+        return
+      }
+      const file = Array.from(dt.files).find((f) => f.type.startsWith('image/'))
+      if (file) {
+        dispatch({ type: 'slide.setTextBg', id: slide.id, src: await fileToImageSrc(file) })
+        return
+      }
+      const url = (dt.getData('text/uri-list') || dt.getData('text/plain')).trim()
+      if (url) dispatch({ type: 'slide.setTextBg', id: slide.id, src: await urlToImageSrc(url) })
+    } catch (err) {
+      console.warn('[slide] could not load background image:', err)
+    } finally {
+      setBgBusy(false)
+    }
+  }
+
   // Edits mirror to the projector automatically when LIVE mode is on and this is
   // the on-air slide (handled centrally in the reducer), so no per-card toggle.
   const setField = (field: 'headline' | 'body', value: string) =>
@@ -1843,19 +1875,31 @@ function TextSlideCard({
   const templateLabel = TEMPLATE_OPTIONS.find((o) => o.value === slide.template)?.label ?? slide.template
   return (
     <div
-      className={`text-card ${selected ? 'text-card--active' : ''}`}
+      className={`text-card ${selected ? 'text-card--active' : ''} ${bgOver ? 'text-card--drag' : ''}`}
       onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setBgOver(true)
+      }}
+      onDragLeave={() => setBgOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setBgOver(false)
+        void ingestBg(e.dataTransfer)
+      }}
     >
       <div className="text-card__head">
         <span className="text-card__label">{templateLabel}</span>
       </div>
 
-      {slide.template === 'basic' && (
+      {(slide.template === 'basic' || slide.template === 'centered') && (
         <>
           <BufferedTextarea
             className="text-card__headline"
             value={slide.headline}
-            placeholder="Headline (e.g. Skiing)"
+            placeholder={
+              slide.template === 'centered' ? 'The statement (e.g. HALFTIME)' : 'Headline (e.g. Skiing)'
+            }
             aria-label="Headline"
             rows={1}
             onCommit={(v) => setField('headline', v)}
@@ -1863,7 +1907,11 @@ function TextSlideCard({
           <BufferedTextarea
             className="text-card__body"
             value={slide.body}
-            placeholder={'Body — press Return for a new line\n(e.g. but with pizza sauce)'}
+            placeholder={
+              slide.template === 'centered'
+                ? 'A smaller line under it — optional'
+                : 'Body — press Return for a new line\n(e.g. but with pizza sauce)'
+            }
             aria-label="Body"
             rows={1}
             onCommit={(v) => setField('body', v)}
@@ -1885,6 +1933,50 @@ function TextSlideCard({
           ))}
         </div>
       )}
+
+      {/* A background belongs to every text layout, so it sits outside the
+          per-template blocks. Dropping an image anywhere on the card sets it —
+          the same gesture the image card already answers to. */}
+      <div className="text-bg">
+        {slide.bg ? (
+          <>
+            <span className="text-bg__thumb">
+              <img src={slide.bg} alt="" />
+            </span>
+            <span className="text-bg__name">Background image</span>
+            <button
+              className="text-bg__clear"
+              onClick={(e) => {
+                e.stopPropagation()
+                dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
+              }}
+            >
+              Remove
+            </button>
+          </>
+        ) : (
+          <button
+            className="text-bg__add"
+            onClick={(e) => {
+              e.stopPropagation()
+              bgInput.current?.click()
+            }}
+          >
+            {bgBusy ? 'Loading…' : '+ Background image — or drag one on'}
+          </button>
+        )}
+      </div>
+      <input
+        ref={bgInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) await ingestBg(file)
+        }}
+      />
 
       <button
         className="logo-card__remove"

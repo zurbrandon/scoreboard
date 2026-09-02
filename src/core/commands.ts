@@ -50,6 +50,7 @@ export type Command =
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
   | { type: 'slide.setSlideshowUrl'; id: string; url: string } // slideshow slide's embed URL
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
+  | { type: 'slide.setTextBg'; id: string; src: string } // text slide's background image; '' clears it
   | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3

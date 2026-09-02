@@ -377,6 +377,22 @@ function baseReduce(state: AppState, command: Command): AppState {
       return updateSlide(state, command.id, (s) =>
         s.type === 'logo' ? { ...s, website: command.website } : s,
       )
+    case 'slide.setTextBg':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: state.slides.items.map((sl) =>
+            sl.id === command.id && sl.type === 'text'
+              ? // Clearing drops the key rather than storing '', so "has a
+                // background" stays a single check everywhere downstream.
+                command.src === ''
+                ? (({ bg: _drop, ...rest }) => rest)(sl)
+                : { ...sl, bg: command.src }
+              : sl,
+          ),
+        },
+      }
     case 'slide.setTemplate':
       return updateSlide(state, command.id, (s) =>
         s.type === 'text' ? { ...s, template: command.template } : s,
