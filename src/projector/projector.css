@@ -121,13 +121,27 @@
   background-size: cover;
   background-position: center;
 }
-/* Darker at the edges than the middle so a centred statement sits in the
-   clearer part of the picture, and text near the bottom still holds. */
+/* How far the picture is knocked back, in three steps rather than on a slider:
+   mid-show you want to pick the one that works, not tune a number. Darker at the
+   edges than the middle throughout, so a centred statement sits in the clearer
+   part of the picture and text near the bottom still holds.
+   The two stops are set per level and the gradient itself is written once. */
 .scene-text--bg::after {
   background:
-    radial-gradient(120% 90% at 50% 45%, rgba(5, 7, 13, 0.42), rgba(5, 7, 13, 0.78) 78%),
-    linear-gradient(180deg, rgba(5, 7, 13, 0.32), rgba(5, 7, 13, 0.62));
+    radial-gradient(120% 90% at 50% 45%, rgba(5, 7, 13, var(--scrim-mid)), rgba(5, 7, 13, var(--scrim-edge)) 78%),
+    linear-gradient(180deg, rgba(5, 7, 13, calc(var(--scrim-mid) * 0.76)), rgba(5, 7, 13, calc(var(--scrim-edge) * 0.8)));
 }
+/* Full: no scrim at all. The text keeps its shadow, which is what lets it hold
+   over an arbitrary photo without one. */
+.scene-text--bg-full::after { display: none; }
+.scene-text--bg-dim { --scrim-mid: 0.42; --scrim-edge: 0.78; }
+/* Faint: the picture reads as texture behind the words rather than as a picture.
+   Heavy enough that even a bright photo stops competing. */
+.scene-text--bg-faint { --scrim-mid: 0.82; --scrim-edge: 0.93; }
+
+/* A flat colour instead of a picture — same job, no image to knock back, so no
+   scrim and no text shadow needed. */
+.scene-text--flat { background: var(--bg-flat); }
 /* The words, and the quad grid, ride above the picture and its scrim. */
 .scene-text--bg > * { position: relative; z-index: 1; }
 /* Words over a photo need their own edge, not just a scrim under them. */

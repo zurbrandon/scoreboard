@@ -871,6 +871,18 @@ function ScoreboardConfig() {
 }
 
 // Resolve a logo's stored src (bundled path or data: URL) for an <img>.
+// Backgrounds you'd actually pick in a dark theatre: the stage blacks the rest
+// of the app uses, and the two team colours. Not a colour picker — a handful of
+// choices that are guaranteed to look right beside everything else.
+const BG_COLORS: { value: string; label: string }[] = [
+  { value: '#05070d', label: 'Black' },
+  { value: '#161a26', label: 'Charcoal' },
+  { value: '#1b2a4a', label: 'Deep blue' },
+  { value: '#0a84ff', label: 'Blue' },
+  { value: '#c0392b', label: 'Red' },
+  { value: '#ffd23f', label: 'Gold' },
+]
+
 const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
   { value: 'basic', label: 'Headline + body' },
   { value: 'centered', label: 'Centred statement' },
@@ -1484,18 +1496,18 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
           <span className="slide-add__label">Text</span>
           <div className="slide-add__grid">
-            {TEMPLATE_OPTIONS.map((t) => (
-              <button
-                key={t.value}
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addText', id: newSlideId('text'), template: t.value, deck })
-                  setAddOpen(false)
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
+            {/* One entry, not one per layout. The layout, and whether there's a
+                background picture or colour, are chosen on the card — which is
+                where you're looking once the slide exists anyway. */}
+            <button
+              className="slide-add__item"
+              onClick={() => {
+                dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck })
+                setAddOpen(false)
+              }}
+            >
+              Text slide
+            </button>
           </div>
 
           <span className="slide-add__label">Media</span>
@@ -1509,19 +1521,6 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
             >
               Full-screen image
             </button>
-            {/* The same slide "Centred statement" makes, offered here too because
-                this is how you go looking for it: not "a text layout that can
-                have a picture" but "a picture with words on it". Both land on
-                the same card. */}
-            <button
-              className="slide-add__item"
-              onClick={() => {
-                dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'centered', deck })
-                setAddOpen(false)
-              }}
-            >
-              Image + centred text
-            </button>
             <button
               className="slide-add__item"
               onClick={() => {
@@ -1531,30 +1530,25 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
             >
               Google Slides link
             </button>
+            {/* One entry. Which logo — either of the built-ins, or one you
+                upload — is chosen on the card, the way the background is. */}
             {deck === 'show' && (
-              <>
-                {LOGO_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    className="slide-add__item"
-                    onClick={() => {
-                      dispatch({
-                        type: 'slide.addLogo',
-                        id: newSlideId('logo'),
-                        name: preset.name,
-                        src: preset.src,
-                        deck,
-                      })
-                      setAddOpen(false)
-                    }}
-                  >
-                    {preset.name} logo
-                  </button>
-                ))}
-                <button className="slide-add__item" onClick={() => fileInput.current?.click()}>
-                  Upload a logo…
-                </button>
-              </>
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  const first = LOGO_PRESETS[0]
+                  dispatch({
+                    type: 'slide.addLogo',
+                    id: newSlideId('logo'),
+                    name: first.name,
+                    src: first.src,
+                    deck,
+                  })
+                  setAddOpen(false)
+                }}
+              >
+                Logo
+              </button>
             )}
           </div>
 
@@ -1672,6 +1666,23 @@ function SlideRow({
 function LogoSlideCard({ slide, selected }: { slide: LogoSlide; selected: boolean }) {
   const dispatch = useDispatch()
   const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const upload = useRef<HTMLInputElement>(null)
+
+  // An uploaded logo is stored on the slide as a data: URL, the same as an
+  // uploaded image — so it travels in a saved template rather than pointing at
+  // a file that might not be there next time.
+  async function ingestLogo(file: File) {
+    setBusy(true)
+    try {
+      dispatch({ type: 'slide.setLogo', id: slide.id, name: file.name.replace(/\.[^.]+$/, ''), src: await fileToImageSrc(file) })
+    } catch (err) {
+      console.warn('[slide] could not load logo:', err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div
       className={`logo-card ${selected ? 'logo-card--active' : ''}`}
@@ -1680,6 +1691,40 @@ function LogoSlideCard({ slide, selected }: { slide: LogoSlide; selected: boolea
       <div className="logo-card__preview">
         <img src={logoImgSrc(slide.src)} alt={slide.name} />
       </div>
+      {/* Which logo. This is why there's one "Logo" entry in the add menu
+          instead of one per logo plus an upload — the choice belongs on the
+          slide, where you can change your mind without deleting it. */}
+      <div className="logopick" onClick={(e) => e.stopPropagation()}>
+        {LOGO_PRESETS.map((preset) => (
+          <button
+            key={preset.name}
+            className={`logopick__opt${slide.src === preset.src ? ' logopick__opt--on' : ''}`}
+            title={preset.name}
+            aria-label={preset.name}
+            aria-pressed={slide.src === preset.src}
+            onClick={() => dispatch({ type: 'slide.setLogo', id: slide.id, name: preset.name, src: preset.src })}
+          >
+            <img src={logoImgSrc(preset.src)} alt="" />
+          </button>
+        ))}
+        <button
+          className={`logopick__upload${slide.src.startsWith('data:') ? ' logopick__opt--on' : ''}`}
+          onClick={() => upload.current?.click()}
+        >
+          {busy ? 'Loading…' : slide.src.startsWith('data:') ? 'Yours ✓' : 'Upload…'}
+        </button>
+      </div>
+      <input
+        ref={upload}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) await ingestLogo(file)
+        }}
+      />
       <BufferedInput
         className="logo-card__site"
         type="text"
@@ -1796,15 +1841,15 @@ function ImageSlideCard({ slide, selected }: { slide: ImageSlide; selected: bool
           new ones do — but a poster or a screenshot you need all of wants to
           fit, so it stays a choice rather than a rule. */}
       {slide.src && (
-        <div className="fitpick" onClick={(e) => e.stopPropagation()}>
+        <div className="seg" onClick={(e) => e.stopPropagation()}>
           {([
             { value: 'cover', label: 'Fill screen' },
             { value: 'contain', label: 'Fit whole image' },
           ] as const).map((opt) => (
             <button
               key={opt.value}
-              className={`fitpick__opt${
-                (slide.fit ?? 'contain') === opt.value ? ' fitpick__opt--on' : ''
+              className={`seg__opt${
+                (slide.fit ?? 'contain') === opt.value ? ' seg__opt--on' : ''
               }`}
               aria-pressed={(slide.fit ?? 'contain') === opt.value}
               onClick={() => dispatch({ type: 'slide.setImageFit', id: slide.id, fit: opt.value })}
@@ -1906,10 +1951,12 @@ function TextSlideCard({
     dispatch({ type: 'slide.setField', id: slide.id, field, value })
   const setQuad = (index: number, value: string) =>
     dispatch({ type: 'slide.setQuad', id: slide.id, index, value })
-  // The layout is fixed at creation — to change it, delete and add a new slide.
-  // So the type just reads as a quiet header (matching the show-beat cards)
-  // rather than a select that adds clutter.
-  const templateLabel = TEMPLATE_OPTIONS.find((o) => o.value === slide.template)?.label ?? slide.template
+  // The layout used to be fixed at creation, on the reasoning that a switcher
+  // was clutter. That was the right call when picking the layout in the add
+  // menu was the only cost; it stopped being right once "text slide" collapsed
+  // into ONE menu entry, because then the layout has to be choosable somewhere.
+  // Switching is lossless — headline/body and the four quad words are stored
+  // side by side, so flipping back and forth loses nothing.
   return (
     <div
       className={`text-card ${selected ? 'text-card--active' : ''} ${bgOver ? 'text-card--drag' : ''}`}
@@ -1925,8 +1972,17 @@ function TextSlideCard({
         void ingestBg(e.dataTransfer)
       }}
     >
-      <div className="text-card__head">
-        <span className="text-card__label">{templateLabel}</span>
+      <div className="seg" onClick={(e) => e.stopPropagation()}>
+        {TEMPLATE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            className={`seg__opt${slide.template === opt.value ? ' seg__opt--on' : ''}`}
+            aria-pressed={slide.template === opt.value}
+            onClick={() => dispatch({ type: 'slide.setTemplate', id: slide.id, template: opt.value })}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {(slide.template === 'basic' || slide.template === 'centered') && (
@@ -1971,37 +2027,94 @@ function TextSlideCard({
         </div>
       )}
 
-      {/* A background belongs to every text layout, so it sits outside the
-          per-template blocks. Dropping an image anywhere on the card sets it —
-          the same gesture the image card already answers to. */}
-      <div className="text-bg">
-        {slide.bg ? (
-          <>
+      {/* Background: none, a colour, or a picture. One control rather than three
+          slide types, which is the whole point of the consolidation. Dropping an
+          image anywhere on the card sets it — the same gesture the image card
+          already answers to. */}
+      <div className="text-bgblock" onClick={(e) => e.stopPropagation()}>
+        <div className="seg seg--sm">
+          {([
+            { value: 'none', label: 'No background' },
+            { value: 'color', label: 'Colour' },
+            { value: 'image', label: 'Image' },
+          ] as const).map((opt) => {
+            const current = slide.bg ? 'image' : slide.bgColor ? 'color' : 'none'
+            return (
+              <button
+                key={opt.value}
+                className={`seg__opt${current === opt.value ? ' seg__opt--on' : ''}`}
+                aria-pressed={current === opt.value}
+                onClick={() => {
+                  if (opt.value === 'none') {
+                    dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
+                    dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: '' })
+                  } else if (opt.value === 'color') {
+                    // Clear the picture, since it would otherwise win over the
+                    // colour and the choice would look like it did nothing.
+                    dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
+                    if (!slide.bgColor) {
+                      dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: BG_COLORS[0].value })
+                    }
+                  } else {
+                    bgInput.current?.click()
+                  }
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {slide.bgColor && !slide.bg && (
+          <div className="swatches">
+            {BG_COLORS.map((c) => (
+              <button
+                key={c.value}
+                className={`swatch${slide.bgColor === c.value ? ' swatch--on' : ''}`}
+                style={{ background: c.value }}
+                title={c.label}
+                aria-label={c.label}
+                aria-pressed={slide.bgColor === c.value}
+                onClick={() => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: c.value })}
+              />
+            ))}
+          </div>
+        )}
+
+        {slide.bg && (
+          <div className="text-bg">
             <span className="text-bg__thumb">
               <img src={slide.bg} alt="" />
             </span>
-            <span className="text-bg__name">Background image</span>
+            {/* How far back the picture sits. Three named steps, because
+                mid-show you want to pick the one that works rather than tune
+                a number. */}
+            <div className="seg seg--sm text-bg__dim">
+              {([
+                { value: 'full', label: 'Full' },
+                { value: 'dim', label: 'Dim' },
+                { value: 'faint', label: 'Faint' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`seg__opt${(slide.bgDim ?? 'dim') === opt.value ? ' seg__opt--on' : ''}`}
+                  aria-pressed={(slide.bgDim ?? 'dim') === opt.value}
+                  onClick={() => dispatch({ type: 'slide.setTextBgDim', id: slide.id, dim: opt.value })}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
             <button
               className="text-bg__clear"
-              onClick={(e) => {
-                e.stopPropagation()
-                dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
-              }}
+              onClick={() => dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })}
             >
               Remove
             </button>
-          </>
-        ) : (
-          <button
-            className="text-bg__add"
-            onClick={(e) => {
-              e.stopPropagation()
-              bgInput.current?.click()
-            }}
-          >
-            {bgBusy ? 'Loading…' : '+ Background image — or drag one on'}
-          </button>
+          </div>
         )}
+        {bgBusy && <span className="text-bg__name">Loading…</span>}
       </div>
       <input
         ref={bgInput}

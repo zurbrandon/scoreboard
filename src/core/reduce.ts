@@ -377,6 +377,33 @@ function baseReduce(state: AppState, command: Command): AppState {
       return updateSlide(state, command.id, (s) =>
         s.type === 'logo' ? { ...s, website: command.website } : s,
       )
+    case 'slide.setTextBgDim':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: state.slides.items.map((sl) =>
+            sl.id === command.id && sl.type === 'text' ? { ...sl, bgDim: command.dim } : sl,
+          ),
+        },
+      }
+    case 'slide.setTextBgColor':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: state.slides.items.map((sl) => {
+            if (sl.id !== command.id || sl.type !== 'text') return sl
+            // Same rule as the image: cleared means the key goes, so "has a
+            // colour" is one check rather than two.
+            if (command.color === '') {
+              const { bgColor: _drop, ...rest } = sl
+              return rest
+            }
+            return { ...sl, bgColor: command.color }
+          }),
+        },
+      }
     case 'slide.setImageFit':
       return {
         ...state,
@@ -384,6 +411,18 @@ function baseReduce(state: AppState, command: Command): AppState {
           ...state.slides,
           items: state.slides.items.map((sl) =>
             sl.id === command.id && sl.type === 'image' ? { ...sl, fit: command.fit } : sl,
+          ),
+        },
+      }
+    case 'slide.setLogo':
+      return {
+        ...state,
+        slides: {
+          ...state.slides,
+          items: state.slides.items.map((sl) =>
+            sl.id === command.id && sl.type === 'logo'
+              ? { ...sl, name: command.name, src: command.src }
+              : sl,
           ),
         },
       }

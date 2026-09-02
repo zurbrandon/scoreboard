@@ -47,6 +47,15 @@ export type FinaleStage = 'idle' | 'tabulating' | 'countdown' | 'celebrate'
 // Each Text card renders with one of these layouts on the projector:
 //  - basic:     a headline + body line (the default)
 //  - quadrants: four words in a 2x2 grid (top-left, top-right, bottom-left, bottom-right)
+/** How far a background image is knocked back behind the words.
+ *  full  — the picture as it is; the text carries its own shadow to survive it
+ *  dim   — darkened enough that any photo can hold text (the default)
+ *  faint — barely there, working as texture rather than as a picture
+ *  ABSENT means dim, which is how a background behaved before the choice
+ *  existed, so a slide made earlier looks exactly as it did. */
+export type SlideBgDim = 'full' | 'dim' | 'faint'
+const BG_DIMS: SlideBgDim[] = ['full', 'dim', 'faint']
+
 /** Layouts a text slide can take.
  *  basic     — a headline with body copy under it (a clue, a rule)
  *  centered  — one big statement, centred, with an optional smaller line
@@ -113,6 +122,11 @@ export interface TextSlide extends SlideBase {
    *  text stays readable over it. Works with any of the templates — "background
    *  image with words on it" is a layout, not a slide type of its own. */
   bg?: string
+  /** How far that image is knocked back. Absent means 'dim'. */
+  bgDim?: SlideBgDim
+  /** A flat colour behind the words instead of an image. Ignored when `bg` is
+   *  set — a slide has one background, and the picture wins. */
+  bgColor?: string
   /** Optional visual theme (a game's look), e.g. 'spellingbee'. */
   theme?: TextTheme
   liveType: boolean
@@ -779,6 +793,8 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
     // Absent rather than '' when there's no background, so the slide's shape
     // says "no background" instead of "a background that is the empty string".
     ...(typeof c.bg === 'string' && c.bg !== '' ? { bg: c.bg } : {}),
+    ...(BG_DIMS.includes(c.bgDim as SlideBgDim) ? { bgDim: c.bgDim as SlideBgDim } : {}),
+    ...(typeof c.bgColor === 'string' && c.bgColor !== '' ? { bgColor: c.bgColor } : {}),
     quads: normQuads(c.quads),
   }
 }

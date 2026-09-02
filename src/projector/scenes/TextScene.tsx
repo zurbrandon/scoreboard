@@ -12,12 +12,20 @@ export function TextScene({ slide, animate = false }: { slide: TextSlide; animat
   const revealCls = animate ? 'scene-text--reveal' : ''
   const themeCls = live.theme ? `scene-text--${live.theme}` : ''
   // A background is a layout concern, not a template: any of the three can sit
-  // on one. The scrim that keeps text readable is drawn in CSS, so the image
-  // itself is all that has to reach the DOM.
-  const bgCls = live.bg ? 'scene-text--bg' : ''
+  // on one, and the scrim is drawn in CSS so only the image reaches the DOM.
+  // A slide has ONE background: a picture if it has one, otherwise a flat colour
+  // if it has one, otherwise the scene's own gradient. The picture wins so that
+  // setting an image never silently depends on what colour was chosen before it.
+  const bgCls = live.bg
+    ? `scene-text--bg scene-text--bg-${live.bgDim ?? 'dim'}`
+    : live.bgColor
+      ? 'scene-text--flat'
+      : ''
   const bgStyle: CSSProperties | undefined = live.bg
     ? ({ ['--bg-image' as string]: `url("${live.bg}")` } as CSSProperties)
-    : undefined
+    : live.bgColor
+      ? ({ ['--bg-flat' as string]: live.bgColor } as CSSProperties)
+      : undefined
 
   if (live.template === 'quadrants') {
     return (

@@ -913,11 +913,13 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   gap: 6px;
 }
 /* The background image on a text card: a thumbnail, a name, and a way out. */
-/* Fill-or-fit on an image card: two states, so a segmented pair rather than a
-   dropdown you have to open to read. */
-.fitpick { display: flex; gap: 4px; }
-.fitpick__opt {
+/* One segmented control, used wherever a slide has a small set of exclusive
+   options: which layout, what kind of background, how far it's knocked back.
+   Replaces .fitpick, which was this shape under a single-purpose name. */
+.seg { display: flex; gap: 4px; }
+.seg__opt {
   flex: 1;
+  min-width: 0;
   padding: 6px 8px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line);
@@ -927,13 +929,70 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   font-size: var(--t-label);
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.fitpick__opt:hover { border-color: var(--line-strong); color: var(--text); }
-.fitpick__opt--on {
+.seg--sm .seg__opt { padding: 5px 7px; font-size: var(--fs-micro); }
+.seg__opt:hover { border-color: var(--line-strong); color: var(--text); }
+.seg__opt--on {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--text);
 }
+
+/* Background block on a text card: the kind, then whatever that kind needs. */
+.text-bgblock { display: flex; flex-direction: column; gap: 6px; }
+.swatches { display: flex; gap: 5px; }
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  padding: 0;
+}
+.swatch--on { box-shadow: 0 0 0 2px var(--accent); }
+.text-bg__dim { flex: 1; }
+
+/* Which logo a logo slide shows: the built-ins as thumbnails, plus upload. */
+.logopick { display: flex; align-items: stretch; gap: 5px; }
+.logopick__opt {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  /* Belt and braces, because the first cut of this let two logos render at
+     intrinsic size and spill across the whole card: the box clips, and the
+     image is sized explicitly rather than by max-% against a grid track. */
+  overflow: hidden;
+}
+.logopick__opt img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.logopick__opt:hover { border-color: var(--line-strong); }
+.logopick__opt--on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.logopick__upload {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--t-label);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.logopick__upload:hover { border-color: var(--accent); color: var(--text); }
 
 .text-bg {
   display: flex;

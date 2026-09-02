@@ -1111,6 +1111,79 @@ describe('how an image meets the frame', () => {
   })
 })
 
+describe('one text slide, with background options', () => {
+  it('switching layout keeps both sets of content, so it is lossless', () => {
+    // This is what lets the three layouts collapse into one menu entry: you can
+    // flip between them without losing what you typed.
+    const after = run(
+      { type: 'slide.addText', id: 'tx', template: 'basic', deck: 'show' },
+      { type: 'slide.setField', id: 'tx', field: 'headline', value: 'Skiing' },
+      { type: 'slide.setQuad', id: 'tx', index: 0, value: 'north' },
+      { type: 'slide.setTemplate', id: 'tx', template: 'quadrants' },
+      { type: 'slide.setTemplate', id: 'tx', template: 'centered' },
+    )
+    const tx = after.slides.items.find((s) => s.id === 'tx')
+    expect(tx?.type === 'text' && tx.template).toBe('centered')
+    expect(tx?.type === 'text' && tx.headline).toBe('Skiing')
+    expect(tx?.type === 'text' && tx.quads[0]).toBe('north')
+  })
+
+  it('treats a missing dim as dim, so an older slide looks unchanged', () => {
+    const [slide] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', bg: 'data:x' }] },
+    ])[0].slides
+    expect(slide.type === 'text' && slide.bgDim).toBeUndefined()
+  })
+
+  it('round-trips each dim level and ignores one it does not know', () => {
+    for (const dim of ['full', 'dim', 'faint'] as const) {
+      const [slide] = normSavedTemplates([
+        { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', bg: 'data:x', bgDim: dim }] },
+      ])[0].slides
+      expect(slide.type === 'text' && slide.bgDim).toBe(dim)
+    }
+    const [bad] = normSavedTemplates([
+      { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', bg: 'data:x', bgDim: 'pitch' }] },
+    ])[0].slides
+    expect(bad.type === 'text' && bad.bgDim).toBeUndefined()
+  })
+
+  it('keeps a background colour, and clearing it drops the key', () => {
+    const after = run(
+      { type: 'slide.addText', id: 'tx', template: 'basic', deck: 'show' },
+      { type: 'slide.setTextBgColor', id: 'tx', color: '#0a84ff' },
+    )
+    const set = after.slides.items.find((s) => s.id === 'tx')
+    expect(set?.type === 'text' && set.bgColor).toBe('#0a84ff')
+
+    const cleared = reduce(after, { type: 'slide.setTextBgColor', id: 'tx', color: '' })
+    const gone = cleared.slides.items.find((s) => s.id === 'tx')
+    expect(gone && 'bgColor' in gone).toBe(false)
+  })
+})
+
+describe('one logo slide', () => {
+  it('can change which logo it shows', () => {
+    const after = run(
+      { type: 'slide.addLogo', id: 'lg', name: 'ComedySportz', src: 'logos/comedysportz.png', deck: 'show' },
+      { type: 'slide.setLogo', id: 'lg', name: 'Seattle Comedy Theater', src: 'logos/seattle-comedy-theater.png' },
+    )
+    const lg = after.slides.items.find((s) => s.id === 'lg')
+    expect(lg?.type === 'logo' && lg.src).toBe('logos/seattle-comedy-theater.png')
+    expect(lg?.type === 'logo' && lg.name).toBe('Seattle Comedy Theater')
+  })
+
+  it('leaves other slides alone', () => {
+    const after = run(
+      { type: 'slide.addText', id: 'tx', template: 'basic', deck: 'show' },
+      { type: 'slide.setLogo', id: 'tx', name: 'x', src: 'y' },
+    )
+    const tx = after.slides.items.find((s) => s.id === 'tx')
+    expect(tx?.type).toBe('text')
+    expect(tx && 'src' in tx).toBe(false)
+  })
+})
+
 describe('robustness', () => {
   it('ignores an unrecognized command instead of returning undefined', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

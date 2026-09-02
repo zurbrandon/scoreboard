@@ -3,7 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
-import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideCue, SlideDeck, SoundBank, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideBgDim, SlideCue, SlideDeck, SoundBank, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -49,9 +49,12 @@ export type Command =
   | { type: 'slide.setImage'; id: string; src: string } // set an image slide's picture (data URL)
   | { type: 'slide.setImageFit'; id: string; fit: 'cover' | 'contain' } // fill the screen, or letterbox it
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
+  | { type: 'slide.setLogo'; id: string; name: string; src: string } // which logo a logo slide shows
   | { type: 'slide.setSlideshowUrl'; id: string; url: string } // slideshow slide's embed URL
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
   | { type: 'slide.setTextBg'; id: string; src: string } // text slide's background image; '' clears it
+  | { type: 'slide.setTextBgDim'; id: string; dim: SlideBgDim } // how far that image is knocked back
+  | { type: 'slide.setTextBgColor'; id: string; color: string } // flat colour background; '' clears it
   | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3
