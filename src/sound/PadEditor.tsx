@@ -133,7 +133,7 @@ export function PadEditor({
       {/* Done is the big one. Remove had been the full-width button and Done an
           icon that shrank to fit, which put the destructive action four times
           the size of the safe one — and both drawn identically. Now they differ
-          in size, in position and in colour, and Remove sits at the far end so
+          in size, in position and in color, and Remove sits at the far end so
           the two aren't neighbours under a quick finger. */}
       <div className="pad-edit__row">
         <button className="pad-edit__remove" onClick={onRemove} title="Take this pad off the board">

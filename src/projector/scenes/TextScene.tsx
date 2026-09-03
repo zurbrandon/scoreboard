@@ -1,11 +1,12 @@
 // Full-screen text scene. Renders the committed (live) card in one of three
-// layouts: a headline+body clue, one big centred statement, or a 2x2 grid of
+// layouts: a headline with a line under it, or a 2x2 grid of words. Any of
 // words. Any of them can carry a background image. Either can be driven live
 // (the operator's live-type toggle just re-commits on every keystroke — the
 // projector doesn't need to know or care).
 
 import type { CSSProperties } from 'react'
 import type { TextSlide } from '../../core/state'
+import { isLightColor } from '../../shared/color'
 
 export function TextScene({ slide, animate = false }: { slide: TextSlide; animate?: boolean }) {
   const live = slide
@@ -13,13 +14,17 @@ export function TextScene({ slide, animate = false }: { slide: TextSlide; animat
   const themeCls = live.theme ? `scene-text--${live.theme}` : ''
   // A background is a layout concern, not a template: any of the three can sit
   // on one, and the scrim is drawn in CSS so only the image reaches the DOM.
-  // A slide has ONE background: a picture if it has one, otherwise a flat colour
+  // A slide has ONE background: a picture if it has one, otherwise a flat color
   // if it has one, otherwise the scene's own gradient. The picture wins so that
-  // setting an image never silently depends on what colour was chosen before it.
+  // setting an image never silently depends on what color was chosen before it.
+  //
+  // A pale background flips the words to dark. Without this, choosing white
+  // gives you white text on white — a slide that is technically working and
+  // completely blank to the audience.
   const bgCls = live.bg
     ? `scene-text--bg scene-text--bg-${live.bgDim ?? 'dim'}`
     : live.bgColor
-      ? 'scene-text--flat'
+      ? `scene-text--flat${isLightColor(live.bgColor) ? ' scene-text--flat-ink' : ''}`
       : ''
   const bgStyle: CSSProperties | undefined = live.bg
     ? ({ ['--bg-image' as string]: `url("${live.bg}")` } as CSSProperties)

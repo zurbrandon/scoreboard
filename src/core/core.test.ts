@@ -992,7 +992,7 @@ describe('templates cover a whole show', () => {
 })
 
 describe('generic text slides', () => {
-  it('reads a slide saved as the retired centred layout as a basic one', () => {
+  it('reads a slide saved as the retired centered layout as a basic one', () => {
     // 'centered' turned out to be 'basic' at another size, so it folded back in.
     // A slide saved while it existed has to keep rendering, not vanish.
     const [slide] = normSavedTemplates([
@@ -1150,7 +1150,7 @@ describe('one text slide, with background options', () => {
     expect(bad.type === 'text' && bad.bgDim).toBeUndefined()
   })
 
-  it('keeps a background colour, and clearing it drops the key', () => {
+  it('keeps a background color, and clearing it drops the key', () => {
     const after = run(
       { type: 'slide.addText', id: 'tx', template: 'basic', deck: 'show' },
       { type: 'slide.setTextBgColor', id: 'tx', color: '#0a84ff' },

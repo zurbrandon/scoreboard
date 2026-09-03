@@ -10,6 +10,7 @@ import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
+import { normalizeHexColor } from '../shared/color'
 import type { ImageSlide, LogoSlide, OperatorTab, ReactionSlide, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide, TextTemplate } from '../core/state'
 import type { Command } from '../core/commands'
 import { REVEAL_STYLES, templateSkeleton, type RevealStyle } from '../core/state'
@@ -871,16 +872,20 @@ function ScoreboardConfig() {
 }
 
 // Resolve a logo's stored src (bundled path or data: URL) for an <img>.
-// Backgrounds you'd actually pick in a dark theatre: the stage blacks the rest
-// of the app uses, and the two team colours. Not a colour picker — a handful of
-// choices that are guaranteed to look right beside everything else.
+// Backgrounds you'd actually pick in a dark theater: the stage blacks the rest
+// of the app uses, the two team colors, and enough beyond them to cover a show
+// that isn't ComedySportz. Anything else goes in the hex field beside them —
+// these are the ones guaranteed to sit right next to everything else.
 const BG_COLORS: { value: string; label: string }[] = [
   { value: '#05070d', label: 'Black' },
   { value: '#161a26', label: 'Charcoal' },
   { value: '#1b2a4a', label: 'Deep blue' },
   { value: '#0a84ff', label: 'Blue' },
   { value: '#c0392b', label: 'Red' },
+  { value: '#1f7a4c', label: 'Green' },
+  { value: '#6b3fa0', label: 'Purple' },
   { value: '#ffd23f', label: 'Gold' },
+  { value: '#f2f4f8', label: 'White' },
 ]
 
 // Only offered on the Games deck: quadrants is the board for a particular game,
@@ -1499,7 +1504,7 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
           <span className="slide-add__label">Text</span>
           <div className="slide-add__grid">
             {/* One entry, not one per layout. The layout, and whether there's a
-                background picture or colour, are chosen on the card — which is
+                background picture or color, are chosen on the card — which is
                 where you're looking once the slide exists anyway. */}
             <button
               className="slide-add__item"
@@ -1911,6 +1916,55 @@ function ImageSlideCard({ slide, selected }: { slide: ImageSlide; selected: bool
   )
 }
 
+// Any color at all, for a show whose look isn't in the swatches.
+//
+// Held as local text while you type, because a hex is only meaningful once it's
+// complete — committing per keystroke would set the background to #1, then #1a,
+// then #1a2 on the way to #1a2b3c, which on a live slide is a strobe. It lands
+// on blur, on Enter, or as soon as what's typed is a whole color.
+function HexField({ value, onCommit }: { value: string; onCommit: (color: string) => void }) {
+  const [text, setText] = useState(value)
+  // Follow the swatches when one is clicked, but never while it's being typed in.
+  const [editing, setEditing] = useState(false)
+  useEffect(() => {
+    if (!editing) setText(value)
+  }, [value, editing])
+
+  const parsed = normalizeHexColor(text)
+  const commit = () => {
+    if (parsed) onCommit(parsed)
+    else setText(value) // not a color: snap back rather than leave a lie on screen
+    setEditing(false)
+  }
+
+  return (
+    <input
+      className="hexfield"
+      value={text}
+      spellCheck={false}
+      aria-label="Background color as hex"
+      aria-invalid={text.trim() !== '' && !parsed}
+      placeholder="#1a2b3c"
+      onFocus={() => setEditing(true)}
+      onChange={(e) => {
+        setText(e.target.value)
+        // Apply the moment it's whole, so pasting a color just works.
+        const next = normalizeHexColor(e.target.value)
+        if (next) onCommit(next)
+      }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+        if (e.key === 'Escape') {
+          setText(value)
+          setEditing(false)
+          e.currentTarget.blur()
+        }
+      }}
+    />
+  )
+}
+
 function TextSlideCard({
   slide,
   selected,
@@ -2029,7 +2083,7 @@ function TextSlideCard({
         </div>
       )}
 
-      {/* Background: none, a colour, or a picture. One control rather than three
+      {/* Background: none, a color, or a picture. One control rather than three
           slide types, which is the whole point of the consolidation. Dropping an
           image anywhere on the card sets it — the same gesture the image card
           already answers to. */}
@@ -2037,7 +2091,7 @@ function TextSlideCard({
         <div className="seg seg--sm">
           {([
             { value: 'none', label: 'No background' },
-            { value: 'color', label: 'Colour' },
+            { value: 'color', label: 'Color' },
             { value: 'image', label: 'Image' },
           ] as const).map((opt) => {
             const current = slide.bg ? 'image' : slide.bgColor ? 'color' : 'none'
@@ -2052,7 +2106,7 @@ function TextSlideCard({
                     dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: '' })
                   } else if (opt.value === 'color') {
                     // Clear the picture, since it would otherwise win over the
-                    // colour and the choice would look like it did nothing.
+                    // color and the choice would look like it did nothing.
                     dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
                     if (!slide.bgColor) {
                       dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: BG_COLORS[0].value })
@@ -2081,6 +2135,10 @@ function TextSlideCard({
                 onClick={() => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: c.value })}
               />
             ))}
+            <HexField
+              value={slide.bgColor}
+              onCommit={(color) => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color })}
+            />
           </div>
         )}
 

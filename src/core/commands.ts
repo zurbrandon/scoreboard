@@ -54,7 +54,7 @@ export type Command =
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
   | { type: 'slide.setTextBg'; id: string; src: string } // text slide's background image; '' clears it
   | { type: 'slide.setTextBgDim'; id: string; dim: SlideBgDim } // how far that image is knocked back
-  | { type: 'slide.setTextBgColor'; id: string; color: string } // flat colour background; '' clears it
+  | { type: 'slide.setTextBgColor'; id: string; color: string } // flat color background; '' clears it
   | { type: 'slide.setLiveType'; id: string; value: boolean } // text slide live-typing toggle
   | { type: 'slide.setField'; id: string; field: 'headline' | 'body'; value: string } // text slide
   | { type: 'slide.setQuad'; id: string; index: number; value: string } // text slide, index 0..3

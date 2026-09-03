@@ -944,6 +944,25 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 /* Background block on a text card: the kind, then whatever that kind needs. */
 .text-bgblock { display: flex; flex-direction: column; gap: 6px; }
 .swatches { display: flex; gap: 5px; }
+/* Any color at all, beside the swatches. Sized to hold "#1a2b3c" exactly. */
+.hexfield {
+  flex: none;
+  width: 82px;
+  padding: 0 7px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: var(--fs-micro);
+  text-transform: lowercase;
+}
+.hexfield:focus { outline: none; border-color: var(--accent); }
+.hexfield::placeholder { color: var(--faint, var(--muted)); text-transform: none; }
+/* Half-typed isn't an error to shout about — it just hasn't landed yet. */
+.hexfield[aria-invalid='true'] { border-color: var(--danger); }
+
 .swatch {
   width: 26px;
   height: 26px;
@@ -2114,7 +2133,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 
 /* Done is the wide one and Remove is not. The gap is real so the destructive
    button is never the neighbour of the safe one under a quick finger, and the
-   two now differ in size, position AND colour rather than only in glyph. */
+   two now differ in size, position AND color rather than only in glyph. */
 /* Stacked, for the same reason the modes are: 150px of card cannot hold two
    labelled buttons side by side without clipping one of them, which is how the
    first attempt at this shipped "✓ Do". Done sits directly under the last field

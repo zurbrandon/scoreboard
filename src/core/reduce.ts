@@ -395,7 +395,7 @@ function baseReduce(state: AppState, command: Command): AppState {
           items: state.slides.items.map((sl) => {
             if (sl.id !== command.id || sl.type !== 'text') return sl
             // Same rule as the image: cleared means the key goes, so "has a
-            // colour" is one check rather than two.
+            // color" is one check rather than two.
             if (command.color === '') {
               const { bgColor: _drop, ...rest } = sl
               return rest

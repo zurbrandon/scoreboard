@@ -122,7 +122,7 @@
 }
 /* How far the picture is knocked back, in three steps rather than on a slider:
    mid-show you want to pick the one that works, not tune a number. Darker at the
-   edges than the middle throughout, so a centred statement sits in the clearer
+   edges than the middle throughout, so a centered statement sits in the clearer
    part of the picture and text near the bottom still holds.
    The two stops are set per level and the gradient itself is written once. */
 .scene-text--bg::after {
@@ -138,9 +138,13 @@
    Heavy enough that even a bright photo stops competing. */
 .scene-text--bg-faint { --scrim-mid: 0.82; --scrim-edge: 0.93; }
 
-/* A flat colour instead of a picture — same job, no image to knock back, so no
+/* A flat color instead of a picture — same job, no image to knock back, so no
    scrim and no text shadow needed. */
 .scene-text--flat { background: var(--bg-flat); }
+/* Pale background, dark words. Near-black rather than pure, and the body line
+   is a lighter grey of the same ink so the hierarchy survives the flip. */
+.scene-text--flat-ink { color: #10131a; }
+.scene-text--flat-ink .scene-text__body { color: #47506a; }
 /* The words, and the quad grid, ride above the picture and its scrim. */
 .scene-text--bg > * { position: relative; z-index: 1; }
 /* Words over a photo need their own edge, not just a scrim under them. */

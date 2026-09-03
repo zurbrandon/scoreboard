@@ -58,11 +58,11 @@ const BG_DIMS: SlideBgDim[] = ['full', 'dim', 'faint']
 
 /**
  * Layouts a text slide can take.
- *  basic     — a headline with a smaller line under it, centred on the stage
+ *  basic     — a headline with a smaller line under it, centered on the stage
  *  quadrants — a 2x2 grid of words, for the games that are played on one
  *
  * There was briefly a third, 'centered', which turned out to be 'basic' at a
- * different size: both centred the same two lines on the same field. That isn't
+ * different size: both centered the same two lines on the same field. That isn't
  * a layout choice, it's the same layout twice, so it's gone — the headline now
  * sizes itself to how long it is, which is what the two of them were really
  * expressing. A slide saved as 'centered' reads back as 'basic'.
@@ -131,7 +131,7 @@ export interface TextSlide extends SlideBase {
   bg?: string
   /** How far that image is knocked back. Absent means 'dim'. */
   bgDim?: SlideBgDim
-  /** A flat colour behind the words instead of an image. Ignored when `bg` is
+  /** A flat color behind the words instead of an image. Ignored when `bg` is
    *  set — a slide has one background, and the picture wins. */
   bgColor?: string
   /** Optional visual theme (a game's look), e.g. 'spellingbee'. */
