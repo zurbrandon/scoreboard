@@ -126,7 +126,20 @@ export function BoardPicker({ tracks, tags }: { tracks: SoundTrackInfo[]; tags: 
       </button>
       {open && (
         <div className="tpl__menu">
-          {savedBoards.length > 0 && <div className="tpl__label">Your boards</div>}
+          {/* The label shows even with nothing under it. The operator's picker
+              always has rows here because two templates ship with the app; no
+              boards ship, because the standard board is built from whatever
+              tags your library happens to have. So this section was invisible
+              until you saved something — which made saving, updating, renaming
+              and reloading a board look like features the soundboard didn't
+              have, when they were only features you hadn't discovered. */}
+          <div className="tpl__label">Your boards</div>
+          {savedBoards.length === 0 && (
+            <p className="tpl__empty">
+              None yet. Name this one below to keep it — then it lands here to reload, update or
+              rename.
+            </p>
+          )}
           {savedBoards.map((b) => {
             const isActive = b.id === activeId
             const pads = b.banks.reduce((n, bank) => n + bank.pads.length, 0)

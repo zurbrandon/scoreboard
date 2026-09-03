@@ -846,6 +846,16 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   box-shadow: 0 22px 48px -12px rgba(0, 0, 0, 0.85);
 }
 .tpl__label { font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 2px; }
+/* An empty section still says what belongs in it. Without this the heading sat
+   over nothing, which reads as broken rather than as empty. */
+.tpl__empty {
+  margin: 0;
+  padding: 2px 10px 6px;
+  font-size: var(--t-label);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--muted);
+}
 .tpl__row { display: flex; align-items: center; gap: 4px; border-radius: var(--r-md); }
 .tpl__row--active { background: rgba(255, 255, 255, 0.04); }
 .tpl__name {
