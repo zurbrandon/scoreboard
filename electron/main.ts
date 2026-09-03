@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync } 
 import { Readable } from 'node:stream'
 
 import { reduce } from '../src/core/reduce'
-import { createInitialState, migrateSlides, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
+import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
 import type {
   BumperTrackInfo,
@@ -103,8 +103,10 @@ function loadState(): AppState {
         activeTemplate: normActiveTemplate(parsed.activeTemplate),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         soundBanks: normSoundBanks(parsed.soundBanks),
-        savedBoards: normSavedBoards(parsed.savedBoards),
-        activeBoard: typeof parsed.activeBoard === 'string' ? parsed.activeBoard : null,
+        // Seeded from the live board when there's no saved list, so an install
+        // that already has tabs lands on a preset matching what's on screen.
+        savedBoards: normSavedBoards(parsed.savedBoards, normSoundBanks(parsed.soundBanks)),
+        activeBoard: normActiveBoard(parsed.activeBoard, normSavedBoards(parsed.savedBoards, normSoundBanks(parsed.soundBanks))),
         soundSlots: normSoundSlots(parsed.soundSlots),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,

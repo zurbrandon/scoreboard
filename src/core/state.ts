@@ -437,8 +437,45 @@ export interface SavedBoard {
   banks: SoundBank[]
 }
 
-export function normSavedBoards(v: unknown): SavedBoard[] {
-  if (!Array.isArray(v)) return []
+/** The board id a fresh install is on. */
+export const DEFAULT_BOARD_ID = 'board-standard'
+
+/**
+ * Seed the saved-board list when there isn't one.
+ *
+ * The operator has shipped two templates since day one, so its picker always
+ * names the preset you're on and always has an Update to offer. The soundboard
+ * shipped none, and the consequence was bigger than an empty list: with no
+ * active board, `dirty` can never be true, so the Update button could never
+ * render at all. The feature existed and was unreachable.
+ *
+ * Seeded FROM the live board rather than from a guess, so an install that
+ * already has tabs lands on a preset that matches what's on screen instead of
+ * being instantly dirty against a board it never chose.
+ */
+export function defaultSavedBoards(banks: readonly SoundBank[]): SavedBoard[] {
+  // No banks of its own on a fresh install: what matters is being ON a named
+  // board, not having tabs invented for you. Add a tab and it goes dirty, which
+  // is when Update has something to say.
+  return [
+    {
+      id: DEFAULT_BOARD_ID,
+      name: 'ComedySportz — Standard',
+      banks: banks.map((b) => ({ ...b, pads: [...b.pads] })),
+    },
+  ]
+}
+
+/** Which board is active: a saved id if it still exists, otherwise the first
+ *  one. Never null while boards exist — being on nothing is the state that hid
+ *  Update. */
+export function normActiveBoard(v: unknown, boards: readonly SavedBoard[]): string | null {
+  if (typeof v === 'string' && boards.some((b) => b.id === v)) return v
+  return boards[0]?.id ?? null
+}
+
+export function normSavedBoards(v: unknown, liveBanks: readonly SoundBank[] = []): SavedBoard[] {
+  if (!Array.isArray(v)) return defaultSavedBoards(liveBanks)
   const out: SavedBoard[] = []
   for (const b of v) {
     if (!b || typeof b !== 'object') continue
@@ -448,7 +485,7 @@ export function normSavedBoards(v: unknown): SavedBoard[] {
     // or older file can't put a shape in a preset that the board itself rejects.
     out.push({ id: r.id, name: r.name, banks: normSoundBanks(r.banks) })
   }
-  return out
+  return out.length > 0 ? out : defaultSavedBoards(liveBanks)
 }
 
 // --- Sound slots (a behavior pulls from a tag, not a folder) -----------------
@@ -722,8 +759,8 @@ export function createInitialState(): AppState {
     activeTemplate: null,
     savedSlideshows: [],
     soundBanks: [],
-    savedBoards: [],
-    activeBoard: null,
+    savedBoards: defaultSavedBoards([]),
+    activeBoard: DEFAULT_BOARD_ID,
     soundSlots: { runOut: null, runIn: null, captain: null, drumroll: null },
     presentation: null,
     revealPhase: 'idle',

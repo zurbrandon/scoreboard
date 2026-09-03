@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, migrateSlides, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
@@ -95,8 +95,10 @@ function loadPersisted(): AppState {
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
         soundBanks: normSoundBanks(parsed.soundBanks),
-        savedBoards: normSavedBoards(parsed.savedBoards),
-        activeBoard: typeof parsed.activeBoard === 'string' ? parsed.activeBoard : null,
+        // Seeded from the live board when there's no saved list, so an install
+        // that already has tabs lands on a preset matching what's on screen.
+        savedBoards: normSavedBoards(parsed.savedBoards, normSoundBanks(parsed.soundBanks)),
+        activeBoard: normActiveBoard(parsed.activeBoard, normSavedBoards(parsed.savedBoards, normSoundBanks(parsed.soundBanks))),
         soundSlots: normSoundSlots(parsed.soundSlots),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
         gifOverlay: null, // transient overlay; never restore across launches

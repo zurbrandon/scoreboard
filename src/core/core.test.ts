@@ -3,6 +3,7 @@ import {
   createInitialState,
   defaultSavedTemplates,
   normActiveTemplate,
+  normActiveBoard,
   normSavedBoards,
   normSavedSlideshows,
   normSavedTemplates,
@@ -1354,7 +1355,9 @@ describe('saved soundboards', () => {
 
   it('saves the board and marks it the one you are on', () => {
     const s = run({ type: 'soundBoard.saveNew', id: 'sb1', name: 'Tuesday', banks })
-    expect(s.savedBoards).toEqual([{ id: 'sb1', name: 'Tuesday', banks }])
+    // By id, not by position: a default board ships, so this is no longer the
+    // only entry in the list.
+    expect(s.savedBoards.find((b) => b.id === 'sb1')).toEqual({ id: 'sb1', name: 'Tuesday', banks })
     expect(s.activeBoard).toBe('sb1')
   })
 
@@ -1375,7 +1378,8 @@ describe('saved soundboards', () => {
       { type: 'soundPad.remove', bankId: 'b1', padId: 'p1' },
     )
     expect(s.soundBanks[0].pads).toEqual([])
-    expect(s.savedBoards[0].banks[0].pads).toEqual([pad('p1')]) // preset untouched
+    const preset = s.savedBoards.find((b) => b.id === 'sb1')
+    expect(preset?.banks[0].pads).toEqual([pad('p1')]) // preset untouched
   })
 
   it('updates and renames a saved board', () => {
@@ -1384,7 +1388,7 @@ describe('saved soundboards', () => {
       { type: 'soundBoard.rename', id: 'sb1', name: 'Corporate' },
       { type: 'soundBoard.update', id: 'sb1', banks: [] },
     )
-    expect(s.savedBoards[0]).toEqual({ id: 'sb1', name: 'Corporate', banks: [] })
+    expect(s.savedBoards.find((b) => b.id === 'sb1')).toEqual({ id: 'sb1', name: 'Corporate', banks: [] })
   })
 
   it('deleting the board you are on keeps your pads and only drops the marker', () => {
@@ -1393,8 +1397,8 @@ describe('saved soundboards', () => {
       { type: 'soundBoard.load', banks, activeId: 'sb1' },
       { type: 'soundBoard.remove', id: 'sb1' },
     )
-    expect(s.savedBoards).toEqual([])
-    expect(s.activeBoard).toBeNull()
+    expect(s.savedBoards.find((b) => b.id === 'sb1')).toBeUndefined()
+    expect(s.activeBoard).toBeNull() // off the deleted one; nothing auto-selected
     expect(s.soundBanks).toEqual(banks) // the pads on screen are yours now
   })
 
@@ -1406,6 +1410,43 @@ describe('saved soundboards', () => {
       { type: 'soundBoard.remove', id: 'sb2' },
     )
     expect(s.activeBoard).toBe('sb1')
+  })
+})
+
+describe('a board ships, so the picker has something to name', () => {
+  it('opens on a named board rather than on nothing', () => {
+    // The bug this fixes is bigger than an empty list: with activeBoard null,
+    // `dirty` can never be true, so the Update button could never render. The
+    // feature was there and unreachable.
+    const fresh = createInitialState()
+    expect(fresh.savedBoards).toHaveLength(1)
+    expect(fresh.savedBoards[0].name).toBe('ComedySportz — Standard')
+    expect(fresh.activeBoard).toBe(fresh.savedBoards[0].id)
+  })
+
+  it('seeds from the live board, so an install with tabs is not instantly dirty', () => {
+    const mine = [{ id: 'b1', name: 'Walk-ons', pads: [] }]
+    const [seeded] = normSavedBoards(undefined, mine)
+    expect(seeded.banks).toEqual(mine)
+  })
+
+  it('seeds when the saved list is present but empty', () => {
+    // The state this actually had to repair: savedBoards: [] persisted from
+    // before a board shipped.
+    expect(normSavedBoards([], [])).toHaveLength(1)
+  })
+
+  it('leaves a real saved list alone', () => {
+    const boards = normSavedBoards([{ id: 'mine', name: 'Mine', banks: [] }], [])
+    expect(boards.map((b) => b.id)).toEqual(['mine'])
+  })
+
+  it('points activeBoard at a board that exists', () => {
+    const boards = [{ id: 'a', name: 'A', banks: [] }, { id: 'b', name: 'B', banks: [] }]
+    expect(normActiveBoard('b', boards)).toBe('b')
+    expect(normActiveBoard('gone', boards)).toBe('a') // stale id falls to the first
+    expect(normActiveBoard(undefined, boards)).toBe('a')
+    expect(normActiveBoard('a', [])).toBeNull()
   })
 })
 
