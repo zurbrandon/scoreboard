@@ -9,25 +9,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppState, useDispatch } from '../store/react'
 import type { SavedBoard, SoundBank } from '../core/state'
-import { normSoundBanks } from '../core/state'
 import type { SoundTrackInfo } from '../shared/bridge'
 import { newId } from '../shared/ids'
-import { makeTagPad } from './pads'
-import { boardFileName, boardSignature, captureBoard, parseBoardFile, relinkPads, serializeBoard, standardBoard } from './boards'
+import { boardSignature, captureBoard, relinkPads } from './boards'
 
-export function BoardPicker({ tracks, tags }: { tracks: SoundTrackInfo[]; tags: string[] }) {
+export function BoardPicker({ tracks }: { tracks: SoundTrackInfo[] }) {
   const dispatch = useDispatch()
   const banks = useAppState((s) => s.soundBanks)
   const savedBoards = useAppState((s) => s.savedBoards)
   const activeId = useAppState((s) => s.activeBoard)
-  const slots = useAppState((s) => s.soundSlots)
 
   const [open, setOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameText, setRenameText] = useState('')
   const [confirmUpdateId, setConfirmUpdateId] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -65,48 +61,6 @@ export function BoardPicker({ tracks, tags }: { tracks: SoundTrackInfo[]; tags: 
   // Fresh ids so the preset and the board on screen never share a pad, then
   // re-pointed at this machine's copies of the songs.
   const loadSaved = (b: SavedBoard) => load(relinkPads(captureBoard(b.banks), tracks), b.id)
-
-  async function exportBoard() {
-    const bridge = window.showboard
-    if (!bridge) return
-    const name = activeBoard?.name ?? 'Soundboard'
-    const ok = await bridge.exportBoardFile(boardFileName(name), serializeBoard(name, captureBoard(banks)))
-    // Cancelling is a normal thing to do, so it isn't worth a message.
-    if (ok) setNotice(`Exported “${name}”.`)
-  }
-
-  async function importBoard() {
-    const bridge = window.showboard
-    if (!bridge) return
-    const text = await bridge.importBoardFile()
-    if (text === null) return // cancelled
-    const file = parseBoardFile(text)
-    if (!file) {
-      setNotice("That doesn't look like a soundboard file.")
-      return
-    }
-    // Through the same normalizer the live board uses, so a hand-edited file
-    // can't put a pad on the board that the board itself would reject.
-    const banksIn = relinkPads(captureBoard(normSoundBanks(file.banks)), tracks)
-    const missing = banksIn.reduce(
-      (n, b) => n + b.pads.filter((p) => p.kind === 'track' && !tracks.some((t) => t.id === p.trackId)).length,
-      0,
-    )
-    if (!confirmDiscard()) return
-    // Imported boards are saved as well as loaded: a board you can't find again
-    // after the next Import isn't much of a share.
-    const id = newId('board')
-    dispatch({ type: 'soundBoard.saveNew', id, name: file.name, banks: captureBoard(banksIn) })
-    dispatch({ type: 'soundBoard.load', banks: banksIn, activeId: id })
-    setOpen(false)
-    // Say it plainly rather than letting them find out mid-show.
-    if (missing > 0) {
-      window.alert(
-        `Imported “${file.name}”, but ${missing} song${missing === 1 ? " isn't" : "s aren't"} in your library — ` +
-          `${missing === 1 ? 'that pad shows' : 'those pads show'} as missing. Tag pads are unaffected.`,
-      )
-    }
-  }
 
   function saveNew() {
     const name = newName.trim()
@@ -224,65 +178,26 @@ export function BoardPicker({ tracks, tags }: { tracks: SoundTrackInfo[]; tags: 
             )
           })}
 
+          {/* One way to start fresh, exactly like the template picker's "Blank".
+              There used to be three, and two of them built a board out of your
+              library: "A pad for every tag" and a "ComedySportz — Standard"
+              that shared its name with the board that now ships — so the menu
+              listed the same words twice, once as something you were on and
+              once as something that would replace it. Reasonable in isolation,
+              confusing in a list. The builders are still in boards.ts if a way
+              back is ever wanted; nothing calls them.
+
+              Export / Import went for the same reason: the operator has no
+              such section, and two pickers that are meant to be one control
+              shouldn't disagree about what's in them. The board-file code and
+              its tests are untouched, so this is a menu entry away from
+              returning. */}
           <div className="tpl__label">Start fresh</div>
           <button className="tpl__name tpl__name--builtin" onClick={() => load([], null)}>
             <span className="tpl__check" aria-hidden></span>
-            Empty board
-          </button>
-          {/* Built from this machine's tags rather than from a canned song list:
-              a tag pad names a tag, so this is the one starting point that means
-              the same thing in anyone's library. */}
-          {tags.length > 0 && (
-            <button
-              className="tpl__name tpl__name--builtin"
-              title="One tab, with a pad for each tag in your library"
-              onClick={() =>
-                load(
-                  [{ id: newId('bank'), name: 'Tags', pads: tags.map((t) => makeTagPad(t, 'random')) }],
-                  null,
-                )
-              }
-            >
-              <span className="tpl__check" aria-hidden></span>
-              A pad for every tag ({tags.length})
-            </button>
-          )}
-
-          {/* Built from this machine's slots and tags, so it means the same
-              thing in anyone's library — a canned song list would arrive as a
-              board of missing pads. */}
-          <button
-            className="tpl__name tpl__name--builtin"
-            title="Your show cues in one tab, the rest of your tags in another"
-            onClick={() => load(standardBoard(slots, tags), null)}
-          >
-            <span className="tpl__check" aria-hidden></span>
-            ComedySportz — Standard
+            Blank — start from scratch
           </button>
 
-          <div className="tpl__label">Share</div>
-          <div className="tpl__row">
-            <button
-              className="tpl__name tpl__name--builtin"
-              disabled={padCount === 0}
-              title={padCount === 0 ? 'Nothing on the board to export' : 'Write this board to a file'}
-              onClick={exportBoard}
-            >
-              <span className="tpl__check" aria-hidden></span>
-              Export this board…
-            </button>
-          </div>
-          <div className="tpl__row">
-            <button
-              className="tpl__name tpl__name--builtin"
-              title="Open a board someone sent you"
-              onClick={importBoard}
-            >
-              <span className="tpl__check" aria-hidden></span>
-              Import a board…
-            </button>
-          </div>
-          {notice && <div className="tpl__notice">{notice}</div>}
 
           <div className="tpl__new">
             <input

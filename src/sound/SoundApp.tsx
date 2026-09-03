@@ -167,7 +167,7 @@ export function SoundApp() {
             kept for screen readers only. Library stays on the right — it's a
             place you go, not a thing you're looking at. */}
         <h1 className="vis-hidden">Sound</h1>
-        <BoardPicker tracks={tracks} tags={tags} />
+        <BoardPicker tracks={tracks} />
         <button className="pill sound__library" onClick={() => setManaging(true)}>
           Library
         </button>
