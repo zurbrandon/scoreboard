@@ -41,22 +41,28 @@ export function TextScene({ slide, animate = false }: { slide: TextSlide; animat
     )
   }
 
-  if (live.template === 'centered') {
-    // One statement, as big as it can be. The body is a subordinate line under
-    // it rather than a paragraph — a game name and its one-line rule.
-    return (
-      <div className={`scene-text scene-text--centered ${bgCls} ${themeCls} ${revealCls}`} style={bgStyle}>
-        {live.headline && <div className="scene-text__statement">{live.headline}</div>}
-        {live.body && <div className="scene-text__under">{live.body}</div>}
-      </div>
-    )
-  }
-
-  // basic
   return (
     <div className={`scene-text ${bgCls} ${themeCls} ${revealCls}`} style={bgStyle}>
-      {live.headline && <div className="scene-text__headline">{live.headline}</div>}
+      {live.headline && (
+        <div className={`scene-text__headline ${headlineSize(live.headline)}`}>{live.headline}</div>
+      )}
       {live.body && <div className="scene-text__body">{live.body}</div>}
     </div>
   )
+}
+
+/**
+ * How big the headline gets, from how much of it there is.
+ *
+ * This is what the old 'centered' template was really for: one word wants to be
+ * enormous, a sentence wants to be readable, and picking between two layouts was
+ * a clumsy way to say so. Stepped rather than fitted — a size per length band,
+ * so a headline doesn't resize while you type into it live, and two slides of
+ * roughly the same length look the same.
+ */
+function headlineSize(text: string): string {
+  const n = text.trim().length
+  if (n <= 14) return 'scene-text__headline--xl' // HALFTIME, a game's name
+  if (n <= 32) return 'scene-text__headline--lg'
+  return '' // the base size: a full sentence
 }

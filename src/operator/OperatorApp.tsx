@@ -883,9 +883,11 @@ const BG_COLORS: { value: string; label: string }[] = [
   { value: '#ffd23f', label: 'Gold' },
 ]
 
+// Only offered on the Games deck: quadrants is the board for a particular game,
+// not a way of laying out a show slide. A show slide has one layout, so it isn't
+// asked about.
 const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
-  { value: 'basic', label: 'Headline + body' },
-  { value: 'centered', label: 'Centred statement' },
+  { value: 'basic', label: 'Headline + subtext' },
   { value: 'quadrants', label: 'Four quadrants' },
 ]
 
@@ -1972,27 +1974,31 @@ function TextSlideCard({
         void ingestBg(e.dataTransfer)
       }}
     >
-      <div className="seg" onClick={(e) => e.stopPropagation()}>
-        {TEMPLATE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            className={`seg__opt${slide.template === opt.value ? ' seg__opt--on' : ''}`}
-            aria-pressed={slide.template === opt.value}
-            onClick={() => dispatch({ type: 'slide.setTemplate', id: slide.id, template: opt.value })}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      {/* A show slide has one layout, so there's nothing to choose. Quadrants is
+          the board for a specific game, so the choice only exists on Games. */}
+      {slide.deck === 'games' && (
+        <div className="seg" onClick={(e) => e.stopPropagation()}>
+          {TEMPLATE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`seg__opt${slide.template === opt.value ? ' seg__opt--on' : ''}`}
+              aria-pressed={slide.template === opt.value}
+              onClick={() => dispatch({ type: 'slide.setTemplate', id: slide.id, template: opt.value })}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {(slide.template === 'basic' || slide.template === 'centered') && (
+      {slide.template === 'basic' && (
         <>
+          {/* The headline sizes itself on the projector from how long it is, so
+              "HALFTIME" and a full sentence both land right without asking. */}
           <BufferedTextarea
             className="text-card__headline"
             value={slide.headline}
-            placeholder={
-              slide.template === 'centered' ? 'The statement (e.g. HALFTIME)' : 'Headline (e.g. Skiing)'
-            }
+            placeholder="Headline (e.g. HALFTIME, or Skiing)"
             aria-label="Headline"
             rows={1}
             onCommit={(v) => setField('headline', v)}
@@ -2000,12 +2006,8 @@ function TextSlideCard({
           <BufferedTextarea
             className="text-card__body"
             value={slide.body}
-            placeholder={
-              slide.template === 'centered'
-                ? 'A smaller line under it — optional'
-                : 'Body — press Return for a new line\n(e.g. but with pizza sauce)'
-            }
-            aria-label="Body"
+            placeholder={'Smaller line under it — optional\n(e.g. but with pizza sauce)'}
+            aria-label="Subtext"
             rows={1}
             onCommit={(v) => setField('body', v)}
           />

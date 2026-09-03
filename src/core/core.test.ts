@@ -992,11 +992,13 @@ describe('templates cover a whole show', () => {
 })
 
 describe('generic text slides', () => {
-  it('keeps the centred layout through a save/load round trip', () => {
+  it('reads a slide saved as the retired centred layout as a basic one', () => {
+    // 'centered' turned out to be 'basic' at another size, so it folded back in.
+    // A slide saved while it existed has to keep rendering, not vanish.
     const [slide] = normSavedTemplates([
       { id: 't', name: 'n', slides: [{ id: 's1', type: 'text', deck: 'show', template: 'centered' }] },
     ])[0].slides
-    expect(slide.type === 'text' && slide.template).toBe('centered')
+    expect(slide.type === 'text' && slide.template).toBe('basic')
   })
 
   it('falls back to basic for a template it does not recognise', () => {
@@ -1011,7 +1013,7 @@ describe('generic text slides', () => {
 
   it('sets and clears a background, and clearing drops the key', () => {
     const after = run(
-      { type: 'slide.addText', id: 'tx', template: 'centered', deck: 'show' },
+      { type: 'slide.addText', id: 'tx', template: 'basic', deck: 'show' },
       { type: 'slide.setTextBg', id: 'tx', src: 'data:image/png;base64,AAA' },
     )
     const withBg = after.slides.items.find((s) => s.id === 'tx')
@@ -1120,10 +1122,10 @@ describe('one text slide, with background options', () => {
       { type: 'slide.setField', id: 'tx', field: 'headline', value: 'Skiing' },
       { type: 'slide.setQuad', id: 'tx', index: 0, value: 'north' },
       { type: 'slide.setTemplate', id: 'tx', template: 'quadrants' },
-      { type: 'slide.setTemplate', id: 'tx', template: 'centered' },
+      { type: 'slide.setTemplate', id: 'tx', template: 'basic' },
     )
     const tx = after.slides.items.find((s) => s.id === 'tx')
-    expect(tx?.type === 'text' && tx.template).toBe('centered')
+    expect(tx?.type === 'text' && tx.template).toBe('basic')
     expect(tx?.type === 'text' && tx.headline).toBe('Skiing')
     expect(tx?.type === 'text' && tx.quads[0]).toBe('north')
   })

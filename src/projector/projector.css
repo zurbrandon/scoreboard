@@ -90,12 +90,11 @@
 /* Live-typing template: one big block that mirrors the operator's keystrokes. */
 .scene-text__live { font-size: 6cqw; font-weight: 800; line-height: 1.15; white-space: pre-line; }
 
-/* Centred template: one statement as big as the stage allows, with an optional
-   subordinate line under it — a game's name and its one-line rule. Sized larger
-   than the headline of a basic slide because it's carrying the whole screen on
-   its own rather than heading a paragraph. */
-.scene-text__statement { font-size: 9.5cqw; font-weight: 800; line-height: 1.04; white-space: pre-line; }
-.scene-text__under { font-size: 3.4cqw; font-weight: 500; line-height: 1.3; color: #c3cbdf; white-space: pre-line; }
+/* The headline grows as it gets shorter: one word carries the whole stage, a
+   sentence has to stay readable. Three steps rather than a fit, so live-typing
+   doesn't resize the text under the audience mid-word. See headlineSize(). */
+.scene-text__headline--lg { font-size: 9cqw; line-height: 1.06; }
+.scene-text__headline--xl { font-size: 12cqw; line-height: 1.02; }
 
 /* A background image, available to any of the templates. Two rules keep the
    words legible over an arbitrary photo: the image is a separate painted layer
@@ -145,9 +144,7 @@
 /* The words, and the quad grid, ride above the picture and its scrim. */
 .scene-text--bg > * { position: relative; z-index: 1; }
 /* Words over a photo need their own edge, not just a scrim under them. */
-.scene-text--bg .scene-text__statement,
 .scene-text--bg .scene-text__headline { text-shadow: 0 0.35cqw 1.6cqw rgba(0, 0, 0, 0.85); }
-.scene-text--bg .scene-text__under,
 .scene-text--bg .scene-text__body { color: #e7ecf8; text-shadow: 0 0.25cqw 1cqw rgba(0, 0, 0, 0.9); }
 /* The quads' dividing rules and cells sit on the image too. */
 .scene-text--quads.scene-text--bg .quad-cell { text-shadow: 0 0.35cqw 1.6cqw rgba(0, 0, 0, 0.85); }
