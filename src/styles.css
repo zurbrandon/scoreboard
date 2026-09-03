@@ -127,7 +127,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
    it's bounded rather than greedy — a long template name ellipsizes instead of
    pushing the settings button off the edge. */
 .operator__header .tpl { flex: 1; min-width: 0; max-width: 22rem; }
-.operator__header .tpl__button { padding: 7px 11px; border-style: solid; }
+.operator__header .tpl__button { padding: 7px 11px; }
 .operator__header-right { margin-left: auto; }
 /* The wordmark is app identity, not a control, so it reads off the primitive
    scale rather than one of the --t-* roles. Weight tracks the roles' 700 —
@@ -766,26 +766,34 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 /* Template picker: a custom dropdown. The button shows the deck's current
    template; the menu loads / saves / updates / renames / deletes. */
 .tpl { position: relative; }
+/* This selects a mode, so it shouldn't wear a field's clothes. It had a dashed
+   border and a panel fill, which is the vocabulary of an empty INPUT — next to
+   an actual search box that reads as a second one. Now the current value is the
+   control: text and a chevron on the bar itself, with the box only appearing
+   under the pointer to say it's pressable. */
 .tpl__button {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--r-lg);
-  border: 1px dashed var(--line-strong);
-  background: var(--panel);
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text);
   font-size: var(--t-control);
   font-weight: 700;
   cursor: pointer;
   text-align: left;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
+.tpl__button:hover { background: var(--panel-2); border-color: var(--line); }
 .tpl__button:hover { border-color: var(--accent); }
 /* When open, the button flattens its bottom and drops its bottom border so it
    merges into the menu below — the two read as one connected dropdown. */
+/* Open: hold the pressed state and square off the edge the menu joins. */
 .tpl__button--open {
-  border-style: solid;
+  background: var(--panel-2);
   border-color: var(--accent);
   border-bottom-color: transparent;
   border-bottom-left-radius: 0;
@@ -1974,7 +1982,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 /* The board picker sits between the search field and Library. Narrow by
    default — the board's name matters less than the pads, and the search field
    should keep the room. */
-.sound__boards { flex: none; width: 168px; }
+/* Content-width now that there's no box to fill — "Board…" stays compact and a
+   long board name ellipsizes instead of every state being 168px wide. */
+.sound__boards { flex: none; max-width: 15rem; }
 /* Result of an export/import, shown in the menu rather than as a dialog — there's
    nothing to decide, and a sheet for "that worked" is a click you didn't need. */
 .tpl__notice { padding: 4px 8px 2px; font-size: var(--fs-micro); color: var(--muted); }
@@ -2271,7 +2281,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 
 
 
+/* Title on the left, the board picker and Library over on the right — they're
+   setup, not the thing you're doing, so they sit away from the tabs and pads
+   you actually work in. */
 .sound__topbar { padding: 12px 18px; gap: 14px; align-items: center; }
+.sound__topbar h1 { margin-right: auto; }
 
 /* Rows are taller here than in the library: this list is walked with the arrow
    keys mid-show, so the highlight has to be readable at a glance. */
