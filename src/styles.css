@@ -117,6 +117,21 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   border-bottom: 1px solid var(--line);
   box-shadow: 0 7px 12px -7px rgba(0, 0, 0, 0.65);
 }
+/* Kept in the accessibility tree and the document outline, off the screen.
+   Used for the window headings, which are noise to someone who can see which
+   window they clicked but are the only <h1> a screen reader has. */
+.vis-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .operator__header {
   display: flex;
   align-items: center;
@@ -127,13 +142,19 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
    it's bounded rather than greedy — a long template name ellipsizes instead of
    pushing the settings button off the edge. */
 .operator__header .tpl { flex: 1; min-width: 0; max-width: 22rem; }
-.operator__header .tpl__button { padding: 7px 11px; }
+/* Leading the bar now, so it takes the size the wordmark had — it's the thing
+   that says what you're working on. Bounded so a long name ellipsizes instead
+   of pushing the settings button off the edge. */
+/* Shrink-to-fit, never grow: stretching the picker marooned its chevron far
+   from a short label. Capped so a long name ellipsizes rather than crowding
+   the buttons on the right. */
+.operator__header .tpl { flex: 0 1 auto; min-width: 0; max-width: 26rem; margin-right: auto; }
+.operator__header .tpl__button { padding: 7px 10px; font-size: var(--fs-lg); }
 .operator__header-right { margin-left: auto; }
 /* The wordmark is app identity, not a control, so it reads off the primitive
    scale rather than one of the --t-* roles. Weight tracks the roles' 700 —
    there is no perceptible 600/700 difference in muted grey at this size, and
    one fewer weight in the system is worth more than the distinction. */
-.operator__header h1 { font-size: var(--fs-xl); margin: 0; color: var(--muted); font-weight: 700; }
 .operator__header-right { display: flex; gap: 10px; }
 
 .pill {
@@ -1784,7 +1805,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   border-bottom: 1px solid var(--line);
   background: var(--panel);
 }
-.sound__topbar h1 { font-size: var(--fs-xl); margin: 0; color: var(--muted); font-weight: 700; } /* see .operator__header h1 */
 .sound__folder { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sound__status { color: var(--muted); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sound__body { flex: 1; overflow-y: auto; padding: 14px 18px; }
@@ -1984,13 +2004,15 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
    should keep the room. */
 /* Content-width now that there's no box to fill — "Board…" stays compact and a
    long board name ellipsizes instead of every state being 168px wide. */
-.sound__boards { flex: none; max-width: 15rem; }
+.sound__boards { flex: 0 1 auto; min-width: 0; max-width: 22rem; margin-right: auto; }
+.sound__topbar .tpl__button { font-size: var(--fs-lg); }
+.sound__library { flex: none; }
 /* Result of an export/import, shown in the menu rather than as a dialog — there's
    nothing to decide, and a sheet for "that worked" is a click you didn't need. */
 .tpl__notice { padding: 4px 8px 2px; font-size: var(--fs-micro); color: var(--muted); }
 .tpl__name:disabled { opacity: 0.4; cursor: default; }
 .tpl__name:disabled:hover { background: none; }
-.sound__boards .tpl__menu { right: 0; left: auto; }
+.sound__boards .tpl__menu { left: 0; right: auto; }
 
 /* A pad is a card with two faces: the button on the front, its settings on the
    back. The cell is the grid item and owns the perspective; .pad-flip is what
@@ -2285,7 +2307,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
    setup, not the thing you're doing, so they sit away from the tabs and pads
    you actually work in. */
 .sound__topbar { padding: 12px 18px; gap: 14px; align-items: center; }
-.sound__topbar h1 { margin-right: auto; }
 
 /* Rows are taller here than in the library: this list is walked with the arrow
    keys mid-show, so the highlight has to be readable at a glance. */

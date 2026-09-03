@@ -162,9 +162,13 @@ export function SoundApp() {
   return (
     <div className="sound">
       <header className="sound__topbar">
-        <h1>Sound</h1>
+        {/* See the operator's header: the board's name is worth more in this
+            slot than the word "Sound", so the picker leads and the heading is
+            kept for screen readers only. Library stays on the right — it's a
+            place you go, not a thing you're looking at. */}
+        <h1 className="vis-hidden">Sound</h1>
         <BoardPicker tracks={tracks} tags={tags} />
-        <button className="pill" onClick={() => setManaging(true)}>
+        <button className="pill sound__library" onClick={() => setManaging(true)}>
           Library
         </button>
       </header>

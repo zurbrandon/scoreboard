@@ -389,10 +389,14 @@ export function OperatorApp() {
     <div className="operator">
       <div className="operator__topbar">
       <header className="operator__header">
-        <h1>Showboard</h1>
-        {/* What show is this? Above the tabs because it sets up more than one of
-            them — a template stamps both the Show beats and the Games queue, so
-            it can't belong to either tab. */}
+        {/* No "Showboard" wordmark: anyone running this knows which window they
+            are in, and the name of the SHOW is the useful thing to have in the
+            title's place. So the picker leads the bar — it answers "what am I
+            working on", which is what a document title is for.
+            The heading stays for screen readers and the document outline. */}
+        <h1 className="vis-hidden">Showboard</h1>
+        {/* Above the tabs because it sets up more than one of them — a template
+            stamps both the Show beats and the Games queue. */}
         <TemplatePicker />
         <div className="operator__header-right">
           {!window.showboard && (
