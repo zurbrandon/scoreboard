@@ -2242,6 +2242,15 @@ function SlideCueRow({ slide }: { slide: Slide }) {
   const library = useAppState((s) => s.music.library)
   const cue = 'cue' in slide ? slide.cue : undefined
 
+  // Show slides only. A cue belongs to the scripted run of beats you play
+  // through at the top of a match — a game slide is a board you put up and then
+  // play off, and an effect and a music change are two controls to ignore on
+  // every card. The ask was "all the slides in the show tab", and putting it on
+  // both decks was me widening that; this is the gate.
+  // After the hooks, not before: the hook order has to be the same on every
+  // render whichever deck the slide is on.
+  if (slide.deck !== 'show') return null
+
   // Merge the effect into the cue (''/none clears it; the reducer drops an empty cue).
   const setCueEffect = (value: string) =>
     dispatch({ type: 'slide.setCue', id: slide.id, cue: { ...cue, effect: value || undefined } })
