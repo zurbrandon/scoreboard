@@ -11,7 +11,7 @@ import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
 import { LOGO_LIBRARY } from '../core/logos'
 import { normalizeHexColor } from '../shared/color'
-import type { ImageSlide, LogoSlide, OperatorTab, ReactionSlide, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide, TextTemplate } from '../core/state'
+import type { ImageSlide, LogoSlide, OperatorTab, ReactionSlide, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide } from '../core/state'
 import type { Command } from '../core/commands'
 import { REVEAL_STYLES, templateSkeleton, type RevealStyle } from '../core/state'
 import { DUCK_STEP } from '../shared/hotkeys'
@@ -892,14 +892,6 @@ const BG_COLORS: { value: string; label: string }[] = [
   { value: '#f2f4f8', label: 'White' },
 ]
 
-// Only offered on the Games deck: quadrants is the board for a particular game,
-// not a way of laying out a show slide. A show slide has one layout, so it isn't
-// asked about.
-const TEMPLATE_OPTIONS: { value: TextTemplate; label: string }[] = [
-  { value: 'basic', label: 'Headline + subtext' },
-  { value: 'quadrants', label: 'Four quadrants' },
-]
-
 // Built-in logo presets for the "add slide" menu.
 const LOGO_PRESETS = LOGO_LIBRARY.map((l) => ({ name: l.name, src: `logos/${l.file}` }))
 
@@ -1507,9 +1499,12 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
 
           <span className="slide-add__label">Text</span>
           <div className="slide-add__grid">
-            {/* One entry, not one per layout. The layout, and whether there's a
-                background picture or color, are chosen on the card — which is
-                where you're looking once the slide exists anyway. */}
+            {/* One entry on the Show deck, because a show slide has one layout
+                and its background is chosen on the card.
+                Two on Games, because there they really are two different
+                slides: a headline board and a four-word grid have nothing in
+                common but the word "text", and the layout is fixed once the
+                slide exists. */}
             <button
               className="slide-add__item"
               onClick={() => {
@@ -1517,8 +1512,24 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                 setAddOpen(false)
               }}
             >
-              Text slide
+              {deck === 'games' ? 'Headline + subhead' : 'Text slide'}
             </button>
+            {deck === 'games' && (
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({
+                    type: 'slide.addText',
+                    id: newSlideId('text'),
+                    template: 'quadrants',
+                    deck,
+                  })
+                  setAddOpen(false)
+                }}
+              >
+                Four quadrants
+              </button>
+            )}
           </div>
 
           <span className="slide-add__label">Media</span>
@@ -1532,15 +1543,19 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
             >
               Full-screen image
             </button>
-            <button
-              className="slide-add__item"
-              onClick={() => {
-                dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
-                setAddOpen(false)
-              }}
-            >
-              Google Slides link
-            </button>
+            {/* Never on Games — a games queue is cards you cut between, not a
+                deck you present through. It wasn't there before either. */}
+            {deck === 'show' && (
+              <button
+                className="slide-add__item"
+                onClick={() => {
+                  dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
+                  setAddOpen(false)
+                }}
+              >
+                Google Slides link
+              </button>
+            )}
             {/* One entry. Which logo — either of the built-ins, or one you
                 upload — is chosen on the card, the way the background is. */}
             {deck === 'show' && (
@@ -2022,33 +2037,23 @@ function TextSlideCard({
       className={`text-card ${selected ? 'text-card--active' : ''} ${bgOver ? 'text-card--drag' : ''}`}
       onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
       onDragOver={(e) => {
+        if (slide.deck !== 'show') return // no background to drop one into
         e.preventDefault()
         setBgOver(true)
       }}
       onDragLeave={() => setBgOver(false)}
       onDrop={(e) => {
+        if (slide.deck !== 'show') return
         e.preventDefault()
         setBgOver(false)
         void ingestBg(e.dataTransfer)
       }}
     >
-      {/* A show slide has one layout, so there's nothing to choose. Quadrants is
-          the board for a specific game, so the choice only exists on Games. */}
-      {slide.deck === 'games' && (
-        <div className="seg" onClick={(e) => e.stopPropagation()}>
-          {TEMPLATE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              className={`seg__opt${slide.template === opt.value ? ' seg__opt--on' : ''}`}
-              aria-pressed={slide.template === opt.value}
-              onClick={() => dispatch({ type: 'slide.setTemplate', id: slide.id, template: opt.value })}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-
+      {/* No layout switcher. A show slide has one layout; on Games the two
+          layouts are two different slides you add from the menu, so which one a
+          card is stops being a question once it exists. The switcher only ever
+          made sense while the add menu had a single "Text slide" entry — that
+          was my doing, and it put a control on every Games card to ignore. */}
       {slide.template === 'basic' && (
         <>
           {/* The headline sizes itself on the projector from how long it is, so
@@ -2087,99 +2092,108 @@ function TextSlideCard({
         </div>
       )}
 
-      {/* Background: none, a color, or a picture. One control rather than three
-          slide types, which is the whole point of the consolidation. Dropping an
-          image anywhere on the card sets it — the same gesture the image card
-          already answers to. */}
-      <div className="text-bgblock" onClick={(e) => e.stopPropagation()}>
-        <div className="seg seg--sm">
-          {([
-            { value: 'none', label: 'No background' },
-            { value: 'color', label: 'Color' },
-            { value: 'image', label: 'Image' },
-          ] as const).map((opt) => {
-            const current = slide.bg ? 'image' : slide.bgColor ? 'color' : 'none'
-            return (
-              <button
-                key={opt.value}
-                className={`seg__opt${current === opt.value ? ' seg__opt--on' : ''}`}
-                aria-pressed={current === opt.value}
-                onClick={() => {
-                  if (opt.value === 'none') {
-                    dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
-                    dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: '' })
-                  } else if (opt.value === 'color') {
-                    // Clear the picture, since it would otherwise win over the
-                    // color and the choice would look like it did nothing.
-                    dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
-                    if (!slide.bgColor) {
-                      dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: BG_COLORS[0].value })
-                    }
-                  } else {
-                    bgInput.current?.click()
-                  }
-                }}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {slide.bgColor && !slide.bg && (
-          <div className="swatches">
-            {BG_COLORS.map((c) => (
-              <button
-                key={c.value}
-                className={`swatch${slide.bgColor === c.value ? ' swatch--on' : ''}`}
-                style={{ background: c.value }}
-                title={c.label}
-                aria-label={c.label}
-                aria-pressed={slide.bgColor === c.value}
-                onClick={() => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: c.value })}
-              />
-            ))}
-            <HexField
-              value={slide.bgColor}
-              onCommit={(color) => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color })}
-            />
-          </div>
-        )}
-
-        {slide.bg && (
-          <div className="text-bg">
-            <span className="text-bg__thumb">
-              <img src={slide.bg} alt="" />
-            </span>
-            {/* How far back the picture sits. Three named steps, because
-                mid-show you want to pick the one that works rather than tune
-                a number. */}
-            <div className="seg seg--sm text-bg__dim">
-              {([
-                { value: 'full', label: 'Full' },
-                { value: 'dim', label: 'Dim' },
-                { value: 'faint', label: 'Faint' },
-              ] as const).map((opt) => (
+      {/* Backgrounds are a Show thing. A game board is a clue or a grid of
+          words read straight off a plain field, and a colour wash or a photo
+          behind it is decoration competing with the one thing the audience has
+          to read. It is also why the card only accepts an image drop on that
+          deck. */}
+      {slide.deck === 'show' && (
+        <>
+        {/* Background: none, a color, or a picture. One control rather than three
+            slide types, which is the whole point of the consolidation. Dropping an
+            image anywhere on the card sets it — the same gesture the image card
+            already answers to. */}
+        <div className="text-bgblock" onClick={(e) => e.stopPropagation()}>
+          <div className="seg seg--sm">
+            {([
+              { value: 'none', label: 'No background' },
+              { value: 'color', label: 'Color' },
+              { value: 'image', label: 'Image' },
+            ] as const).map((opt) => {
+              const current = slide.bg ? 'image' : slide.bgColor ? 'color' : 'none'
+              return (
                 <button
                   key={opt.value}
-                  className={`seg__opt${(slide.bgDim ?? 'dim') === opt.value ? ' seg__opt--on' : ''}`}
-                  aria-pressed={(slide.bgDim ?? 'dim') === opt.value}
-                  onClick={() => dispatch({ type: 'slide.setTextBgDim', id: slide.id, dim: opt.value })}
+                  className={`seg__opt${current === opt.value ? ' seg__opt--on' : ''}`}
+                  aria-pressed={current === opt.value}
+                  onClick={() => {
+                    if (opt.value === 'none') {
+                      dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
+                      dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: '' })
+                    } else if (opt.value === 'color') {
+                      // Clear the picture, since it would otherwise win over the
+                      // color and the choice would look like it did nothing.
+                      dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })
+                      if (!slide.bgColor) {
+                        dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: BG_COLORS[0].value })
+                      }
+                    } else {
+                      bgInput.current?.click()
+                    }
+                  }}
                 >
                   {opt.label}
                 </button>
-              ))}
-            </div>
-            <button
-              className="text-bg__clear"
-              onClick={() => dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })}
-            >
-              Remove
-            </button>
+              )
+            })}
           </div>
-        )}
-        {bgBusy && <span className="text-bg__name">Loading…</span>}
-      </div>
+
+          {slide.bgColor && !slide.bg && (
+            <div className="swatches">
+              {BG_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  className={`swatch${slide.bgColor === c.value ? ' swatch--on' : ''}`}
+                  style={{ background: c.value }}
+                  title={c.label}
+                  aria-label={c.label}
+                  aria-pressed={slide.bgColor === c.value}
+                  onClick={() => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color: c.value })}
+                />
+              ))}
+              <HexField
+                value={slide.bgColor}
+                onCommit={(color) => dispatch({ type: 'slide.setTextBgColor', id: slide.id, color })}
+              />
+            </div>
+          )}
+
+          {slide.bg && (
+            <div className="text-bg">
+              <span className="text-bg__thumb">
+                <img src={slide.bg} alt="" />
+              </span>
+              {/* How far back the picture sits. Three named steps, because
+                  mid-show you want to pick the one that works rather than tune
+                  a number. */}
+              <div className="seg seg--sm text-bg__dim">
+                {([
+                  { value: 'full', label: 'Full' },
+                  { value: 'dim', label: 'Dim' },
+                  { value: 'faint', label: 'Faint' },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`seg__opt${(slide.bgDim ?? 'dim') === opt.value ? ' seg__opt--on' : ''}`}
+                    aria-pressed={(slide.bgDim ?? 'dim') === opt.value}
+                    onClick={() => dispatch({ type: 'slide.setTextBgDim', id: slide.id, dim: opt.value })}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="text-bg__clear"
+                onClick={() => dispatch({ type: 'slide.setTextBg', id: slide.id, src: '' })}
+              >
+                Remove
+              </button>
+            </div>
+          )}
+          {bgBusy && <span className="text-bg__name">Loading…</span>}
+        </div>
+        </>
+      )}
       <input
         ref={bgInput}
         type="file"
