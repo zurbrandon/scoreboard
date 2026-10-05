@@ -13,6 +13,7 @@ import type {
   ShowboardBridge,
   SoundLibraryUpdate,
   SoundProgress,
+  UpdateStatus,
 } from '../src/shared/bridge'
 import type { HotkeyAction } from '../src/shared/hotkeys'
 import type { MomentKind } from '../src/core/state'
@@ -36,6 +37,16 @@ const bridge: ShowboardBridge = {
 
   getUiScale: () => ipcRenderer.invoke('showboard:getUiScale') as Promise<number>,
   setUiScale: (scale) => ipcRenderer.send('showboard:setUiScale', scale),
+
+  getUpdateStatus: () => ipcRenderer.invoke('showboard:getUpdateStatus') as Promise<UpdateStatus>,
+  checkForUpdate: () => ipcRenderer.send('showboard:checkForUpdate'),
+  downloadUpdate: () => ipcRenderer.send('showboard:downloadUpdate'),
+  installUpdate: () => ipcRenderer.send('showboard:installUpdate'),
+  onUpdateStatus: (callback) => {
+    const listener = (_e: unknown, status: UpdateStatus) => callback(status)
+    ipcRenderer.on('showboard:updateStatus', listener)
+    return () => ipcRenderer.removeListener('showboard:updateStatus', listener)
+  },
 
   chooseMusicFolder: () => ipcRenderer.send('showboard:chooseMusicFolder'),
   requestTracks: () => ipcRenderer.send('showboard:requestTracks'),

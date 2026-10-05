@@ -1,7 +1,7 @@
 {
   "name": "showboard",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -15,9 +15,11 @@
     "electron:dev": "npm run electron:build && concurrently -k -n vite,electron \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:start": "electron .",
     "package:mac": "npm run build && npm run electron:build && electron-builder --mac",
-    "package:win": "npm run build && npm run electron:build && electron-builder --win"
+    "package:win": "npm run build && npm run electron:build && electron-builder --win",
+    "release:win": "npm run build && npm run electron:build && electron-builder --win --publish always"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "emoji-picker-react": "^4.19.1",
     "motion": "^13.1.0",
     "react": "^18.3.1",
@@ -40,6 +42,13 @@
       "icon": "build/icon.icns",
       "category": "public.app-category.entertainment"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "zurbrandon",
+        "repo": "scoreboard"
+      }
+    ],
     "win": {
       "target": [
         {

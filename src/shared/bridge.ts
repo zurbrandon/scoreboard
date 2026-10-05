@@ -73,6 +73,17 @@ export interface SoundProgress {
   playing: boolean
 }
 
+/** Where the operator-driven update flow has got to. */
+export interface UpdateStatus {
+  phase: 'idle' | 'checking' | 'available' | 'current' | 'downloading' | 'ready' | 'error'
+  /** The running version, always present so the UI can show it at rest. */
+  version: string
+  /** The version on offer, once a check has found one. */
+  available?: string | null
+  percent?: number
+  message?: string
+}
+
 export interface ShowboardBridge {
   role: 'operator' | 'projector' | 'sound'
   /** Synchronous so the renderer store can start with real state. */
@@ -90,6 +101,15 @@ export interface ShowboardBridge {
   // soundboard windows together; the projector is never touched.
   getUiScale(): Promise<number>
   setUiScale(scale: number): void
+
+  // In-app updates. Three separate, explicit steps — nothing downloads or
+  // installs unless the operator asks, because this app is often mid-show.
+  getUpdateStatus(): Promise<UpdateStatus>
+  checkForUpdate(): void
+  downloadUpdate(): void
+  /** Quits and relaunches into the downloaded version. */
+  installUpdate(): void
+  onUpdateStatus(callback: (status: UpdateStatus) => void): () => void
 
   // Music folder.
   chooseMusicFolder(): void

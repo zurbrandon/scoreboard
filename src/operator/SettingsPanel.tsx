@@ -12,6 +12,7 @@ import { ScoreboardLogosPanel } from './ScoreboardLogosPanel'
 import { IdleScreenPicker } from './IdleScreenPicker'
 import { SoundLibraryPanel } from './SoundLibraryPanel'
 import { UiScalePanel } from './UiScalePanel'
+import { UpdatePanel } from './UpdatePanel'
 import { SoundSlotsPanel } from './SoundSlotsPanel'
 
 type SettingsTab = 'visuals' | 'audio'
@@ -70,6 +71,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                   Shrink the operator and soundboard windows to fit a smaller
                   screen. Saved per machine.
                 </span>
+              </section>
+            )}
+
+            {isElectron && (
+              <section className="settings-section">
+                <h3>App version</h3>
+                <UpdatePanel />
               </section>
             )}
 

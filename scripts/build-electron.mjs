@@ -9,8 +9,11 @@ const common = {
   target: 'node18',
   format: 'cjs',
   sourcemap: true,
-  // Electron provides its own runtime; never bundle it.
-  external: ['electron'],
+  // Electron provides its own runtime; never bundle it. electron-updater is
+  // external too — it resolves its providers through dynamic requires, which a
+  // bundler can only get wrong, and electron-builder already ships the real
+  // package inside the asar as a production dependency.
+  external: ['electron', 'electron-updater'],
   logLevel: 'info',
 }
 

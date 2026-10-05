@@ -4,6 +4,7 @@
 // persists to disk. Windows are thin views; the projector never mutates.
 
 import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net, globalShortcut, session } from 'electron'
+import electronUpdater from 'electron-updater'
 import { basename, extname, join } from 'node:path'
 import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync, rmSync } from 'node:fs'
 import { Readable } from 'node:stream'
@@ -26,6 +27,7 @@ import { DEFAULT_HOTKEYS } from '../src/shared/hotkeys'
 import { normalizeSoundMeta, normalizeTags, serializeSoundMeta, type SoundMeta } from '../src/shared/soundTags'
 import { AUDIO_EXTENSIONS, findAudioFiles, trackName } from '../src/shared/soundScan'
 import { parseByteRange } from '../src/shared/byteRange'
+import type { UpdateStatus } from '../src/shared/bridge'
 
 // Content-Type matters: without it the element has to sniff, and some builds
 // refuse to report a duration for an unlabelled stream — which also breaks
@@ -570,6 +572,38 @@ function registerIpc() {
     }))
   })
 
+  ipcMain.handle('showboard:getUpdateStatus', (): UpdateStatus => updateStatus)
+
+  ipcMain.on('showboard:checkForUpdate', async () => {
+    if (!app.isPackaged) {
+      pushUpdateStatus({ phase: 'error', message: UPDATES_UNAVAILABLE_IN_DEV })
+      return
+    }
+    pushUpdateStatus({ phase: 'checking', message: undefined })
+    try {
+      await autoUpdater.checkForUpdates()
+    } catch (err) {
+      // The 'error' event covers most paths, but a throw here (bad feed, bad
+      // config) would otherwise leave the UI stuck on "checking" forever.
+      pushUpdateStatus({ phase: 'error', message: errorText(err) })
+    }
+  })
+
+  ipcMain.on('showboard:downloadUpdate', async () => {
+    pushUpdateStatus({ phase: 'downloading', percent: 0, message: undefined })
+    try {
+      await autoUpdater.downloadUpdate()
+    } catch (err) {
+      pushUpdateStatus({ phase: 'error', message: errorText(err) })
+    }
+  })
+
+  ipcMain.on('showboard:installUpdate', () => {
+    // Quits and relaunches into the new version. Only ever reached from an
+    // explicit click, never on quit — see configureUpdater().
+    autoUpdater.quitAndInstall()
+  })
+
   ipcMain.handle('showboard:getUiScale', (): number => settings.uiScale)
 
   ipcMain.on('showboard:setUiScale', (_event, scale: number) => {
@@ -768,6 +802,60 @@ function registerIpc() {
 // (even when the sound app is focused) and is forwarded to the operator window,
 // which runs the action. A failed register (chord already taken by another app)
 // is logged, not fatal — the show goes on without that one key.
+// ---------------------------------------------------------------- Updates
+// Entirely operator-driven. This is a live-show tool: the app must never
+// download, swap or restart itself on its own initiative, because the moment it
+// chose would eventually be during a show. So autoDownload and
+// autoInstallOnAppQuit are both off, and each step — check, download, install —
+// happens only when someone asks for it in Settings.
+const { autoUpdater } = electronUpdater
+
+let updateStatus: UpdateStatus = { phase: 'idle', version: app.getVersion() }
+
+function pushUpdateStatus(next: Partial<UpdateStatus>) {
+  updateStatus = { ...updateStatus, ...next, version: app.getVersion() }
+  operatorWin?.webContents.send('showboard:updateStatus', updateStatus)
+}
+
+function configureUpdater() {
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = false
+  // electron-updater logs through electron-log if present; we have no logger, so
+  // route its noise to the same console the rest of main uses.
+  autoUpdater.logger = null
+
+  autoUpdater.on('update-available', (info) => {
+    pushUpdateStatus({ phase: 'available', available: info.version })
+  })
+  autoUpdater.on('update-not-available', () => {
+    pushUpdateStatus({ phase: 'current', available: null })
+  })
+  autoUpdater.on('download-progress', (p) => {
+    pushUpdateStatus({ phase: 'downloading', percent: Math.round(p.percent) })
+  })
+  autoUpdater.on('update-downloaded', (info) => {
+    pushUpdateStatus({ phase: 'ready', available: info.version, percent: 100 })
+  })
+  autoUpdater.on('error', (err) => {
+    console.warn('[main] updater error:', err)
+    pushUpdateStatus({ phase: 'error', message: errorText(err) })
+  })
+}
+
+// An unpackaged app has no app-update.yml, and asking anyway throws — so the
+// dev build reports plainly instead of surfacing a confusing stack.
+const UPDATES_UNAVAILABLE_IN_DEV = 'Updates only work in the installed app, not in dev.'
+
+function errorText(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err)
+  // The common one by far, and its raw form ("net::ERR_INTERNET_DISCONNECTED")
+  // tells the operator nothing they can act on.
+  if (/ERR_INTERNET_DISCONNECTED|ENOTFOUND|EAI_AGAIN|ETIMEDOUT/i.test(raw)) {
+    return 'No connection — this machine needs internet to check for updates.'
+  }
+  return raw
+}
+
 function registerGlobalShortcuts() {
   globalShortcut.unregisterAll()
   const failed: string[] = []
@@ -917,6 +1005,7 @@ app.whenReady().then(() => {
   state = loadState()
   settings = loadSettings()
   soundTags = loadSoundTags()
+  configureUpdater()
   registerIpc()
   createOperatorWindow()
   createProjectorWindow()
