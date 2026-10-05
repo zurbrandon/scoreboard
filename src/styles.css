@@ -47,6 +47,18 @@
   font-weight: 900;
   font-display: block;
 }
+/* The projector's three italic styles — team name, VS medallion, verdict slam —
+   are all weight 900. Without a real italic face the browser synthesizes an
+   oblique by shearing the upright, which is what it did for every one of them
+   once the UI font stopped being system-ui. This is the only italic the app
+   asks for; add another face here if a new weight ever needs one. */
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/Geist-BlackItalic.otf') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: block;
+}
 
 /* Emoji are VENDORED too, and for the same reason as the typefaces — but the
    stakes are higher. The particle effects draw emoji as canvas text
