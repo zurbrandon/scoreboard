@@ -5,7 +5,7 @@
 
 import { app, BrowserWindow, ipcMain, screen, dialog, protocol, net, globalShortcut, session } from 'electron'
 import { basename, extname, join } from 'node:path'
-import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync, createReadStream, statSync, rmSync } from 'node:fs'
 import { Readable } from 'node:stream'
 
 import { reduce } from '../src/core/reduce'
@@ -64,7 +64,24 @@ interface Settings {
   /** Reopen the soundboard on launch if it was open at quit — a show machine
    *  should come up in the same arrangement it went down in. */
   soundWindowOpen: boolean
+  /** Zoom factor for the two CONTROL surfaces (operator + soundboard). The
+   *  booth PC is a smaller, lower-grade panel wearing a thick Windows title bar
+   *  and taskbar, so the layout that fits a Mac display crowds it. Scaling the
+   *  webContents moves type, padding, borders and radii together — the one
+   *  knob that keeps the design's proportions intact, since spacing here is
+   *  deliberately raw px rather than tokens. Per-machine, so each box keeps its
+   *  own comfortable size. The projector is never scaled: it sizes itself in
+   *  container units against whatever it's thrown at. */
+  uiScale: number
 }
+
+// Chromium clamps zoom well past anything useful here; these are the bounds the
+// layout still reads correctly at (minWidth 460 on the operator stops meaning
+// much below 0.6).
+const UI_SCALE_MIN = 0.6
+const UI_SCALE_MAX = 1.4
+const clampUiScale = (n: unknown) =>
+  typeof n === 'number' && Number.isFinite(n) ? Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, n)) : 1
 
 const stateFile = () => join(app.getPath('userData'), 'showboard-state.json')
 const settingsFile = () => join(app.getPath('userData'), 'showboard-settings.json')
@@ -72,6 +89,10 @@ const settingsFile = () => join(app.getPath('userData'), 'showboard-settings.jso
 // curated body of work, not show state, and keeping them in their own file means
 // a corrupt or reset state file can never take the tagging with it.
 const soundTagsFile = () => join(app.getPath('userData'), 'showboard-sound-tags.json')
+// Written ONLY when the OS refuses a global shortcut, so the file's existence is
+// itself the signal. A packaged app has no console, and a hotkey the OS handed
+// to someone else is otherwise indistinguishable from a dead macro-pad key.
+const hotkeyReportFile = () => join(app.getPath('userData'), 'showboard-hotkey-conflicts.txt')
 
 function loadState(): AppState {
   const fresh = createInitialState()
@@ -174,6 +195,7 @@ function loadSettings(): Settings {
       operatorBounds: parsed.operatorBounds ?? null,
       soundBounds: parsed.soundBounds ?? null,
       soundWindowOpen: parsed.soundWindowOpen ?? false,
+      uiScale: clampUiScale(parsed.uiScale),
     }
   } catch {
     return {
@@ -186,6 +208,7 @@ function loadSettings(): Settings {
       operatorBounds: null,
       soundBounds: null,
       soundWindowOpen: false,
+      uiScale: 1,
     }
   }
 }
@@ -201,6 +224,7 @@ let settings: Settings = {
   operatorBounds: null,
   soundBounds: null,
   soundWindowOpen: false,
+  uiScale: 1,
 }
 
 let saveStateTimer: ReturnType<typeof setTimeout> | undefined
@@ -254,6 +278,18 @@ function loadRoute(win: BrowserWindow, view: 'operator' | 'projector' | 'sound')
   }
 }
 
+// Zoom has to be (re)applied per page load: a navigation resets the factor, and
+// in dev an HMR full reload counts. Applying it on did-finish-load rather than
+// once at create time is what keeps the scale sticky across a reload.
+function applyUiScale(win: BrowserWindow | null) {
+  if (!win || win.isDestroyed()) return
+  win.webContents.setZoomFactor(settings.uiScale)
+}
+
+function trackUiScale(win: BrowserWindow) {
+  win.webContents.on('did-finish-load', () => applyUiScale(win))
+}
+
 function createOperatorWindow() {
   const bounds = settings.operatorBounds
   operatorWin = new BrowserWindow({
@@ -268,6 +304,7 @@ function createOperatorWindow() {
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   })
   loadRoute(operatorWin, 'operator')
+  trackUiScale(operatorWin)
 
   const persistBounds = () => {
     if (!operatorWin) return
@@ -477,6 +514,7 @@ function createSoundWindow() {
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   })
   loadRoute(soundWin, 'sound')
+  trackUiScale(soundWin)
   settings.soundWindowOpen = true
   scheduleSaveSettings()
 
@@ -530,6 +568,17 @@ function registerIpc() {
       height: d.size.height,
       primary: d.id === primaryId,
     }))
+  })
+
+  ipcMain.handle('showboard:getUiScale', (): number => settings.uiScale)
+
+  ipcMain.on('showboard:setUiScale', (_event, scale: number) => {
+    settings.uiScale = clampUiScale(scale)
+    saveSettings()
+    // Both control surfaces, live — the point is to dial it in while looking at
+    // it, not to restart the app between guesses.
+    applyUiScale(operatorWin)
+    applyUiScale(soundWin)
   })
 
   ipcMain.on('showboard:setProjectorDisplay', (_event, id: number) => {
@@ -721,13 +770,49 @@ function registerIpc() {
 // is logged, not fatal — the show goes on without that one key.
 function registerGlobalShortcuts() {
   globalShortcut.unregisterAll()
+  const failed: string[] = []
   for (const { accelerator, action, label } of DEFAULT_HOTKEYS) {
     const ok = globalShortcut.register(accelerator, () => {
       operatorWin?.webContents.send('showboard:hotkey', action)
     })
-    if (!ok) console.warn('[main] could not register shortcut %s (%s)', accelerator, label)
+    if (!ok) {
+      console.warn('[main] could not register shortcut %s (%s)', accelerator, label)
+      failed.push(`${accelerator}\t${label}`)
+    }
   }
-  console.log('[main] registered %d global shortcuts', DEFAULT_HOTKEYS.length)
+  console.log(
+    '[main] registered %d of %d global shortcuts',
+    DEFAULT_HOTKEYS.length - failed.length,
+    DEFAULT_HOTKEYS.length,
+  )
+  reportHotkeyConflicts(failed)
+}
+
+// Another running app can already own a chord — far likelier on the booth's
+// Windows box than on this Mac, since vendor tray utilities (graphics drivers,
+// keyboard software) claim Ctrl+Alt+Shift combos. Leave a plain-text note where
+// it can be found without a terminal.
+function reportHotkeyConflicts(failed: string[]) {
+  try {
+    if (failed.length === 0) {
+      rmSync(hotkeyReportFile(), { force: true })
+      return
+    }
+    writeFileSync(
+      hotkeyReportFile(),
+      [
+        `Showboard could not claim ${failed.length} of ${DEFAULT_HOTKEYS.length} shortcuts`,
+        `(${new Date().toLocaleString()}) — another running app already owns them,`,
+        'so these macro-pad keys will do nothing until it is closed or remapped.',
+        '',
+        ...failed,
+        '',
+      ].join('\n'),
+      'utf-8',
+    )
+  } catch (err) {
+    console.warn('[main] could not write hotkey conflict report:', err)
+  }
 }
 
 // Keep both renderers running at full speed even when they're not focused or are

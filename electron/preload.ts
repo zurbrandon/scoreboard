@@ -34,6 +34,9 @@ const bridge: ShowboardBridge = {
   listDisplays: () => ipcRenderer.invoke('showboard:listDisplays') as Promise<DisplayInfo[]>,
   setProjectorDisplay: (id) => ipcRenderer.send('showboard:setProjectorDisplay', id),
 
+  getUiScale: () => ipcRenderer.invoke('showboard:getUiScale') as Promise<number>,
+  setUiScale: (scale) => ipcRenderer.send('showboard:setUiScale', scale),
+
   chooseMusicFolder: () => ipcRenderer.send('showboard:chooseMusicFolder'),
   requestTracks: () => ipcRenderer.send('showboard:requestTracks'),
   onTracks: (callback) => {

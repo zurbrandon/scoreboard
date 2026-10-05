@@ -4,6 +4,8 @@
 
 import { useEffect, useRef } from 'react'
 
+import { EMOJI_FONT_STACK, warmEmojiGlyphs } from './emojiFont'
+
 interface Flake {
   x: number
   y: number
@@ -24,6 +26,12 @@ export function EmojiRain({ nonce, emoji }: { nonce: number; emoji: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef(0)
   const seenNonce = useRef(nonce)
+
+  // Deliberately keyed on `emoji` alone. The mood is chosen long before the
+  // reveal that rains it, so loading here means the fire path never waits.
+  useEffect(() => {
+    warmEmojiGlyphs(emoji)
+  }, [emoji])
 
   useEffect(() => {
     if (nonce === seenNonce.current) return
@@ -90,7 +98,7 @@ export function EmojiRain({ nonce, emoji }: { nonce: number; emoji: string }) {
         ctx.globalAlpha = fade
         ctx.translate(f.x, f.y)
         ctx.rotate(f.rot)
-        ctx.font = `${f.size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`
+        ctx.font = `${f.size}px ${EMOJI_FONT_STACK}`
         ctx.fillText(glyph, 0, 0)
         ctx.restore()
       }

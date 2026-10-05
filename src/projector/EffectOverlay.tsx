@@ -6,6 +6,8 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 
+import { EMOJI_FONT_STACK, warmEmojiGlyphs } from './emojiFont'
+
 interface Particle {
   x: number
   y: number
@@ -176,6 +178,12 @@ export function EffectOverlay({
   const redEmojiRef = useRef(redEmoji)
   redEmojiRef.current = redEmoji
 
+  // Warm every glyph this overlay can draw, whenever the pool changes: the two
+  // static ones plus whatever moods the teams are currently wearing.
+  useEffect(() => {
+    warmEmojiGlyphs(Object.values(EFFECT_EMOJI).join('') + blueEmoji + redEmoji)
+  }, [blueEmoji, redEmoji])
+
   // Pick a random verdict phrase per fire (stable across unrelated re-renders).
   const slamWord = useMemo(() => {
     const s = SLAMS[kind]
@@ -261,7 +269,7 @@ function makeParticleTick(
       ctx.translate(p.x, p.y)
       ctx.rotate(p.rot)
       if (p.glyph) {
-        ctx.font = `${p.w}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`
+        ctx.font = `${p.w}px ${EMOJI_FONT_STACK}`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(p.glyph, 0, 0)

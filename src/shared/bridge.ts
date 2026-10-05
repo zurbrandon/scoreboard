@@ -86,6 +86,11 @@ export interface ShowboardBridge {
   listDisplays(): Promise<DisplayInfo[]>
   setProjectorDisplay(id: number): void
 
+  // How large the control surfaces draw themselves. Scales the operator and
+  // soundboard windows together; the projector is never touched.
+  getUiScale(): Promise<number>
+  setUiScale(scale: number): void
+
   // Music folder.
   chooseMusicFolder(): void
   requestTracks(): void

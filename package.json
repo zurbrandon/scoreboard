@@ -14,7 +14,8 @@
     "electron:build": "node scripts/build-electron.mjs",
     "electron:dev": "npm run electron:build && concurrently -k -n vite,electron \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:start": "electron .",
-    "package:mac": "npm run build && npm run electron:build && electron-builder --mac"
+    "package:mac": "npm run build && npm run electron:build && electron-builder --mac",
+    "package:win": "npm run build && npm run electron:build && electron-builder --win"
   },
   "dependencies": {
     "emoji-picker-react": "^4.19.1",
@@ -38,6 +39,24 @@
       "identity": null,
       "icon": "build/icon.icns",
       "category": "public.app-category.entertainment"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Showboard"
     }
   },
   "devDependencies": {

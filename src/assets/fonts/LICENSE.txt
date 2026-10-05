@@ -1,0 +1,11 @@
+Geist and Geist Mono — Copyright (c) 2023 Vercel, Inc.
+Geist Pixel — Copyright (c) Vercel, Inc.
+JetBrains Mono — Copyright (c) 2020 The JetBrains Mono Project Authors.
+
+Both families are licensed under the SIL Open Font License, Version 1.1,
+which permits bundling them inside an application. The full license text:
+https://openfontlicense.org/open-font-license-official-text/
+
+They are vendored here rather than relied on as system fonts so the operator
+and projector render identically on the Mac they're built on and the Windows
+booth machine they run on.
