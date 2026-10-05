@@ -46,7 +46,8 @@
       {
         "provider": "github",
         "owner": "zurbrandon",
-        "repo": "scoreboard"
+        "repo": "scoreboard",
+        "releaseType": "release"
       }
     ],
     "win": {
