@@ -642,17 +642,22 @@
   box-shadow: inset 0 0.1cqw 0 rgba(255, 255, 255, 0.35), 0 0.3cqh 1cqh rgba(0, 0, 0, 0.4);
 }
 
-/* recessed LED screen holding the score */
-.led-screen {
+/* recessed LED screen holding the score. The third score's box is the same
+   piece of hardware, just a different shape, so it shares the face here. */
+.led-screen,
+.audience-panel {
   position: relative;
-  flex: 1;
-  display: grid; place-items: center;
-  border-radius: 10px;
   background: #04060b;
   box-shadow: inset 0 0 0 0.15cqw rgba(255, 255, 255, 0.05), inset 0 0.6cqh 2.2cqh rgba(0, 0, 0, 0.9);
   overflow: hidden;
 }
-.led-screen::before {
+.led-screen {
+  flex: 1;
+  display: grid; place-items: center;
+  border-radius: 10px;
+}
+.led-screen::before,
+.audience-panel::before {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 4px);
@@ -975,8 +980,8 @@
 }
 
 .scoreboard__bottom { display: flex; align-items: center; gap: 2cqw; z-index: 1; }
-/* Three fixed slots keep the audience centered while the edge ribbons come and
-   go (and swap sides at halftime). */
+/* Three fixed slots hold the ribbons to their own edges as they come and go
+   (and swap sides at halftime); the centre one is an empty spacer. */
 .ribbon-slot--left { display: flex; justify-content: flex-start; }
 .ribbon-slot--right { display: flex; justify-content: flex-end; }
 .ribbon-slot--center { flex: 1; text-align: center; }
@@ -989,7 +994,50 @@
 }
 .ribbon--blue { background: linear-gradient(180deg, var(--blue), var(--blue-dim)); }
 .ribbon--red { background: linear-gradient(180deg, var(--red), var(--red-dim)); }
-.audience { color: #9aa6c4; font-size: 1.5cqw; font-weight: 800; letter-spacing: 0.15em; }
+/* ------------------------------------------------- Third score ("audience")
+   A full-width readout under the match. Label left, number right: the label is
+   operator-written and can be any length, so it takes the slack and truncates,
+   while the number keeps whatever width it needs. z-index matches the rest of
+   the scoreboard's content so the vignette still sits over it. */
+.audience-panel {
+  display: flex; align-items: center; justify-content: space-between; gap: 3cqw;
+  padding: 1.8cqh 3cqw;
+  z-index: 1;
+  /* The same 4cqw the two team panels round their outer corners to — this box
+     is the bottom of the same piece of equipment, so it carries the pill's
+     radius on all four corners rather than the LED face's tighter 10px. */
+  border-radius: 4cqw;
+}
+.audience-panel__label {
+  min-width: 0; /* without this the flex item refuses to shrink and the ellipsis never appears */
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  /* Same treatment as a team's name in its banner (.team-panel__name) — white,
+     heavy, italic, with the same drop shadow — so this reads as the name of a
+     score rather than a caption under one. A touch smaller than the team names'
+     3cqw, matching how its readout sits below theirs. */
+  font-size: 2.6cqw; font-weight: 900; font-style: italic;
+  text-transform: uppercase; letter-spacing: 0.02em; color: #fff;
+  text-shadow: 0 0.15cqw 0.4cqw rgba(0, 0, 0, 0.6);
+}
+.audience-panel__score {
+  flex: none;
+  font-family: 'Geist Pixel', 'Courier New', ui-monospace, monospace;
+  font-weight: 400; /* single-weight face; see .team-panel__score */
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+  /* Half the team readouts' 15cqw, so the hierarchy reads at a glance.
+     --score-scale steps it down for a joke score; see AUDIENCE_FIT_CHARS. */
+  font-size: calc(8cqw * var(--score-scale, 1));
+  /* 1, not the team panels' 0.9: those sit in a grid-centred LED face with room
+     to spare, while this box is sized by its own content — at 0.9 the pixel
+     face's ink paints below its line box and the panel's overflow clips the
+     digits' feet. */
+  line-height: 1;
+  color: #eafcff;
+  /* Neutral cyan — the half pill's accent — rather than either team's colour,
+     because this score belongs to neither of them. */
+  text-shadow: 0 0 1cqw rgba(255, 255, 255, 0.9), 0 0 3cqw #16b6d6, 0 0 6cqw #16b6d6;
+}
 
 /* "Show end" finale takeover */
 .finale {

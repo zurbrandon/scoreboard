@@ -8,6 +8,7 @@ import { motion } from 'motion/react'
 import { useAppState } from '../../store/react'
 import { determineWinner } from '../../core/winner'
 import {
+  AUDIENCE_FIT_CHARS,
   FINALE_FIT_CHARS,
   FINALE_TIE_FIT_CHARS,
   PANEL_FIT_CHARS,
@@ -31,8 +32,6 @@ const CONFETTI_COLORS: Record<'blue' | 'red' | 'tie', string[]> = {
 
 export function Scoreboard() {
   const half = useAppState((s) => s.halfLive)
-  const audienceScore = useAppState((s) => s.audienceLive.score)
-  const audienceLabel = useAppState((s) => s.audienceLive.label)
   const audienceVisible = useAppState((s) => s.audienceLive.visible)
   const ribbons = useAppState((s) => s.ribbonsLive)
   const winner = useAppState((s) => s.lastWinner)
@@ -78,10 +77,12 @@ export function Scoreboard() {
         <div className="scoreboard__vs" aria-hidden="true">VS</div>
       </div>
 
+      {audienceVisible && <AudiencePanel />}
+
       <footer className="scoreboard__bottom">
         {/* Ribbons follow their team across the halftime side-swap: the label +
-            color are keyed to whichever team sits on that side. Fixed left/center/
-            right slots keep the audience centered even when parts are hidden. */}
+            color are keyed to whichever team sits on that side. The empty centre
+            slot is the spacer that holds them to their own edges. */}
         <span className="ribbon-slot ribbon-slot--left">
           {ribbons.visible && (
             <span className={`ribbon ribbon--${leftTeam}`}>
@@ -89,13 +90,7 @@ export function Scoreboard() {
             </span>
           )}
         </span>
-        <span className="ribbon-slot ribbon-slot--center">
-          {audienceVisible && (
-            <span className="audience">
-              {audienceLabel} · {audienceScore}
-            </span>
-          )}
-        </span>
+        <span className="ribbon-slot ribbon-slot--center" />
         <span className="ribbon-slot ribbon-slot--right">
           {ribbons.visible && (
             <span className={`ribbon ribbon--${rightTeam}`}>
@@ -264,6 +259,33 @@ function HeaderLogo({
       alt={alt}
       onError={() => setFailed(true)}
     />
+  )
+}
+
+// The third score — a running count that isn't either team's (the bar tab, the
+// audience, a running gag). It reads as a score in its own right rather than a
+// caption: same recessed LED face and pixel numerals as the team panels, run the
+// full width of the stage, but at roughly half their type size and glowing a
+// neutral cyan rather than a team colour, so it never competes with the match.
+// Rendered only when toggled on, and as a sibling of the flex:1 teams row — so
+// turning it on is what shortens the team panels, with no second place to keep
+// the heights in sync.
+function AudiencePanel() {
+  const score = useAppState((s) => s.audienceLive.score)
+  const label = useAppState((s) => s.audienceLive.label)
+
+  // Counts up the same way the team readouts do, so a point awarded here reads
+  // as the same kind of event.
+  const shown = useAnimatedNumber(score)
+  const scoreText = formatScore(shown)
+
+  return (
+    <section className="audience-panel" aria-label={label || 'Third score'}>
+      <span className="audience-panel__label">{label}</span>
+      <span className="audience-panel__score" style={scoreScaleStyle(scoreText, AUDIENCE_FIT_CHARS)}>
+        {scoreText}
+      </span>
+    </section>
   )
 }
 

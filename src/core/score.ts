@@ -37,6 +37,14 @@ export function scoreScale(text: string, fitChars: number): number {
 //               (1.94em) — so the line affords one more character than a bare
 //               score before it has to step down. A normal tie ("42 – 39") thus
 //               stays full size, while "999 – 999" steps down as it must.
+//   Audience    the third score's box runs the full stage width, so its readout
+//               has far more room than it will ever need: at base 8cqw the
+//               widest glyph is 5.17cqw, and the box clears 48cqw even after the
+//               label takes its share — room for nine characters. Stepping at
+//               six is a safety net for a joke score, not a fit constraint, and
+//               it keeps the third score visibly subordinate to the two team
+//               readouts (base 15cqw) at every length.
 export const PANEL_FIT_CHARS = 4
 export const FINALE_FIT_CHARS = 6
 export const FINALE_TIE_FIT_CHARS = 7
+export const AUDIENCE_FIT_CHARS = 6
