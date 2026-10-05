@@ -16,7 +16,7 @@
     "electron:start": "electron .",
     "package:mac": "npm run build && npm run electron:build && electron-builder --mac",
     "package:win": "npm run build && npm run electron:build && electron-builder --win",
-    "release:win": "npm run build && npm run electron:build && electron-builder --win --publish always"
+    "release:win": "npm run build && npm run electron:build && node scripts/release-win.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
