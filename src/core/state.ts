@@ -221,7 +221,9 @@ export function emptyTextSlide(
   deck: SlideDeck = 'show',
   theme?: TextTheme,
 ): TextSlide {
-  return { id, type: 'text', deck, template, theme, liveType: false, headline: '', body: '', quads: ['', '', '', ''] }
+  // A Spelling Bee word is typed live while the player spells it, so that slide
+  // is born live-typing (and, having no switch for it, stays that way).
+  return { id, type: 'text', deck, template, theme, liveType: theme === 'spellingbee', headline: '', body: '', quads: ['', '', '', ''] }
 }
 export function emptyImageSlide(id: string, src = '', deck: SlideDeck = 'show'): ImageSlide {
   // New image slides fill the screen; see ImageSlide.fit for why absent means
@@ -838,7 +840,7 @@ function textSlideFrom(c: Record<string, unknown>): TextSlide {
       ? (c.template as TextTemplate)
       : 'basic',
     theme: c.theme === 'spellingbee' ? 'spellingbee' : undefined,
-    liveType: wasLive ? true : Boolean(c.liveType),
+    liveType: wasLive || c.theme === 'spellingbee' ? true : Boolean(c.liveType),
     headline: wasLive ? String(c.liveText ?? c.headline ?? '') : String(c.headline ?? ''),
     body: String(c.body ?? ''),
     // Absent rather than '' when there's no background, so the slide's shape

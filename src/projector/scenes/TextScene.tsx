@@ -51,7 +51,9 @@ export function TextScene({ slide, animate = false }: { slide: TextSlide; animat
       {live.headline && (
         <div className={`scene-text__headline ${headlineSize(live.headline)}`}>{live.headline}</div>
       )}
-      {live.body && <div className="scene-text__body">{live.body}</div>}
+      {/* Spelling Bee is the word alone — a subtext saved before it was its own
+          slide stays in the data but never reaches the board. */}
+      {live.body && live.theme !== 'spellingbee' && <div className="scene-text__body">{live.body}</div>}
     </div>
   )
 }

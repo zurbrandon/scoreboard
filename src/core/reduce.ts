@@ -815,6 +815,16 @@ const LIVE_EDIT_CMDS = new Set<Command['type']>([
 // off this is a no-op passthrough, so the staged Preview/Program flow is intact.
 export function reduce(state: AppState, command: Command): AppState {
   const next = baseReduce(state, command)
+
+  // A live-typing slide (Spelling Bee) mirrors every edit while it's on air,
+  // LIVE mode or not — the audience watches the word appear as it's spelled.
+  if (!next.liveMode && LIVE_EDIT_CMDS.has(command.type) && 'id' in command) {
+    const live = next.slides.live
+    if (live && command.id === live.id && next.scene === 'slides') {
+      const updated = next.slides.items.find((s) => s.id === live.id)
+      if (updated?.type === 'text' && updated.liveType) return { ...next, slides: { ...next.slides, live: updated } }
+    }
+  }
   if (!next.liveMode) return next
 
   if (command.type === 'slide.select') {

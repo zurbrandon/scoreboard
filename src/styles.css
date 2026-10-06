@@ -844,6 +844,26 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .reactionpad__btn:active { transform: scale(0.98); }
 
 /* Build-view card for the reaction slide — a labeled marker, no fields. */
+/* Spelling Bee card: the word field IS the chalkboard, in the board's own
+   Comic Sans, so the card reads as what the audience will see. */
+.bee-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-right: 28px; }
+.bee-card__tag { font-size: var(--fs-lg); font-weight: 900; color: #fff; }
+.bee-card__live { font-size: var(--fs-sm); color: var(--muted); }
+.bee-card__live--on { color: var(--accent); font-weight: 700; }
+.bee-card__word {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 0; outline: none;
+  background: radial-gradient(140% 120% at 50% 35%, rgba(255, 255, 255, 0.06), transparent 60%), #2f4a3d;
+  box-shadow: inset 0 0 0 4px #6b4a2a;
+  color: #f4f1e4;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Marker Felt', cursive;
+  font-size: 28px; text-align: center;
+}
+.bee-card__word::placeholder { color: rgba(244, 241, 228, 0.4); }
+.bee-card__word:focus { box-shadow: inset 0 0 0 4px #6b4a2a, 0 0 0 2px var(--accent); }
+
 .reaction-card__preview { flex-direction: column; gap: 4px; background: radial-gradient(120% 120% at 50% 0%, #23182e, #0b0710 74%) !important; }
 .reaction-card__tag { font-size: var(--fs-2xl); font-weight: 900; color: #fff; }
 .reaction-card__sub { font-size: var(--fs-sm); color: var(--muted); }

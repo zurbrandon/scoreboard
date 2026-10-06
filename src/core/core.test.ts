@@ -1188,6 +1188,32 @@ describe('one logo slide', () => {
   })
 })
 
+describe('spelling bee', () => {
+  const onAir = (theme?: 'spellingbee') =>
+    run(
+      { type: 'slide.addText', id: 'sb', template: 'basic', deck: 'games', theme },
+      { type: 'slide.commit' },
+      { type: 'display.set', scene: 'slides' },
+      { type: 'slide.setField', id: 'sb', field: 'headline', value: 'CAT' },
+    )
+
+  it('is born live-typing', () => {
+    const s = run({ type: 'slide.addText', id: 'sb', template: 'basic', deck: 'games', theme: 'spellingbee' })
+    expect(s.slides.items.find((i) => i.id === 'sb')).toMatchObject({ liveType: true })
+  })
+
+  it('mirrors each keystroke to the projector while on air, outside LIVE mode', () => {
+    const s = onAir('spellingbee')
+    expect(s.liveMode).toBe(false)
+    expect(s.slides.live?.type === 'text' && s.slides.live.headline).toBe('CAT')
+  })
+
+  it('leaves an ordinary text slide staged until it is shown again', () => {
+    const s = onAir()
+    expect(s.slides.live?.type === 'text' && s.slides.live.headline).toBe('')
+  })
+})
+
 describe('scoreboard theme', () => {
   it('starts plain and switches on pick', () => {
     expect(createInitialState().scoreboardTheme).toBe('none')

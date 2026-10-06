@@ -44,6 +44,7 @@ function describeSlide(slide: Slide): string {
     case 'show':
       return SHOW_BEAT_META[slide.beat]?.label ?? 'Show slide'
     case 'text':
+      if (slide.theme === 'spellingbee') return slide.headline.trim() ? `Spelling Bee · ${slide.headline.trim()}` : 'Spelling Bee'
       return slide.headline.trim() || 'Text slide'
     case 'logo':
       return slide.name.trim() || 'Logo'
@@ -1286,6 +1287,9 @@ function slideCard(slide: Slide, selectedId: string): ReactNode {
     case 'show':
       return <ShowSlideCard slide={slide} selected={slide.id === selectedId} />
     case 'text':
+      // Spelling Bee is its own slide to the operator: one word, typed live.
+      // (Stored as a themed text slide, so the projector renders it as one.)
+      if (slide.theme === 'spellingbee') return <SpellingBeeCard slide={slide} selected={slide.id === selectedId} />
       return <TextSlideCard slide={slide} selected={slide.id === selectedId} />
     case 'reaction':
       return <ReactionSlideCard slide={slide} selected={slide.id === selectedId} />
@@ -1638,6 +1642,15 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
                   }}
                 >
                   🎭 Yay Boo — reaction pad
+                </button>
+                <button
+                  className="slide-add__item"
+                  onClick={() => {
+                    dispatch({ type: 'slide.addText', id: newSlideId('text'), template: 'basic', deck, theme: 'spellingbee' })
+                    setAddOpen(false)
+                  }}
+                >
+                  🐝 Spelling Bee — live word
                 </button>
               </div>
             </>
@@ -2427,6 +2440,68 @@ function ShowSlideCard({ slide, selected }: { slide: ShowSlide; selected: boolea
       {confirming && (
         <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
           <span className="logo-card__confirm-q">Remove this beat?</span>
+          <div className="logo-card__confirm-row">
+            <button
+              className="logo-card__confirm-yes"
+              onClick={() => {
+                dispatch({ type: 'slide.remove', id: slide.id })
+                setConfirming(false)
+              }}
+            >
+              Remove
+            </button>
+            <button className="logo-card__confirm-no" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// The card for a Spelling Bee slide: one word on a chalkboard, nothing else.
+// It's always live-typing — once it's on air, every keystroke goes straight to
+// the projector (see `reduce`), so you type the word as the player spells it.
+function SpellingBeeCard({ slide, selected }: { slide: TextSlide; selected: boolean }) {
+  const dispatch = useDispatch()
+  const [confirming, setConfirming] = useState(false)
+  const onAir = useAppState((s) => s.scene === 'slides' && s.slides.live?.id === slide.id)
+  return (
+    <div
+      className={`logo-card bee-card ${selected ? 'logo-card--active' : ''}`}
+      onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
+    >
+      <div className="bee-card__head">
+        <span className="bee-card__tag">🐝 Spelling Bee</span>
+        <span className={`bee-card__live ${onAir ? 'bee-card__live--on' : ''}`}>
+          {onAir ? '● Live — typing shows as you go' : 'Types live once it’s on air'}
+        </span>
+      </div>
+      <BufferedInput
+        className="bee-card__word"
+        value={slide.headline}
+        placeholder="The word"
+        aria-label="Spelling Bee word"
+        spellCheck={false}
+        autoCapitalize="off"
+        onClick={(e) => e.stopPropagation()}
+        onCommit={(v) => dispatch({ type: 'slide.setField', id: slide.id, field: 'headline', value: v })}
+      />
+      <SlideCueRow slide={slide} />
+      <button
+        className="logo-card__remove"
+        aria-label="Remove slide"
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirming(true)
+        }}
+      >
+        ✕
+      </button>
+      {confirming && (
+        <div className="logo-card__confirm" onClick={(e) => e.stopPropagation()}>
+          <span className="logo-card__confirm-q">Remove this slide?</span>
           <div className="logo-card__confirm-row">
             <button
               className="logo-card__confirm-yes"
