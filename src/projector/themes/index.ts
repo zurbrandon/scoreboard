@@ -3,12 +3,12 @@
 // optional and a theme fills in only the ones it wants. Keyed by ThemeId, so
 // adding an id to core/themes.ts won't typecheck until it has an entry here.
 //
-// To add a theme: add its id + name to THEMES in core/themes.ts, write a file
-// beside halloween.tsx exporting a ScoreboardSkin, and register it below.
-// Projector rule still applies: animate transform/opacity only, never blur.
+// To add a theme, see docs/THEMES.md. Projector rule still applies: animate
+// transform/opacity only, never blur.
 
 import type { ComponentType } from 'react'
 import type { ThemeId } from '../../core/themes'
+import { christmas } from './christmas'
 import { halloween } from './halloween'
 
 export type ConfettiWinner = 'blue' | 'red' | 'tie'
@@ -35,4 +35,5 @@ export interface ScoreboardSkin {
 export const SKINS: Record<ThemeId, ScoreboardSkin> = {
   none: {},
   halloween,
+  christmas,
 }

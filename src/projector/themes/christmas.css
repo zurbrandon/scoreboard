@@ -1,0 +1,88 @@
+/* Christmas skin. The lights sit in .scoreboard at z-index 0, under the header,
+   teams and footer (z-index 1); the snow sits at 2, over the board but under
+   the finale (3) and the confetti/emoji rain. */
+.xm { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+/* A faint cold glow along the floor, like light off snow. Static. */
+.xm__glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(70% 28% at 50% 106%, rgba(200, 225, 255, 0.18), transparent 70%);
+}
+
+.xm__wire {
+  position: absolute; left: 0; top: 0;
+  width: 100%; height: 6cqh;
+  color: #1d3b2a;
+}
+
+/* Each bulb hangs from its point on the wire. The glass is static; only the
+   halo — a pre-drawn gradient — twinkles, by opacity, out of step. */
+.xm__bulb {
+  position: absolute;
+  width: 0; height: 0;
+}
+.xm__glass {
+  position: absolute; left: -0.45cqw; top: 0;
+  width: 0.9cqw; height: 1.4cqw;
+  border-radius: 45% 45% 50% 50% / 35% 35% 65% 65%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--c) 45%);
+  box-shadow: 0 -0.25cqw 0 -0.05cqw #2b3a30; /* the socket */
+}
+.xm__halo {
+  position: absolute; left: -2cqw; top: -1.3cqw;
+  width: 4cqw; height: 4cqw;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--c), transparent);
+  opacity: 0.55;
+  animation: xm-twinkle 2.4s ease-in-out var(--d) infinite alternate;
+  will-change: opacity;
+}
+@keyframes xm-twinkle {
+  from { opacity: 0.2; }
+  to { opacity: 0.75; }
+}
+
+.xm-snow { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+/* Outer span falls, inner one sways — both transform-only and permanently
+   composited (static will-change, never toggled). */
+.xm-snow__fall {
+  position: absolute; top: 0;
+  animation: xm-fall linear infinite;
+  will-change: transform;
+}
+.xm-snow__flake {
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 40%, rgba(255, 255, 255, 0) 70%);
+  animation: xm-sway ease-in-out infinite alternate;
+}
+@keyframes xm-fall {
+  from { transform: translateY(-4cqh); }
+  to { transform: translateY(104cqh); }
+}
+@keyframes xm-sway {
+  from { transform: translateX(-1.2cqw); }
+  to { transform: translateX(1.2cqw); }
+}
+
+/* Snow settled on the VS medallion's top rim. */
+.xm-cap {
+  position: absolute; left: 50%; top: 0;
+  width: 8.6cqw; height: auto;
+  transform: translate(-50%, -42%);
+  filter: drop-shadow(0 0.2cqw 0.3cqw rgba(0, 0, 0, 0.45));
+}
+
+/* Winner entrance: swings like a struck bell, then settles at the same held
+   scale as the stock entrances. Transform-only, and about the same centre as
+   theirs so the held card lands in the same place. */
+.team-panel--winner-jingle { animation: winner-jingle 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) forwards; }
+@keyframes winner-jingle {
+  0% { transform: scale(1) rotate(0deg); }
+  18% { transform: scale(1.14) rotate(4deg); }
+  36% { transform: scale(1.11) rotate(-3.2deg); }
+  54% { transform: scale(1.09) rotate(2.2deg); }
+  72% { transform: scale(1.08) rotate(-1.2deg); }
+  88% { transform: scale(1.07) rotate(0.5deg); }
+  100% { transform: scale(1.07) rotate(0deg); }
+}
