@@ -3,7 +3,7 @@
 // reveal (animate), the logo slams in (Motion spring) and the website staggers
 // in per character.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import type { LogoSlide } from '../../core/state'
 
@@ -15,6 +15,15 @@ export function logoSrc(src: string): string {
 
 export function LogoScene({ slide: logo, animate = false }: { slide: LogoSlide; animate?: boolean }) {
   const [failed, setFailed] = useState(false)
+  // A failed load mustn't stick: switching logos starts fresh, and a broken one
+  // keeps re-trying (a load can fail for a moment — a dev server restarting, a
+  // slow disk — and the Blank screen would otherwise stay empty all night).
+  useEffect(() => setFailed(false), [logo.src])
+  useEffect(() => {
+    if (!failed) return
+    const id = setTimeout(() => setFailed(false), 3000)
+    return () => clearTimeout(id)
+  }, [failed])
 
   return (
     <div className={`scene-logo ${animate ? 'scene-logo--reveal' : ''}`}>
