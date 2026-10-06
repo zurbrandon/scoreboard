@@ -321,12 +321,12 @@ function baseReduce(state: AppState, command: Command): AppState {
       return { ...state, reaction: null, reactionNonce: state.reactionNonce + 1 }
     case 'scoreboard.setLogo':
       return { ...state, scoreboardLogos: { ...state.scoreboardLogos, [command.side]: command.src } }
-    case 'scoreboard.setLogoSite':
-      return { ...state, scoreboardLogoSites: { ...state.scoreboardLogoSites, [command.side]: command.website } }
     case 'scoreboard.setTheme':
       return { ...state, scoreboardTheme: command.theme }
     case 'idle.set':
       return { ...state, idleLogoSrc: command.src }
+    case 'idle.setWebsite':
+      return { ...state, idleWebsite: command.website }
     case 'slide.addShow':
       return {
         ...state,

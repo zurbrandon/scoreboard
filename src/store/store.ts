@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normScoreboardLogoSites, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
 import { normThemeId } from '../core/themes'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
@@ -95,7 +95,6 @@ function loadPersisted(): AppState {
         activeTemplate: normActiveTemplate(parsed.activeTemplate),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
-        scoreboardLogoSites: normScoreboardLogoSites(parsed.scoreboardLogoSites),
         scoreboardTheme: normThemeId(parsed.scoreboardTheme),
         soundBanks: normSoundBanks(parsed.soundBanks),
         // Seeded from the live board when there's no saved list, so an install
@@ -104,6 +103,8 @@ function loadPersisted(): AppState {
         activeBoard: normActiveBoard(parsed.activeBoard, normSavedBoards(parsed.savedBoards, normSoundBanks(parsed.soundBanks))),
         soundSlots: normSoundSlots(parsed.soundSlots),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
+        // An empty string is a choice (no website); only a missing field defaults.
+        idleWebsite: typeof parsed.idleWebsite === 'string' ? parsed.idleWebsite : fresh.idleWebsite,
         gifOverlay: null, // transient overlay; never restore across launches
         washHold: null, // transient hold; never restore across launches
         liveMode: false, // always launch in staged mode, never mid-live

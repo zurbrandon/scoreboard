@@ -1,13 +1,11 @@
 // Settings → Visuals: swap the scoreboard's two corner logos. Pick a built-in
 // preset or upload your own; the choice lives in app state so the projector
 // updates live. Defaults are ComedySportz (left) + Seattle Comedy Theater (right).
-// Each slot also carries the website shown under that logo on the Blank screen.
 
 import { useRef } from 'react'
 import { useAppState, useDispatch } from '../store/react'
-import { BufferedInput } from './BufferedField'
 import { LOGO_LIBRARY } from '../core/logos'
-import { defaultScoreboardLogoSites, defaultScoreboardLogos } from '../core/state'
+import { defaultScoreboardLogos } from '../core/state'
 import { logoImgSrc, fileToLogoSrc } from './logoAssets'
 
 const PRESETS = LOGO_LIBRARY.map((l) => ({ name: l.name, src: `logos/${l.file}` }))
@@ -15,7 +13,6 @@ const PRESETS = LOGO_LIBRARY.map((l) => ({ name: l.name, src: `logos/${l.file}` 
 function LogoSlot({ side, label }: { side: 'left' | 'right'; label: string }) {
   const dispatch = useDispatch()
   const src = useAppState((s) => s.scoreboardLogos[side])
-  const site = useAppState((s) => s.scoreboardLogoSites?.[side] ?? '')
   const fileRef = useRef<HTMLInputElement>(null)
   const set = (v: string) => dispatch({ type: 'scoreboard.setLogo', side, src: v })
   return (
@@ -58,13 +55,6 @@ function LogoSlot({ side, label }: { side: 'left' | 'right'; label: string }) {
           }}
         />
       </div>
-      <BufferedInput
-        className="logo-slot__site"
-        value={site}
-        placeholder="Website under it on Blank (optional)"
-        aria-label={`${label} logo website`}
-        onCommit={(v) => dispatch({ type: 'scoreboard.setLogoSite', side, website: v })}
-      />
     </div>
   )
 }
@@ -73,11 +63,8 @@ export function ScoreboardLogosPanel() {
   const dispatch = useDispatch()
   const reset = () => {
     const d = defaultScoreboardLogos()
-    const sites = defaultScoreboardLogoSites()
     dispatch({ type: 'scoreboard.setLogo', side: 'left', src: d.left })
     dispatch({ type: 'scoreboard.setLogo', side: 'right', src: d.right })
-    dispatch({ type: 'scoreboard.setLogoSite', side: 'left', website: sites.left })
-    dispatch({ type: 'scoreboard.setLogoSite', side: 'right', website: sites.right })
   }
   return (
     <div className="extra logo-slots">

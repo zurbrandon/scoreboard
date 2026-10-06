@@ -1188,11 +1188,11 @@ describe('one logo slide', () => {
   })
 })
 
-describe('corner logo websites', () => {
-  it('default to the theater site and change per slot', () => {
-    expect(createInitialState().scoreboardLogoSites).toEqual({ left: 'seattlecomedytheater.com', right: 'seattlecomedytheater.com' })
-    const s = run({ type: 'scoreboard.setLogoSite', side: 'left', website: 'comedysportz.com' })
-    expect(s.scoreboardLogoSites).toEqual({ left: 'comedysportz.com', right: 'seattlecomedytheater.com' })
+describe('blank screen website', () => {
+  it('defaults to the theater site and can be changed or cleared', () => {
+    expect(createInitialState().idleWebsite).toBe('seattlecomedytheater.com')
+    expect(run({ type: 'idle.setWebsite', website: 'comedysportzseattle.com' }).idleWebsite).toBe('comedysportzseattle.com')
+    expect(run({ type: 'idle.setWebsite', website: '' }).idleWebsite).toBe('')
   })
 })
 
