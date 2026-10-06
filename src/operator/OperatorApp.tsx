@@ -1504,9 +1504,11 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
               >
                 {slideCard(slide, selectedId)}
                 {/* On-air game → its controls ride on the live card. A reaction
-                    slide (Yay Boo) gets the yay/boo pad; every other game gets the
-                    Yes / No ruling. */}
+                    slide (Yay Boo) gets the yay/boo pad; Spelling Bee gets none
+                    (the word on the board is the whole game); every other game
+                    gets the Yes / No ruling. */}
                 {id === onAirId &&
+                  !(slide.type === 'text' && slide.theme === 'spellingbee') &&
                   (slide.type === 'reaction' ? (
                     <div className="reactionpad reactionpad--onair">
                       <button className="reactionpad__btn reactionpad__btn--blue" onClick={() => dispatch({ type: 'reaction.flash', team: 'blue', kind: 'yay' })}>
