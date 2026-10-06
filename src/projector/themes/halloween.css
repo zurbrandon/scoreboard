@@ -40,6 +40,9 @@
   will-change: transform;
 }
 .hw__bat--rtl { animation-name: hw-fly-rtl; }
+/* The emoji faces left, so a bat crossing left-to-right is mirrored to fly
+   head-first. Read by the flap keyframes below. */
+.hw__bat--ltr { --face: -1; }
 .hw__bat-wings {
   display: block; line-height: 1;
   animation: hw-flap ease-in-out infinite alternate;
@@ -47,8 +50,8 @@
   filter: drop-shadow(0 0 0.2cqw rgba(225, 210, 255, 0.95)) drop-shadow(0 0 0.6cqw rgba(183, 140, 255, 0.7));
 }
 @keyframes hw-flap {
-  from { transform: scaleY(1); }
-  to { transform: scaleY(0.5); }
+  from { transform: scaleX(var(--face, 1)) scaleY(1); }
+  to { transform: scaleX(var(--face, 1)) scaleY(0.5); }
 }
 /* Crossing takes the first ~40% of the cycle; the rest waits off screen. */
 @keyframes hw-fly-ltr {
