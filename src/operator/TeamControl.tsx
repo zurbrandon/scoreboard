@@ -10,8 +10,9 @@ import type { Side } from '../core/sides'
 import type { TeamId } from '../core/state'
 import { formatScore } from '../core/score'
 
-// The +/- buttons normally step by 1; holding a modifier steps by 10. Mac uses
-// Command; elsewhere (Windows/Linux) uses Shift.
+// The add row is explicit (+1 / +5 / +10). The −1 button steps by 1, or by 10
+// while a modifier is held — Command on Mac, Shift elsewhere.
+const ADD_STEPS = [1, 5, 10] as const
 const BIG_STEP = 10
 function bigStepHeld(e: { metaKey: boolean; shiftKey: boolean }): boolean {
   const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform)
@@ -62,8 +63,9 @@ export function TeamControl({
   const step = big ? BIG_STEP : 1
   // Read the modifier off the click itself so the amount is exact even if the
   // key state and the label ever disagree by a hair.
-  const bump = (e: { metaKey: boolean; shiftKey: boolean }, sign: 1 | -1) =>
-    dispatch({ type: 'team.bumpScore', team, delta: sign * (bigStepHeld(e) ? BIG_STEP : 1) })
+  const add = (n: number) => dispatch({ type: 'team.bumpScore', team, delta: n })
+  const subtract = (e: { metaKey: boolean; shiftKey: boolean }) =>
+    dispatch({ type: 'team.bumpScore', team, delta: -(bigStepHeld(e) ? BIG_STEP : 1) })
 
   // Keep the exact text the operator is typing (e.g. "3." mid-entry) so a
   // trailing decimal point survives round-tripping through the number. null =
@@ -123,18 +125,24 @@ export function TeamControl({
           </span>
         </div>
 
-        <div className={`team-control__buttons ${big ? 'team-control__buttons--big' : ''}`}>
+        <div className="team-control__buttons">
+          {/* +1 stays the widest: it's the tap a show runs on. */}
+          <div className="team-control__addrow">
+            {ADD_STEPS.map((n) => (
+              <button
+                key={n}
+                className={`team-btn team-btn--inc ${n === 1 ? 'team-btn--main' : 'team-btn--jump'}`}
+                aria-label={`Add ${n} to ${team}`}
+                onClick={() => add(n)}
+              >
+                +{n}
+              </button>
+            ))}
+          </div>
           <button
-            className="team-btn team-btn--inc"
-            aria-label={`Add ${step} to ${team}`}
-            onClick={(e) => bump(e, 1)}
-          >
-            +{step}
-          </button>
-          <button
-            className="team-btn team-btn--dec"
+            className={`team-btn team-btn--dec ${big ? 'team-btn--big' : ''}`}
             aria-label={`Subtract ${step} from ${team}`}
-            onClick={(e) => bump(e, -1)}
+            onClick={subtract}
           >
             −{step}
           </button>

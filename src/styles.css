@@ -508,12 +508,15 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .team-control__buttons { display: flex; flex-direction: column; gap: 6px; }
 .team-btn { width: 100%; border: none; border-radius: var(--r-lg); color: #fff; font-weight: 800; line-height: 1; }
 .team-btn:active { transform: translateY(1px); }
+.team-control__addrow { display: flex; gap: 6px; }
 .team-btn--inc { font-size: var(--t-hero); padding: 20px 0; }
+.team-btn--main { flex: 1.6; }
+.team-btn--jump { flex: 1; font-size: var(--t-action); }
 .team-btn--dec { font-size: var(--t-action); padding: 16px 0; background: var(--panel-3); }
 .team-control--blue .team-btn--inc { background: var(--blue); }
 .team-control--red .team-btn--inc { background: var(--red); }
 /* Big-step mode (modifier held): ring the buttons so it's obvious a click = 10. */
-.team-control__buttons--big .team-btn { box-shadow: 0 0 0 2px var(--accent); }
+.team-btn--big { box-shadow: 0 0 0 2px var(--accent); }
 
 /* small buttons (audience) */
 .btn { border: none; border-radius: var(--r-lg); color: #fff; font-weight: 800; line-height: 1; background: var(--panel-2); }
@@ -657,6 +660,25 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* A section head that folds its section (Custom). Reset to look like the
+   plain head; the chips say what's switched on while it's folded. */
+.section-head--toggle {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%;
+  padding: 0; border: none; background: none; cursor: pointer;
+  font-family: inherit; text-align: left;
+}
+.section-head--toggle:hover { color: var(--text); }
+.section-head__chevron { font-size: 1.4em; transform: rotate(-90deg); transition: transform 0.15s ease; }
+.section-head--open .section-head__chevron { transform: rotate(0deg); }
+.section-head__active { display: flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; }
+.section-head__chip {
+  padding: 2px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.02em; text-transform: none;
 }
 
 /* "Next song" picker — defaults to Random; shows the queued bumper's name. */

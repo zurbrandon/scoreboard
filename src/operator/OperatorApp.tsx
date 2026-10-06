@@ -5,7 +5,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, Reorder, useDragControls } from 'motion/react'
-import { MdScoreboard, MdViewCarousel, MdSportsEsports, MdAutoAwesome, MdClose } from 'react-icons/md'
+import { MdScoreboard, MdViewCarousel, MdSportsEsports, MdAutoAwesome, MdClose, MdExpandMore } from 'react-icons/md'
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
@@ -722,6 +722,15 @@ function ScoreboardConfig() {
   const ribbonAway = useAppState((s) => s.ribbons.away)
   const ribbonsVisible = useAppState((s) => s.ribbons.visible)
   const theme = useAppState((s) => s.scoreboardTheme) ?? 'none'
+  const [customOpen, setCustomOpen] = useRememberedFlag('showboard.customOpen', true)
+  // What the folded Custom section is hiding that's switched on, so closing it
+  // never hides the fact that something is on the board.
+  const themeInfo = THEMES.find((t) => t.id === theme)
+  const customActive = [
+    ribbonsVisible && 'Labels',
+    audienceVisible && (audienceLabel || 'Third score'),
+    theme !== 'none' && themeInfo && `${themeInfo.emoji} ${themeInfo.name}`,
+  ].filter((x): x is string => !!x)
   // Default at the usage site (not in the selector) so useSyncExternalStore
   // still sees a stable reference; loadPersisted guarantees the field exists.
   const musicLibrary = useAppState((s) => s.music.library) ?? []
@@ -782,7 +791,7 @@ function ScoreboardConfig() {
             </button>
           </div>
           <div className="pot__quick">
-            {[2, 3, 5].map((n) => (
+            {[2, 5, 10].map((n) => (
               <button key={n} className="pot__chip" onClick={() => addPot(n)}>
                 +{n}
               </button>
@@ -799,76 +808,96 @@ function ScoreboardConfig() {
         </span>
       </div>
 
-      <h3 className="section-head">Custom</h3>
-      <div className="extra ribbons-row">
-        <BufferedInput
-          className="ribbon-input ribbon-input--blue"
-          value={ribbonHome}
-          placeholder="Home"
-          aria-label="Home label (Blue)"
-          onCommit={(v) => dispatch({ type: 'ribbons.setHome', value: v })}
-        />
-        <BufferedInput
-          className="ribbon-input ribbon-input--red"
-          value={ribbonAway}
-          placeholder="Away"
-          aria-label="Away label (Red)"
-          onCommit={(v) => dispatch({ type: 'ribbons.setAway', value: v })}
-        />
-        <label className="switch" title={ribbonsVisible ? 'Showing on the board' : 'Hidden'}>
-          <input
-            type="checkbox"
-            checked={ribbonsVisible}
-            onChange={(e) => dispatch({ type: 'ribbons.setVisible', visible: e.target.checked })}
-          />
-          <span className="switch__track">
-            <span className="switch__thumb" />
+      <button
+        className={`section-head section-head--toggle ${customOpen ? 'section-head--open' : ''}`}
+        aria-expanded={customOpen}
+        onClick={() => setCustomOpen(!customOpen)}
+      >
+        <MdExpandMore className="section-head__chevron" aria-hidden="true" />
+        Custom
+        {!customOpen && customActive.length > 0 && (
+          <span className="section-head__active" title="Switched on">
+            {customActive.map((label) => (
+              <span key={label} className="section-head__chip">
+                {label}
+              </span>
+            ))}
           </span>
-        </label>
-      </div>
+        )}
+      </button>
+      {customOpen && (
+        <>
+        <div className="extra ribbons-row">
+          <BufferedInput
+            className="ribbon-input ribbon-input--blue"
+            value={ribbonHome}
+            placeholder="Home"
+            aria-label="Home label (Blue)"
+            onCommit={(v) => dispatch({ type: 'ribbons.setHome', value: v })}
+          />
+          <BufferedInput
+            className="ribbon-input ribbon-input--red"
+            value={ribbonAway}
+            placeholder="Away"
+            aria-label="Away label (Red)"
+            onCommit={(v) => dispatch({ type: 'ribbons.setAway', value: v })}
+          />
+          <label className="switch" title={ribbonsVisible ? 'Showing on the board' : 'Hidden'}>
+            <input
+              type="checkbox"
+              checked={ribbonsVisible}
+              onChange={(e) => dispatch({ type: 'ribbons.setVisible', visible: e.target.checked })}
+            />
+            <span className="switch__track">
+              <span className="switch__thumb" />
+            </span>
+          </label>
+        </div>
 
-      <div className="extra audience-row">
-        <BufferedInput
-          className="audience-label"
-          value={audienceLabel}
-          aria-label="Audience label"
-          onCommit={(v) => dispatch({ type: 'audience.setLabel', label: v })}
-        />
-        <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.decrement' })}>
-          −
-        </button>
-        <strong className="extra__value">{audienceScore}</strong>
-        <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.increment' })}>
-          +
-        </button>
-        <label className="switch" title={audienceVisible ? 'Showing on the board' : 'Hidden'}>
-          <input
-            type="checkbox"
-            checked={audienceVisible}
-            onChange={(e) => dispatch({ type: 'audience.setVisible', visible: e.target.checked })}
+        <div className="extra audience-row">
+          <BufferedInput
+            className="audience-label"
+            value={audienceLabel}
+            aria-label="Audience label"
+            onCommit={(v) => dispatch({ type: 'audience.setLabel', label: v })}
           />
-          <span className="switch__track">
-            <span className="switch__thumb" />
-          </span>
-        </label>
-      </div>
-      {/* Seasonal skin. Goes straight to the board (no Update needed): it's a
-          look, like the corner logos, not a change to the match. */}
-      <div className="extra nextsong-row">
-        <span className="nextsong__label">Theme</span>
-        <select
-          className="nextsong__select"
-          value={theme}
-          aria-label="Scoreboard theme"
-          onChange={(e) => dispatch({ type: 'scoreboard.setTheme', theme: normThemeId(e.target.value) })}
-        >
-          {THEMES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.emoji ? `${t.emoji} ${t.name}` : t.name}
-            </option>
-          ))}
-        </select>
-      </div>
+          <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.decrement' })}>
+            −
+          </button>
+          <strong className="extra__value">{audienceScore}</strong>
+          <button className="btn btn--sm" onClick={() => dispatch({ type: 'audience.increment' })}>
+            +
+          </button>
+          <label className="switch" title={audienceVisible ? 'Showing on the board' : 'Hidden'}>
+            <input
+              type="checkbox"
+              checked={audienceVisible}
+              onChange={(e) => dispatch({ type: 'audience.setVisible', visible: e.target.checked })}
+            />
+            <span className="switch__track">
+              <span className="switch__thumb" />
+            </span>
+          </label>
+        </div>
+        {/* Seasonal skin. Goes straight to the board (no Update needed): it's a
+            look, like the corner logos, not a change to the match. */}
+        <div className="extra nextsong-row">
+          <span className="nextsong__label">Theme</span>
+          <select
+            className="nextsong__select"
+            value={theme}
+            aria-label="Scoreboard theme"
+            onChange={(e) => dispatch({ type: 'scoreboard.setTheme', theme: normThemeId(e.target.value) })}
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.emoji ? `${t.emoji} ${t.name}` : t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        </>
+      )}
       <h3 className="section-head">Audio</h3>
       <div className="extra nextsong-row">
         <span className="nextsong__label">🎵 Next song</span>
@@ -2542,4 +2571,27 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
       )}
     </div>
   )
+}
+
+// A UI-only on/off the operator expects to stay the way they left it (a folded
+// section). Per machine, in localStorage; storage that's blocked or empty just
+// falls back to the default.
+function useRememberedFlag(key: string, fallback: boolean): [boolean, (v: boolean) => void] {
+  const [value, setValue] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key)
+      return raw === null ? fallback : raw === '1'
+    } catch {
+      return fallback
+    }
+  })
+  const set = (v: boolean) => {
+    setValue(v)
+    try {
+      localStorage.setItem(key, v ? '1' : '0')
+    } catch {
+      // Not remembered this time; the toggle itself still works.
+    }
+  }
+  return [value, set]
 }
