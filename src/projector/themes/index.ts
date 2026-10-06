@@ -18,6 +18,10 @@ export interface ScoreboardSkin {
   Decorations?: ComponentType
   /** Drawn inside the VS medallion, so it rides along wherever the seam is. */
   VsAccent?: ComponentType
+  /** Replaces the random winner entrance (pop/slam/bounce/throb) with the
+   *  theme's own. Names a CSS class suffix: `team-panel--winner-<name>`, which
+   *  the theme's stylesheet defines — transform-only, settling at ~scale(1.07). */
+  winnerStyle?: string
   confetti?: {
     /** Recolour the reveal burst. `base` is the plain board's palette for this
      *  winner — keep the winner's colour in it so the burst still says who won. */

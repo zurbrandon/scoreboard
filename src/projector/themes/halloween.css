@@ -18,15 +18,81 @@
 .hw__web--left { left: 0; }
 .hw__web--right { right: 0; transform: scaleX(-1); }
 
-/* Hangs off the right-hand web, a little inside the venue logo. */
+/* Hangs off the right-hand web, a little inside the venue logo, and swings
+   slowly from the top of its thread. */
 .hw__spider {
   position: absolute; top: 0; right: 24cqw;
   display: flex; flex-direction: column; align-items: center;
+  transform-origin: 50% 0;
+  animation: hw-swing 5.5s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes hw-swing {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(6deg); }
+}
+
+/* Bats: the outer span flies the lane, the inner one flaps. Both transform-only
+   and permanently composited (static will-change, never toggled). */
+.hw__bat {
+  position: absolute; left: 0;
+  animation: hw-fly-ltr linear infinite;
+  will-change: transform;
+}
+.hw__bat--rtl { animation-name: hw-fly-rtl; }
+.hw__bat-wings {
+  display: block; line-height: 1;
+  animation: hw-flap ease-in-out infinite alternate;
+  /* Near-black emoji: a held moonlight rim so it reads on the dark board. */
+  filter: drop-shadow(0 0 0.2cqw rgba(225, 210, 255, 0.95)) drop-shadow(0 0 0.6cqw rgba(183, 140, 255, 0.7));
+}
+@keyframes hw-flap {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0.5); }
+}
+/* Crossing takes the first ~40% of the cycle; the rest waits off screen. */
+@keyframes hw-fly-ltr {
+  0% { transform: translate(-8cqw, 0); }
+  10% { transform: translate(22cqw, -2cqh); }
+  20% { transform: translate(50cqw, 1.5cqh); }
+  30% { transform: translate(78cqw, -1.5cqh); }
+  40%, 100% { transform: translate(108cqw, 0.5cqh); }
+}
+@keyframes hw-fly-rtl {
+  0% { transform: translate(108cqw, 0); }
+  10% { transform: translate(78cqw, 1.5cqh); }
+  20% { transform: translate(50cqw, -2cqh); }
+  30% { transform: translate(22cqw, 1cqh); }
+  40%, 100% { transform: translate(-8cqw, 0); }
 }
 .hw__thread { width: 0.12cqw; height: 13cqh; background: rgba(225, 230, 245, 0.55); }
 .hw__spider-glyph { font-size: 3.6cqw; line-height: 1; margin-top: -0.3cqw; transform: rotate(180deg);
   /* The emoji is near-black; a held (never animated) glow lifts it off the bg. */
   filter: drop-shadow(0 0 0.35cqw rgba(255, 166, 77, 0.85));
+}
+
+/* Candlelight behind the pumpkin: a pre-drawn soft gradient whose OPACITY
+   flickers — no blur is animated, so nothing re-rasters. */
+.hw-pumpkin-glow {
+  position: absolute; left: 50%; top: 0;
+  z-index: -1; /* under the VS lettering, over the medallion face */
+  width: 14cqw; height: 14cqw;
+  transform: translate(-50%, -54%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 150, 40, 0.85), rgba(255, 110, 20, 0.3) 50%, transparent);
+  animation: hw-flicker 2.8s steps(1, end) infinite;
+  will-change: opacity;
+}
+@keyframes hw-flicker {
+  0% { opacity: 0.85; }
+  9% { opacity: 0.55; }
+  14% { opacity: 1; }
+  31% { opacity: 0.7; }
+  38% { opacity: 0.95; }
+  57% { opacity: 0.6; }
+  63% { opacity: 0.9; }
+  81% { opacity: 0.5; }
+  86% { opacity: 1; }
 }
 
 /* Perched on top of the VS medallion, overlapping its rim. */
@@ -35,4 +101,23 @@
   transform: translate(-50%, -62%);
   font-size: 5cqw; font-style: normal; line-height: 1;
   filter: drop-shadow(0 0.3cqw 0.5cqw rgba(0, 0, 0, 0.6));
+}
+
+/* Winner entrance: rises, then shivers side to side before settling at the
+   same held scale as the stock entrances. Transform-only. */
+.team-panel--winner-spooky { animation: winner-spooky 1.05s cubic-bezier(0.3, 0.7, 0.4, 1) forwards; }
+@keyframes winner-spooky {
+  0% { transform: scale(1) rotate(0deg); }
+  16% { transform: scale(0.95) rotate(0deg); }
+  38% { transform: scale(1.15) rotate(-3deg); }
+  50% { transform: scale(1.13) rotate(3deg); }
+  62% { transform: scale(1.11) rotate(-2.2deg); }
+  74% { transform: scale(1.09) rotate(1.5deg); }
+  86% { transform: scale(1.08) rotate(-0.7deg); }
+  100% { transform: scale(1.07) rotate(0deg); }
+}
+/* The held winner glow goes pumpkin-orange instead of gold. Static, like the
+   stock one — it paints once and holds. */
+.scoreboard--theme-halloween .team-panel--winner {
+  box-shadow: 0 0 110px rgba(255, 122, 26, 0.85), inset 0 0 3cqh rgba(0, 0, 0, 0.55);
 }
