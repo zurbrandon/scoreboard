@@ -4,6 +4,7 @@
 
 import type { BumperTrack } from './bumper'
 import { LOGO_LIBRARY } from './logos'
+import type { ThemeId } from './themes'
 
 export type TeamId = 'blue' | 'red'
 // Match phase. 'end' is the finale — Reveal triggers the winner celebration.
@@ -724,6 +725,9 @@ export interface AppState {
   reactionNonce: number
   /** The two scoreboard corner logos (editable in Settings → Visuals). */
   scoreboardLogos: ScoreboardLogos
+  /** The seasonal skin over the scoreboard ('none' = the plain board). Applies
+   *  the moment it's picked, like the logos — it's a look, not a score change. */
+  scoreboardTheme: ThemeId
   /** What the projector shows when "nothing" is on — i.e. the Blank/black scene.
    *  null = pure blackout (default); otherwise a logo image `src` to hold on
    *  black (a scoreboard logo or a deck logo slide), for venues that want a
@@ -792,6 +796,7 @@ export function createInitialState(): AppState {
     reaction: null,
     reactionNonce: 0,
     scoreboardLogos: defaultScoreboardLogos(),
+    scoreboardTheme: 'none',
     idleLogoSrc: null,
     music: {
       volume: 0.8,

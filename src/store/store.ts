@@ -13,6 +13,7 @@
 
 import { reduce } from '../core/reduce'
 import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
+import { normThemeId } from '../core/themes'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
 
@@ -94,6 +95,7 @@ function loadPersisted(): AppState {
         activeTemplate: normActiveTemplate(parsed.activeTemplate),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
+        scoreboardTheme: normThemeId(parsed.scoreboardTheme),
         soundBanks: normSoundBanks(parsed.soundBanks),
         // Seeded from the live board when there's no saved list, so an install
         // that already has tabs lands on a preset matching what's on screen.

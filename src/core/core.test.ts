@@ -25,6 +25,7 @@ import {
   scoreScale,
 } from './score'
 import type { Command } from './commands'
+import { normThemeId } from './themes'
 
 // Small helper: run a list of commands from the initial state.
 function run(...commands: Command[]) {
@@ -1184,6 +1185,19 @@ describe('one logo slide', () => {
     const tx = after.slides.items.find((s) => s.id === 'tx')
     expect(tx?.type).toBe('text')
     expect(tx && 'src' in tx).toBe(false)
+  })
+})
+
+describe('scoreboard theme', () => {
+  it('starts plain and switches on pick', () => {
+    expect(createInitialState().scoreboardTheme).toBe('none')
+    expect(run({ type: 'scoreboard.setTheme', theme: 'halloween' }).scoreboardTheme).toBe('halloween')
+  })
+
+  it('falls back to no theme for an id this build does not know', () => {
+    expect(normThemeId('halloween')).toBe('halloween')
+    expect(normThemeId('easter-2031')).toBe('none')
+    expect(normThemeId(undefined)).toBe('none')
   })
 })
 

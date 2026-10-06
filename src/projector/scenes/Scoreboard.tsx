@@ -3,7 +3,7 @@
 // their scores stay with them. Reveal animations (count-up, winner grow,
 // confetti) are driven off revealPhase / revealNonce; the store holds truth.
 
-import { type CSSProperties, useEffect, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { useAppState } from '../../store/react'
 import { determineWinner } from '../../core/winner'
@@ -21,6 +21,7 @@ import { logoSrc } from './LogoScene'
 import { useAnimatedNumber } from '../useAnimatedNumber'
 import { Confetti } from '../Confetti'
 import { EmojiRain } from '../EmojiRain'
+import { SKINS } from '../themes'
 
 const HALF_LABEL = { first: '1st Half', second: '2nd Half', end: 'Final' } as const
 
@@ -51,7 +52,14 @@ export function Scoreboard() {
       : sideOf(winner, half) === 'left'
         ? 0.25
         : 0.75
-  const colors = CONFETTI_COLORS[winner ?? 'tie']
+  // A theme may recolour the burst and mix its own emoji in; the plain board's
+  // palette is what it starts from.
+  const theme = useAppState((s) => s.scoreboardTheme) ?? 'none'
+  const skin = SKINS[theme] ?? SKINS.none
+  const colors = useMemo(() => {
+    const key = winner ?? 'tie'
+    return skin.confetti?.colors?.(CONFETTI_COLORS[key], key) ?? CONFETTI_COLORS[key]
+  }, [skin, winner])
 
   // The winning team's mood emoji (if any) rains across the screen on reveal.
   const winnerEmoji = useAppState((s) =>
@@ -59,7 +67,8 @@ export function Scoreboard() {
   )
 
   return (
-    <div className="scoreboard">
+    <div className={`scoreboard scoreboard--theme-${theme}`}>
+      {skin.Decorations && <skin.Decorations />}
       <header className="scoreboard__top">
         <HeaderLogo src={logos.left} alt="Home logo" fallback="CSz" />
         <div className="scoreboard__half">{HALF_LABEL[half]}</div>
@@ -74,7 +83,10 @@ export function Scoreboard() {
       <div className="scoreboard__teams">
         <TeamPanel team={leftTeam} side="left" />
         <TeamPanel team={rightTeam} side="right" />
-        <div className="scoreboard__vs" aria-hidden="true">VS</div>
+        <div className="scoreboard__vs" aria-hidden="true">
+          VS
+          {skin.VsAccent && <skin.VsAccent />}
+        </div>
       </div>
 
       {audienceVisible && <AudiencePanel />}
@@ -103,7 +115,7 @@ export function Scoreboard() {
       {revealPhase === 'finale' && finaleStage === 'tabulating' && <FinaleTabulating />}
       {revealPhase === 'finale' && finaleStage === 'countdown' && <FinaleCountdown value={countdown} />}
       {revealPhase === 'finale' && finaleStage === 'celebrate' && <FinaleOverlay />}
-      <Confetti nonce={revealNonce} colors={colors} originX={originX} />
+      <Confetti nonce={revealNonce} colors={colors} originX={originX} glyphs={skin.confetti?.glyphs} />
       <EmojiRain nonce={revealNonce} emoji={winnerEmoji} />
     </div>
   )

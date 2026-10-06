@@ -3,6 +3,7 @@
 // asks where a command came from (Engineering Principles: "Every Input Is Equal").
 
 import type { BumperTrack } from './bumper'
+import type { ThemeId } from './themes'
 import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideBgDim, SlideCue, SlideDeck, SoundBank, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
@@ -62,6 +63,7 @@ export type Command =
   | { type: 'reaction.flash'; team: TeamId; kind: ReactionKind } // Yay Boo: flash the projector a team color + word (yay/boo)
   | { type: 'reaction.clear' } // return a reaction slide to its neutral holding screen
   | { type: 'scoreboard.setLogo'; side: 'left' | 'right'; src: string } // change a scoreboard corner logo
+  | { type: 'scoreboard.setTheme'; theme: ThemeId } // seasonal skin over the scoreboard
   | { type: 'idle.set'; src: string | null } // Blank/black scene: null = black, else a logo src to hold
   | { type: 'slide.addMany'; deck: SlideDeck; slides: Slide[] } // append pre-built slides (already have fresh ids) + select the first — used to stamp a template
   // Saved deck templates (persisted, editable): stamp one into a deck, or save /

@@ -1,0 +1,38 @@
+/* Halloween skin. Sits in .scoreboard as an absolute layer at z-index 0, under
+   the header/teams/footer (all z-index 1), so it decorates without covering. */
+.hw { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+/* Low haze along the floor — static gradient, nothing animates. */
+.hw__haze {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(55% 32% at 22% 104%, rgba(138, 63, 252, 0.34), transparent 70%),
+    radial-gradient(55% 32% at 78% 104%, rgba(255, 122, 26, 0.26), transparent 70%);
+}
+
+.hw__web {
+  position: absolute; top: 0;
+  width: 24cqw; height: 24cqw;
+  color: rgba(225, 230, 245, 0.5);
+}
+.hw__web--left { left: 0; }
+.hw__web--right { right: 0; transform: scaleX(-1); }
+
+/* Hangs off the right-hand web, a little inside the venue logo. */
+.hw__spider {
+  position: absolute; top: 0; right: 24cqw;
+  display: flex; flex-direction: column; align-items: center;
+}
+.hw__thread { width: 0.12cqw; height: 13cqh; background: rgba(225, 230, 245, 0.55); }
+.hw__spider-glyph { font-size: 3.6cqw; line-height: 1; margin-top: -0.3cqw; transform: rotate(180deg);
+  /* The emoji is near-black; a held (never animated) glow lifts it off the bg. */
+  filter: drop-shadow(0 0 0.35cqw rgba(255, 166, 77, 0.85));
+}
+
+/* Perched on top of the VS medallion, overlapping its rim. */
+.hw-pumpkin {
+  position: absolute; left: 50%; top: 0;
+  transform: translate(-50%, -62%);
+  font-size: 5cqw; font-style: normal; line-height: 1;
+  filter: drop-shadow(0 0.3cqw 0.5cqw rgba(0, 0, 0, 0.6));
+}

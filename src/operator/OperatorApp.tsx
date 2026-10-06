@@ -9,6 +9,7 @@ import { MdScoreboard, MdViewCarousel, MdSportsEsports, MdAutoAwesome, MdClose }
 import type { IconType } from 'react-icons'
 import { useAppState, useDispatch } from '../store/react'
 import { teamOnSide } from '../core/sides'
+import { THEMES, normThemeId } from '../core/themes'
 import { LOGO_LIBRARY } from '../core/logos'
 import { normalizeHexColor } from '../shared/color'
 import type { ImageSlide, LogoSlide, OperatorTab, ReactionSlide, SavedTemplate, ShowBeat, ShowSlide, Slide, SlideDeck, SlideshowSlide, TeamId, TextSlide } from '../core/state'
@@ -720,6 +721,7 @@ function ScoreboardConfig() {
   const ribbonHome = useAppState((s) => s.ribbons.home)
   const ribbonAway = useAppState((s) => s.ribbons.away)
   const ribbonsVisible = useAppState((s) => s.ribbons.visible)
+  const theme = useAppState((s) => s.scoreboardTheme) ?? 'none'
   // Default at the usage site (not in the selector) so useSyncExternalStore
   // still sees a stable reference; loadPersisted guarantees the field exists.
   const musicLibrary = useAppState((s) => s.music.library) ?? []
@@ -849,6 +851,23 @@ function ScoreboardConfig() {
             <span className="switch__thumb" />
           </span>
         </label>
+      </div>
+      {/* Seasonal skin. Goes straight to the board (no Update needed): it's a
+          look, like the corner logos, not a change to the match. */}
+      <div className="extra nextsong-row">
+        <span className="nextsong__label">Theme</span>
+        <select
+          className="nextsong__select"
+          value={theme}
+          aria-label="Scoreboard theme"
+          onChange={(e) => dispatch({ type: 'scoreboard.setTheme', theme: normThemeId(e.target.value) })}
+        >
+          {THEMES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.emoji ? `${t.emoji} ${t.name}` : t.name}
+            </option>
+          ))}
+        </select>
       </div>
       <h3 className="section-head">Audio</h3>
       <div className="extra nextsong-row">

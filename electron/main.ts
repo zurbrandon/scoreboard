@@ -12,6 +12,7 @@ import { Readable } from 'node:stream'
 import { reduce } from '../src/core/reduce'
 import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../src/core/state'
 import type { Command } from '../src/core/commands'
+import { normThemeId } from '../src/core/themes'
 import type {
   BumperTrackInfo,
   DisplayInfo,
@@ -132,6 +133,7 @@ function loadState(): AppState {
         activeBoard: normActiveBoard(parsed.activeBoard, normSavedBoards(parsed.savedBoards, normSoundBanks(parsed.soundBanks))),
         soundSlots: normSoundSlots(parsed.soundSlots),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
+        scoreboardTheme: normThemeId(parsed.scoreboardTheme),
         idleLogoSrc: typeof parsed.idleLogoSrc === 'string' ? parsed.idleLogoSrc : null,
         // Reset every draft to its live value on launch — no stale pending
         // board changes carried across restarts.
