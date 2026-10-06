@@ -965,6 +965,22 @@ const GAMES: { id: string; label: string; build: (mk: () => string) => Command[]
       { type: 'slide.addText', id: mk(), template: 'basic', deck: 'games', theme: 'spellingbee' } as Command,
     ],
   },
+  {
+    id: 'yay-boo',
+    label: 'Yay Boo',
+    // One reaction pad slide; the game is played from its on-air buttons.
+    build: (mk) => [{ type: 'slide.addReaction', id: mk(), deck: 'games' } as Command],
+  },
+  {
+    id: 'hot-bell',
+    label: 'Hot Bell',
+    // Ten clue slides (headline + subhead), filled in before the game.
+    build: (mk) =>
+      Array.from(
+        { length: 10 },
+        () => ({ type: 'slide.addText', id: mk(), template: 'basic', deck: 'games' }) as Command,
+      ),
+  },
 ]
 
 // Code built-in show "starters" shown in the picker alongside the operator's own
