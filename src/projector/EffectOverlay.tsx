@@ -22,6 +22,7 @@ interface Particle {
   wobble: number
   wobbleSpeed: number
   flutter: boolean
+  term: number // the fall speed air resistance holds it to, px/ms (see the tick)
   life: number
   decay: number
 }
@@ -49,6 +50,12 @@ const SLAMS: Record<string, { words: string[]; cls: string }> = {
 
 const GRAVITY = 0.0012 // px per ms^2
 const DRAG = 0.9996
+// Falling paper is held to a slow flutter by air resistance; a shot piece keeps
+// its full speed on the way UP (that's the punch) and only eases to this once
+// it's coming down. Speeds are tuned at 1080 tall and scale with the canvas, so
+// the rain takes as long on any screen.
+const FALL_SETTLE = 0.004 // per ms: how quickly a falling piece eases to `term`
+const REF_H = 1080
 
 // Cap the canvas' internal render resolution. The particle effects — the
 // fireworks especially — are fill-rate bound: every frame clears the whole
@@ -111,6 +118,7 @@ function spawnParticles(kind: string, w: number, h: number, glyphs?: string[]): 
         wobble: rand(0, Math.PI * 2),
         wobbleSpeed: rand(0.001, 0.003),
         flutter: true,
+        term: rand(0.16, 0.26) * (h / REF_H),
         life: 1,
         decay: 1 / rand(4200, 6000),
       })
@@ -120,8 +128,10 @@ function spawnParticles(kind: string, w: number, h: number, glyphs?: string[]): 
 
   // confetti / hearts / stars / team-emoji: two cannons from the bottom corners,
   // up + inward. Each glyph particle draws from the pool, so a two-team pool mixes.
+  // Emoji are dearer to draw than paper, so glyph cannons fire fewer.
+  const perCannon = useGlyph ? 70 : 120
   const cannon = (originX: number, aimSign: number) => {
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < perCannon; i++) {
       const angle = -Math.PI / 2 + aimSign * rand(0.1, 0.6)
       const speed = rand(1.1, 2.0)
       const glyph = useGlyph ? pick(pool) : undefined
@@ -140,13 +150,42 @@ function spawnParticles(kind: string, w: number, h: number, glyphs?: string[]): 
         wobble: rand(0, Math.PI * 2),
         wobbleSpeed: rand(0.002, 0.006),
         flutter: !glyph,
+        // Paper flutters; an emoji is "heavier" and drops a little faster.
+        term: (glyph ? rand(0.24, 0.32) : rand(0.15, 0.24)) * (h / REF_H),
         life: 1,
-        decay: 1 / rand(2400, 3800),
+        // A backstop only: pieces normally leave by falling off the bottom.
+        decay: 1 / rand(8000, 10000),
       })
     }
   }
   cannon(0.06, +1)
   cannon(0.94, -1)
+
+  // Plain confetti also gets a downpour: a second wave already falling from
+  // above the top edge, spread high so it keeps arriving for several seconds
+  // after the shot instead of all at once.
+  if (kind === 'confetti') {
+    for (let i = 0; i < 180; i++) {
+      const size = rand(9, 18)
+      out.push({
+        x: rand(0, w),
+        y: rand(-h * 0.75, -h * 0.1),
+        vx: rand(-0.04, 0.04),
+        vy: rand(0.04, 0.1),
+        w: size,
+        h: size * rand(0.4, 0.9),
+        color: pick(CONFETTI_COLORS),
+        rot: rand(0, Math.PI * 2),
+        vr: rand(-0.008, 0.008),
+        wobble: rand(0, Math.PI * 2),
+        wobbleSpeed: rand(0.002, 0.005),
+        flutter: true,
+        term: rand(0.15, 0.24) * (h / REF_H),
+        life: 1,
+        decay: 1 / rand(12000, 14000),
+      })
+    }
+  }
   return out
 }
 
@@ -255,17 +294,24 @@ function makeParticleTick(
     let alive = false
     for (const p of particles) {
       p.life -= p.decay * dt
-      if (p.life <= 0) continue
+      if (p.life <= 0 || p.y > h + 60) continue
       alive = true
-      p.vy += GRAVITY * dt
+      // Rising: plain gravity, so the shot keeps its punch. Falling: air
+      // resistance takes over and settles it at its flutter speed.
+      if (p.vy < 0) p.vy += GRAVITY * dt
+      else p.vy += (p.term - p.vy) * Math.min(1, FALL_SETTLE * dt)
       p.vx *= DRAG
       p.wobble += p.wobbleSpeed * dt
-      p.x += (p.vx + Math.sin(p.wobble) * 0.06) * dt
+      // Sways wider once it's drifting down than while it's being shot up.
+      const sway = p.vy > 0 ? 0.13 : 0.06
+      p.x += (p.vx + Math.sin(p.wobble) * sway) * dt
       p.y += p.vy * dt
       p.rot += p.vr * dt
 
       ctx.save()
-      ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.5))
+      // Full strength until the very end of its life (most leave off the bottom
+      // first), rather than fading the whole way down.
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 4))
       ctx.translate(p.x, p.y)
       ctx.rotate(p.rot)
       if (p.glyph) {

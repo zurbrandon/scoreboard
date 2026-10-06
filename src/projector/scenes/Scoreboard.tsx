@@ -40,6 +40,7 @@ export function Scoreboard() {
   const revealPhase = useAppState((s) => s.revealPhase)
   const finaleStage = useAppState((s) => s.finaleStage)
   const countdown = useAppState((s) => s.countdown)
+  const stopNonce = useAppState((s) => s.stopNonce)
   const logos = useAppState((s) => s.scoreboardLogos) ?? { left: 'logos/comedysportz.png', right: 'logos/seattle-comedy-theater.png' }
 
   const leftTeam = teamOnSide('left', half)
@@ -115,7 +116,7 @@ export function Scoreboard() {
       {revealPhase === 'finale' && finaleStage === 'tabulating' && <FinaleTabulating />}
       {revealPhase === 'finale' && finaleStage === 'countdown' && <FinaleCountdown value={countdown} />}
       {revealPhase === 'finale' && finaleStage === 'celebrate' && <FinaleOverlay />}
-      <Confetti nonce={revealNonce} colors={colors} originX={originX} glyphs={skin.confetti?.glyphs} />
+      <Confetti nonce={revealNonce} colors={colors} originX={originX} glyphs={skin.confetti?.glyphs} stopNonce={stopNonce} />
       <EmojiRain nonce={revealNonce} emoji={winnerEmoji} />
     </div>
   )
