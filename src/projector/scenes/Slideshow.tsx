@@ -10,6 +10,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useAppState } from '../../store/react'
+import { webAddress } from '../../shared/webAddress'
 
 // The <webview> element's navigation API, as much of it as this scene uses.
 interface WebviewElement extends HTMLElement {
@@ -20,7 +21,8 @@ interface WebviewElement extends HTMLElement {
 
 const inApp = typeof window !== 'undefined' && 'showboard' in window
 
-export function Slideshow({ url }: { url: string }) {
+export function Slideshow({ url: typed }: { url: string }) {
+  const url = webAddress(typed)
   const viewRef = useRef<WebviewElement>(null)
   const webNav = useAppState((s) => s.webNav)
   const seenNav = useRef(webNav?.nonce ?? 0)
