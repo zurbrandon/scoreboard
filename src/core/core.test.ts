@@ -1196,7 +1196,7 @@ describe('scoreboard theme', () => {
 
   it('falls back to no theme for an id this build does not know', () => {
     expect(normThemeId('halloween')).toBe('halloween')
-    expect(normThemeId('christmas')).toBe('christmas')
+    for (const id of ['christmas', 'newyear', 'valentines', 'pride']) expect(normThemeId(id)).toBe(id)
     expect(normThemeId('easter-2031')).toBe('none')
     expect(normThemeId(undefined)).toBe('none')
   })

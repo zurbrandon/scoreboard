@@ -1,0 +1,91 @@
+/* Valentine's skin. The garland sits in .scoreboard at z-index 0, under the
+   header/teams/footer (z-index 1); the drifting hearts sit at 2, over the board
+   but under the finale (3) and the confetti/emoji rain. */
+.vd { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+/* A soft pink glow along the floor. Static. */
+.vd__glow {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(55% 30% at 25% 105%, rgba(255, 77, 141, 0.22), transparent 70%),
+    radial-gradient(55% 30% at 75% 105%, rgba(255, 156, 194, 0.16), transparent 70%);
+}
+
+.vd__string {
+  position: absolute; left: 0; top: 0;
+  width: 100%; height: 6cqh;
+  color: rgba(255, 190, 215, 0.55);
+}
+
+/* Each heart charm hangs from its point on the string and pulses (scale). */
+.vd__charm {
+  position: absolute;
+  width: 1.5cqw; height: 1.4cqw;
+  margin-left: -0.75cqw;
+  transform-origin: 50% 0;
+  animation: vd-pulse 1.8s ease-in-out var(--d) infinite;
+  will-change: transform;
+  filter: drop-shadow(0 0 0.3cqw rgba(255, 77, 141, 0.7));
+}
+.vd__charm svg, .vd-float__heart svg { display: block; width: 100%; height: 100%; }
+@keyframes vd-pulse {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  60% { transform: scale(1); }
+}
+
+.vd-float { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+/* Outer span rises, inner one sways — transform-only, permanently composited. */
+.vd-float__rise {
+  position: absolute; top: 0;
+  animation: vd-rise linear infinite;
+  will-change: transform;
+}
+.vd-float__heart {
+  display: block;
+  animation: vd-sway ease-in-out infinite alternate;
+}
+@keyframes vd-rise {
+  from { transform: translateY(104cqh); }
+  to { transform: translateY(-6cqh); }
+}
+@keyframes vd-sway {
+  from { transform: translateX(-1.4cqw) rotate(-10deg); }
+  to { transform: translateX(1.4cqw) rotate(10deg); }
+}
+
+/* Cupid's heart perched on the VS medallion, beating lub-dub. */
+.vd-cupid {
+  position: absolute; left: 50%; top: 0;
+  margin-left: -2.5cqw;
+  font-size: 5cqw; font-style: normal; line-height: 1;
+  transform: translateY(-62%);
+  animation: vd-beat 1.6s ease-in-out infinite;
+  will-change: transform;
+  filter: drop-shadow(0 0.3cqw 0.5cqw rgba(0, 0, 0, 0.6));
+}
+@keyframes vd-beat {
+  0%, 100% { transform: translateY(-62%) scale(1); }
+  12% { transform: translateY(-62%) scale(1.14); }
+  24% { transform: translateY(-62%) scale(1); }
+  36% { transform: translateY(-62%) scale(1.09); }
+  50% { transform: translateY(-62%) scale(1); }
+}
+
+/* Winner entrance: two beats — lub, dub — then settles at the same held scale
+   as the stock entrances. Transform-only. */
+.team-panel--winner-heartbeat { animation: winner-heartbeat 0.95s ease-out forwards; }
+@keyframes winner-heartbeat {
+  0% { transform: scale(1); }
+  16% { transform: scale(1.16); }
+  32% { transform: scale(1.02); }
+  50% { transform: scale(1.13); }
+  70% { transform: scale(1.04); }
+  100% { transform: scale(1.07); }
+}
+/* The held winner glow goes pink instead of gold. Static. */
+.scoreboard--theme-valentines .team-panel--winner {
+  box-shadow: 0 0 110px rgba(255, 77, 141, 0.85), inset 0 0 3cqh rgba(0, 0, 0, 0.55);
+}

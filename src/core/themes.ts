@@ -4,7 +4,7 @@
 // the list the state and the picker share — what a theme actually draws lives in
 // src/projector/themes/.
 
-export type ThemeId = 'none' | 'halloween' | 'christmas'
+export type ThemeId = 'none' | 'halloween' | 'christmas' | 'newyear' | 'valentines' | 'pride'
 
 export interface ThemeInfo {
   id: ThemeId
@@ -16,6 +16,9 @@ export const THEMES: ThemeInfo[] = [
   { id: 'none', name: 'None', emoji: '' },
   { id: 'halloween', name: 'Halloween', emoji: '🎃' },
   { id: 'christmas', name: 'Christmas', emoji: '🎄' },
+  { id: 'newyear', name: "New Year's Eve", emoji: '🥂' },
+  { id: 'valentines', name: "Valentine's Day", emoji: '💘' },
+  { id: 'pride', name: 'Pride', emoji: '🏳️‍🌈' },
 ]
 
 /** An id written by a newer build (or a theme that's since been retired) falls

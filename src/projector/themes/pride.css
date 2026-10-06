@@ -1,0 +1,96 @@
+/* Pride skin. Sits in .scoreboard as an absolute layer at z-index 0, under
+   the header/teams/footer (all z-index 1). */
+.pr { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+/* Faint rainbow glow along the floor. Static. */
+.pr__glow {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(40% 26% at 15% 106%, rgba(228, 3, 3, 0.16), transparent 70%),
+    radial-gradient(40% 26% at 38% 106%, rgba(255, 237, 0, 0.12), transparent 70%),
+    radial-gradient(40% 26% at 62% 106%, rgba(0, 128, 38, 0.15), transparent 70%),
+    radial-gradient(40% 26% at 85% 106%, rgba(117, 7, 135, 0.2), transparent 70%);
+}
+
+/* A big soft rainbow arc behind the board: its crown shows in the open band
+   above the panels, between the logos. One static gradient — paints once. */
+.pr__arc {
+  position: absolute; left: 50%; top: 2cqh;
+  width: 120cqw; height: 120cqw;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    transparent 84%, #750787 84% 86%, #004dff 86% 88%, #008026 88% 90%,
+    #ffed00 90% 92%, #ff8c00 92% 94%, #e40303 94% 96%, transparent 96%);
+  opacity: 0.4;
+}
+
+/* Six-stripe bands on the very top and bottom edges. */
+.pr__band {
+  position: absolute; left: 0; right: 0;
+  height: 2.6cqh;
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    #e40303 0 16.66%, #ff8c00 16.66% 33.33%, #ffed00 33.33% 50%,
+    #008026 50% 66.66%, #004dff 66.66% 83.33%, #750787 83.33% 100%);
+  opacity: 0.9;
+}
+.pr__band--top { top: 0; }
+.pr__band--bottom { bottom: 0; }
+
+/* A light sweep along each band: a pre-drawn gradient that TRANSLATES across
+   (transform only) in the first part of the cycle, then rests off the edge. */
+.pr__sheen {
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: 18cqw;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: translateX(-20cqw);
+  animation: pr-sweep 9s ease-in-out infinite;
+  will-change: transform;
+}
+.pr__sheen--late { animation-delay: -4.5s; }
+@keyframes pr-sweep {
+  0% { transform: translateX(-20cqw); }
+  35%, 100% { transform: translateX(104cqw); }
+}
+
+.pr__sparkle {
+  position: absolute;
+  line-height: 1;
+  opacity: 0;
+  text-shadow: 0 0 0.6cqw currentColor; /* held, never animated */
+  animation: pr-twinkle var(--t) ease-in-out var(--d) infinite;
+  will-change: transform, opacity;
+}
+@keyframes pr-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  50% { opacity: 0.95; transform: scale(1) rotate(45deg); }
+}
+
+/* Pride flag perched on the VS medallion, waving from its pole. */
+.pr-flag {
+  position: absolute; left: 50%; top: 0;
+  margin-left: -2.6cqw;
+  font-size: 5.2cqw; font-style: normal; line-height: 1;
+  transform-origin: 15% 90%;
+  transform: translateY(-64%);
+  animation: pr-wave 2.4s ease-in-out infinite alternate;
+  will-change: transform;
+  filter: drop-shadow(0 0.3cqw 0.5cqw rgba(0, 0, 0, 0.6));
+}
+@keyframes pr-wave {
+  from { transform: translateY(-64%) rotate(-7deg); }
+  to { transform: translateY(-64%) rotate(5deg); }
+}
+
+/* Winner entrance: two hops up, then settles at the same held scale as the
+   stock entrances. Transform-only. */
+.team-panel--winner-strut { animation: winner-strut 0.95s cubic-bezier(0.3, 0.8, 0.4, 1) forwards; }
+@keyframes winner-strut {
+  0% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-3cqh) scale(1.13); }
+  38% { transform: translateY(0) scale(1.06); }
+  56% { transform: translateY(-1.6cqh) scale(1.1); }
+  74% { transform: translateY(0) scale(1.06); }
+  100% { transform: translateY(0) scale(1.07); }
+}

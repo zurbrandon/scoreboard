@@ -10,6 +10,9 @@ import type { ComponentType } from 'react'
 import type { ThemeId } from '../../core/themes'
 import { christmas } from './christmas'
 import { halloween } from './halloween'
+import { newyear } from './newyear'
+import { pride } from './pride'
+import { valentines } from './valentines'
 
 export type ConfettiWinner = 'blue' | 'red' | 'tie'
 
@@ -36,4 +39,7 @@ export const SKINS: Record<ThemeId, ScoreboardSkin> = {
   none: {},
   halloween,
   christmas,
+  newyear,
+  valentines,
+  pride,
 }

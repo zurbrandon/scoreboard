@@ -5,6 +5,7 @@
 
 import type { CSSProperties } from 'react'
 import type { ScoreboardSkin } from './index'
+import { swag } from './swag'
 import './christmas.css'
 
 const FESTIVE = ['#e8323c', '#1fa35c', '#ffd23f', '#ffffff']
@@ -61,30 +62,16 @@ function Decorations() {
   )
 }
 
-// The light string hangs in SWAGS shallow scallops across the full width. One
-// function gives both the wire path (in the 100×10 viewBox) and where each bulb
-// hangs (in % across and cqh down), so the bulbs always sit on the wire.
-const SWAGS = 5
-const WIRE_TOP = 0.6 // cqh
-const WIRE_SAG = 3.4 // cqh
-const WIRE_BOX = 6 // cqh — the svg's height; the viewBox's 10 units map onto it
-const sagAt = (x: number) => WIRE_TOP + WIRE_SAG * Math.sin(Math.PI * ((x * SWAGS) % 1))
-
-const WIRE_PATH = (() => {
-  let d = ''
-  for (let i = 0; i <= 200; i++) {
-    const x = i / 200
-    d += `${i ? 'L' : 'M'}${(x * 100).toFixed(2)} ${((sagAt(x) / WIRE_BOX) * 10).toFixed(2)} `
-  }
-  return d
-})()
-
+// The light string: five shallow scallops across the top, 30 bulbs along it.
+// The svg is 6cqh tall (see .xm__wire), which `box` must match.
+const STRING = swag({ swags: 5, top: 0.6, sag: 3.4, box: 6, count: 30 })
+const WIRE_PATH = STRING.path
 const BULB_COLORS = ['#ff3b46', '#2fd27a', '#ffd23f', '#4d8dff']
-const BULB_COUNT = 30
-const BULBS = Array.from({ length: BULB_COUNT }, (_, i) => {
-  const x = (i + 0.5) / BULB_COUNT
-  return { x: x * 100, y: sagAt(x), color: BULB_COLORS[i % BULB_COLORS.length], delay: -((i * 0.37) % 2.4) }
-})
+const BULBS = STRING.points.map((p, i) => ({
+  ...p,
+  color: BULB_COLORS[i % BULB_COLORS.length],
+  delay: -((i * 0.37) % 2.4),
+}))
 
 // Built once per load; random is fine — nobody needs the same snowfall twice.
 const FLAKES = Array.from({ length: 26 }, () => ({
