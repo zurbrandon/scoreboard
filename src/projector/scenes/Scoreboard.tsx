@@ -262,6 +262,15 @@ function HeaderLogo({
   const [failed, setFailed] = useState(false)
   // Re-try when the logo changes (a previously-broken src shouldn't stick).
   useEffect(() => setFailed(false), [src])
+  // ...and keep re-trying while it's broken. A load can fail for a moment (the
+  // dev server restarting under the window, a slow disk) and the text fallback
+  // shouldn't then hold for the rest of the show. A still-missing file just
+  // fails again, quietly, every few seconds.
+  useEffect(() => {
+    if (!failed) return
+    const id = setTimeout(() => setFailed(false), 3000)
+    return () => clearTimeout(id)
+  }, [failed])
   if (!src || failed) {
     return <div className={`scoreboard__logo ${extraClass}`}>{fallback}</div>
   }
