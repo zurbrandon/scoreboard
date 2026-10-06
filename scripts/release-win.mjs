@@ -17,8 +17,10 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
+// With stdio 'inherit' the output goes straight to the terminal and
+// execFileSync returns null, so there's nothing to trim.
 const run = (cmd, args, opts = {}) =>
-  execFileSync(cmd, args, { encoding: 'utf-8', stdio: 'pipe', ...opts }).trim()
+  (execFileSync(cmd, args, { encoding: 'utf-8', stdio: 'pipe', ...opts }) ?? '').trim()
 
 const { version } = JSON.parse(readFileSync('package.json', 'utf-8'))
 const tag = `v${version}`
