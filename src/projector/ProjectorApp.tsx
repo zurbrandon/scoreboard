@@ -30,11 +30,15 @@ export function ProjectorApp() {
   const momentNonce = useAppState((s) => s.momentNonce)
   const reaction = useAppState((s) => s.reaction)
   const reactionNonce = useAppState((s) => s.reactionNonce)
-  // Idle (Blank) screen: null → black; else a logo src held static on black. If
-  // the src matches a deck logo slide we borrow its website so the URL shows too.
+  // Idle (Blank) screen: null → black; else a logo src held static on black,
+  // with the website set for that corner logo in Settings. A logo that's only in
+  // a deck (not a corner logo) still borrows its slide's website.
   const idleLogoSrc = useAppState((s) => s.idleLogoSrc)
   const idleWebsite = useAppState((s) => {
     if (!idleLogoSrc) return ''
+    const sites = s.scoreboardLogoSites
+    if (sites && idleLogoSrc === s.scoreboardLogos.left) return sites.left
+    if (sites && idleLogoSrc === s.scoreboardLogos.right) return sites.right
     const match = s.slides.items.find((x): x is LogoSlide => x.type === 'logo' && x.src === idleLogoSrc)
     return match?.website ?? ''
   })

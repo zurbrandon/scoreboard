@@ -1188,6 +1188,14 @@ describe('one logo slide', () => {
   })
 })
 
+describe('corner logo websites', () => {
+  it('default to the theater site and change per slot', () => {
+    expect(createInitialState().scoreboardLogoSites).toEqual({ left: 'seattlecomedytheater.com', right: 'seattlecomedytheater.com' })
+    const s = run({ type: 'scoreboard.setLogoSite', side: 'left', website: 'comedysportz.com' })
+    expect(s.scoreboardLogoSites).toEqual({ left: 'comedysportz.com', right: 'seattlecomedytheater.com' })
+  })
+})
+
 describe('web page navigation', () => {
   it('counts each Back / Home press, even the same one twice', () => {
     const s = run({ type: 'web.nav', action: 'back' }, { type: 'web.nav', action: 'back' })

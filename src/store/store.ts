@@ -12,7 +12,7 @@
 // createStore() picks the transport by whether the Electron bridge is present.
 
 import { reduce } from '../core/reduce'
-import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
+import { createInitialState, migrateSlides, normActiveBoard, normActiveTemplate, normSavedTemplates, normSavedSlideshows, normScoreboardLogos, normScoreboardLogoSites, normSavedBoards, normSoundBanks, normSoundSlots, type AppState } from '../core/state'
 import { normThemeId } from '../core/themes'
 import type { Command } from '../core/commands'
 import type { ShowboardBridge } from '../shared/bridge'
@@ -95,6 +95,7 @@ function loadPersisted(): AppState {
         activeTemplate: normActiveTemplate(parsed.activeTemplate),
         savedSlideshows: normSavedSlideshows(parsed.savedSlideshows),
         scoreboardLogos: normScoreboardLogos(parsed.scoreboardLogos),
+        scoreboardLogoSites: normScoreboardLogoSites(parsed.scoreboardLogoSites),
         scoreboardTheme: normThemeId(parsed.scoreboardTheme),
         soundBanks: normSoundBanks(parsed.soundBanks),
         // Seeded from the live board when there's no saved list, so an install

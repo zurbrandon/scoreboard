@@ -1991,6 +1991,13 @@ button { font-family: inherit; color: inherit; cursor: pointer; } /* color: butt
 .logo-slot__preview { width: 120px; height: 40px; display: flex; align-items: center; justify-content: center; background: #0c1017; border-radius: var(--r-md); overflow: hidden; }
 .logo-slot__preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .logo-slot__choices { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.logo-slot__site {
+  width: 100%; margin-top: 8px; padding: 8px 10px;
+  border-radius: var(--r-sm); border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--text);
+  font-family: inherit; font-size: var(--fs-md);
+}
+.logo-slot__site:focus { outline: none; border-color: var(--accent); }
 .logo-chip { width: 64px; height: 34px; padding: 3px; border-radius: var(--r-md); cursor: pointer; background: #0c1017; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
 .logo-chip img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .logo-chip--active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }

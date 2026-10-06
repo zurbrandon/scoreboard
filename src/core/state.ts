@@ -213,6 +213,27 @@ export function normScoreboardLogos(v: unknown): ScoreboardLogos {
   }
 }
 
+// The website shown small under each corner logo when it's held on the Blank
+// screen. Per slot, set in Settings next to the logo itself — it used to be
+// borrowed from a matching logo slide in a deck, so it vanished with the slide.
+export interface ScoreboardLogoSites {
+  left: string
+  right: string
+}
+export function defaultScoreboardLogoSites(): ScoreboardLogoSites {
+  return { left: 'seattlecomedytheater.com', right: 'seattlecomedytheater.com' }
+}
+export function normScoreboardLogoSites(v: unknown): ScoreboardLogoSites {
+  const d = defaultScoreboardLogoSites()
+  if (!v || typeof v !== 'object') return d
+  const o = v as Record<string, unknown>
+  // An empty string is a choice (no website), so only a missing field defaults.
+  return {
+    left: typeof o.left === 'string' ? o.left : d.left,
+    right: typeof o.right === 'string' ? o.right : d.right,
+  }
+}
+
 export function logoSlide(id: string, name: string, src: string, website = '', deck: SlideDeck = 'show'): LogoSlide {
   return { id, type: 'logo', deck, name, src, website }
 }
@@ -732,6 +753,8 @@ export interface AppState {
   webNav: { action: WebNavAction; nonce: number }
   /** The two scoreboard corner logos (editable in Settings → Visuals). */
   scoreboardLogos: ScoreboardLogos
+  /** The website under each corner logo on the Blank screen. */
+  scoreboardLogoSites: ScoreboardLogoSites
   /** The seasonal skin over the scoreboard ('none' = the plain board). Applies
    *  the moment it's picked, like the logos — it's a look, not a score change. */
   scoreboardTheme: ThemeId
@@ -804,6 +827,7 @@ export function createInitialState(): AppState {
     reactionNonce: 0,
     webNav: { action: 'home', nonce: 0 },
     scoreboardLogos: defaultScoreboardLogos(),
+    scoreboardLogoSites: defaultScoreboardLogoSites(),
     scoreboardTheme: 'none',
     idleLogoSrc: null,
     music: {

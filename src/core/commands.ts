@@ -64,6 +64,7 @@ export type Command =
   | { type: 'reaction.flash'; team: TeamId; kind: ReactionKind } // Yay Boo: flash the projector a team color + word (yay/boo)
   | { type: 'reaction.clear' } // return a reaction slide to its neutral holding screen
   | { type: 'scoreboard.setLogo'; side: 'left' | 'right'; src: string } // change a scoreboard corner logo
+  | { type: 'scoreboard.setLogoSite'; side: 'left' | 'right'; website: string } // website under a corner logo on Blank
   | { type: 'scoreboard.setTheme'; theme: ThemeId } // seasonal skin over the scoreboard
   | { type: 'idle.set'; src: string | null } // Blank/black scene: null = black, else a logo src to hold
   | { type: 'slide.addMany'; deck: SlideDeck; slides: Slide[] } // append pre-built slides (already have fresh ids) + select the first — used to stamp a template
