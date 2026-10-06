@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b --noEmit && tsc -p tsconfig.electron.json",
     "electron:build": "node scripts/build-electron.mjs",
-    "electron:dev": "npm run electron:build && concurrently -k -n vite,electron \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "npm run electron:build && concurrently -k -n vite,electron \"vite --strictPort\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:start": "electron .",
     "package:mac": "npm run build && npm run electron:build && electron-builder --mac",
     "package:win": "npm run build && npm run electron:build && electron-builder --win",
