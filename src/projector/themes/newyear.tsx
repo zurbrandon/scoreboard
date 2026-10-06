@@ -15,6 +15,7 @@ const GLYPHS = ['✨', '🥂']
 export const newyear: ScoreboardSkin = {
   Decorations,
   VsAccent: MirrorBall,
+  FooterCenter: () => <span className="ny-year">✦ {comingYear()} ✦</span>,
   winnerStyle: 'fizz',
   confetti: {
     colors: (base, winner) => (winner === 'tie' ? [...GOLD, ...SILVER] : [base[0], base[0], ...GOLD, ...SILVER]),
@@ -46,7 +47,6 @@ function Decorations() {
           ))}
         </span>
       ))}
-      <div className="ny__year">✦ {comingYear()} ✦</div>
     </div>
   )
 }

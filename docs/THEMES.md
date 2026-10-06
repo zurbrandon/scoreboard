@@ -16,6 +16,7 @@ that makes the score harder to read. Every hook is optional:
 | Hook | What it does |
 | --- | --- |
 | `Decorations` | A component drawn across the whole board. Put it at `z-index: 0` to sit behind the header/teams/footer (all `1`), or `2` to sit over them (still under the finale and confetti). |
+| `FooterCenter` | A component in the footer's centre slot, between the Home/Away ribbons. It takes real layout space, so the panels can't cover it when the ribbons are hidden. |
 | `VsAccent` | A component drawn inside the VS medallion, so it moves with the seam. |
 | `winnerStyle` | Replaces the random winner entrance with your own: names the suffix of a `team-panel--winner-<name>` class your stylesheet defines. |
 | `confetti.colors` | Recolours the reveal burst. Keep the winner's colour (`base[0]`) in it so the burst still says who won. |

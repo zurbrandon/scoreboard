@@ -102,7 +102,7 @@ export function Scoreboard() {
             </span>
           )}
         </span>
-        <span className="ribbon-slot ribbon-slot--center" />
+        <span className="ribbon-slot ribbon-slot--center">{skin.FooterCenter && <skin.FooterCenter />}</span>
         <span className="ribbon-slot ribbon-slot--right">
           {ribbons.visible && (
             <span className={`ribbon ribbon--${rightTeam}`}>

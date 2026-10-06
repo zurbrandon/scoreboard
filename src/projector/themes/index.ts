@@ -19,6 +19,10 @@ export type ConfettiWinner = 'blue' | 'red' | 'tie'
 export interface ScoreboardSkin {
   /** Drawn across the whole board, behind the teams (corners, edges, haze). */
   Decorations?: ComponentType
+  /** Drawn in the footer's centre slot, between the Home/Away ribbons. Unlike
+   *  Decorations it holds its own space in the layout, so the panels can't
+   *  cover it when the ribbons are hidden. */
+  FooterCenter?: ComponentType
   /** Drawn inside the VS medallion, so it rides along wherever the seam is. */
   VsAccent?: ComponentType
   /** Replaces the random winner entrance (pop/slam/bounce/throb) with the
