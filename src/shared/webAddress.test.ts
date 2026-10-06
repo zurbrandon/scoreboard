@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { webAddress } from './Slideshow'
+import { webAddress } from './webAddress'
 
 describe('webAddress', () => {
   it('gives a bare address https://', () => {
