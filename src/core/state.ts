@@ -158,6 +158,7 @@ export interface SlideshowSlide extends SlideBase {
 // color with the word. The live flash lives on AppState.reaction, not the slide,
 // so the slide stays a simple, reusable marker in the deck.
 export type ReactionKind = 'yay' | 'boo'
+export type WebNavAction = 'back' | 'home'
 export interface ReactionSlide extends SlideBase {
   type: 'reaction'
 }
@@ -725,6 +726,10 @@ export interface AppState {
   /** Bumped on each reaction tap so the projector replays the flash even when the
    *  same team+word is tapped twice in a row. */
   reactionNonce: number
+  /** The operator's Back / Home buttons for a web page slide on air. The
+   *  projector owns the page (that's where it's clicked), so the buttons send a
+   *  request; the nonce makes pressing the same one twice fire twice. */
+  webNav: { action: WebNavAction; nonce: number }
   /** The two scoreboard corner logos (editable in Settings → Visuals). */
   scoreboardLogos: ScoreboardLogos
   /** The seasonal skin over the scoreboard ('none' = the plain board). Applies
@@ -797,6 +802,7 @@ export function createInitialState(): AppState {
     soundSeekTo: 0,
     reaction: null,
     reactionNonce: 0,
+    webNav: { action: 'home', nonce: 0 },
     scoreboardLogos: defaultScoreboardLogos(),
     scoreboardTheme: 'none',
     idleLogoSrc: null,

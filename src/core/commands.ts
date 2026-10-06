@@ -4,7 +4,7 @@
 
 import type { BumperTrack } from './bumper'
 import type { ThemeId } from './themes'
-import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideBgDim, SlideCue, SlideDeck, SoundBank, SoundPad, SoundPadMode, SoundSlotId, TeamId, TextTemplate, TextTheme, WashKind } from './state'
+import type { Half, MomentKind, MomentVisual, ReactionKind, RevealStyle, Scene, ShowBeat, Slide, SlideBgDim, SlideCue, SlideDeck, SoundBank, SoundPad, SoundPadMode, SoundSlotId, TeamId, WebNavAction, TextTemplate, TextTheme, WashKind } from './state'
 
 export type Command =
   // Hardware buttons: ±1 to a team's PENDING score. Repeat-tap for larger swings.
@@ -51,7 +51,8 @@ export type Command =
   | { type: 'slide.setImageFit'; id: string; fit: 'cover' | 'contain' } // fill the screen, or letterbox it
   | { type: 'slide.setWebsite'; id: string; website: string } // logo slide
   | { type: 'slide.setLogo'; id: string; name: string; src: string } // which logo a logo slide shows
-  | { type: 'slide.setSlideshowUrl'; id: string; url: string } // slideshow slide's embed URL
+  | { type: 'slide.setSlideshowUrl'; id: string; url: string } // web page slide's URL
+  | { type: 'web.nav'; action: WebNavAction } // Back / Home on the on-air web page
   | { type: 'slide.setTemplate'; id: string; template: TextTemplate } // text slide
   | { type: 'slide.setTextBg'; id: string; src: string } // text slide's background image; '' clears it
   | { type: 'slide.setTextBgDim'; id: string; dim: SlideBgDim } // how far that image is knocked back

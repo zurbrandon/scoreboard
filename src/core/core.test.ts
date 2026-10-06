@@ -1188,6 +1188,14 @@ describe('one logo slide', () => {
   })
 })
 
+describe('web page navigation', () => {
+  it('counts each Back / Home press, even the same one twice', () => {
+    const s = run({ type: 'web.nav', action: 'back' }, { type: 'web.nav', action: 'back' })
+    expect(s.webNav).toEqual({ action: 'back', nonce: 2 })
+    expect(run({ type: 'web.nav', action: 'home' }).webNav.action).toBe('home')
+  })
+})
+
 describe('spelling bee', () => {
   const onAir = (theme?: 'spellingbee') =>
     run(

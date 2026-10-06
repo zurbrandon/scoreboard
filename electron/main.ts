@@ -331,7 +331,9 @@ function createProjectorWindow() {
     title: 'Showboard — Projector',
     backgroundColor: '#000000',
     autoHideMenuBar: true,
-    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
+    // webviewTag: the web page slide embeds a real browser view here (see
+    // lockDownWebPages) — a frame can't, since most sites forbid being framed.
+    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, webviewTag: true },
   })
   loadRoute(projectorWin, 'projector')
   projectorWin.on('closed', () => {
@@ -922,6 +924,39 @@ app.commandLine.appendSwitch('disable-background-timer-throttling')
 // letting an autoplay link render where the embed link can't. Everything else
 // keeps its headers untouched.
 const FRAMEABLE_HOST = /(^|\.)(canva\.com|canva\.site|google\.com|googleusercontent\.com|gstatic\.com)$/i
+// The web page slide's browser view. Pages there are the open internet, so they
+// get nothing of the app: only the projector may host one, it must be an
+// http(s) page in its own persistent session (logins survive a relaunch but
+// never touch the app's), with no preload and no Node. A link that wants a new
+// window opens in the same view instead — there's no second window on a
+// projector for it to go to.
+const WEB_PARTITION = 'persist:web'
+function lockDownWebPages() {
+  app.on('web-contents-created', (_e, contents) => {
+    contents.on('will-attach-webview', (event, webPreferences, params) => {
+      const host = BrowserWindow.fromWebContents(contents)
+      if (!host || host !== projectorWin || !/^https?:\/\//i.test(params.src)) {
+        event.preventDefault()
+        return
+      }
+      delete webPreferences.preload
+      webPreferences.nodeIntegration = false
+      webPreferences.contextIsolation = true
+      webPreferences.sandbox = true
+      params.partition = WEB_PARTITION
+    })
+    if (contents.getType() === 'webview') {
+      contents.setWindowOpenHandler(({ url }) => {
+        if (/^https?:\/\//i.test(url)) void contents.loadURL(url)
+        return { action: 'deny' }
+      })
+      contents.on('will-navigate', (event, url) => {
+        if (!/^https?:\/\//i.test(url)) event.preventDefault()
+      })
+    }
+  })
+}
+
 function allowSlideshowFraming() {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     let host = ''
@@ -954,6 +989,7 @@ function allowSlideshowFraming() {
 
 app.whenReady().then(() => {
   allowSlideshowFraming()
+  lockDownWebPages()
   // Serves local audio with byte-range support. This has to be a hand-rolled
   // handler rather than net.fetch on a file:// URL, because that ignores Range
   // and answers 200 with the whole body — a media element given a response it

@@ -346,6 +346,8 @@ function baseReduce(state: AppState, command: Command): AppState {
       })
     case 'slide.setImage':
       return updateSlide(state, command.id, (s) => (s.type === 'image' ? { ...s, src: command.src } : s))
+    case 'web.nav':
+      return { ...state, webNav: { action: command.action, nonce: state.webNav.nonce + 1 } }
     case 'slide.setSlideshowUrl':
       return updateSlide(state, command.id, (s) => (s.type === 'slideshow' ? { ...s, url: command.url } : s))
     case 'slide.remove': {

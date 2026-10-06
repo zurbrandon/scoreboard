@@ -8,3 +8,16 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Electron's <webview> tag (the web page slide). React doesn't know it, so it
+// gets the plain element props plus the two attributes the scene sets.
+declare namespace React {
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string
+        partition?: string
+      }
+    }
+  }
+}

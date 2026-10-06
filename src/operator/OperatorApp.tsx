@@ -51,7 +51,7 @@ function describeSlide(slide: Slide): string {
     case 'image':
       return 'Image'
     case 'slideshow':
-      return 'Slideshow'
+      return 'Web page'
     case 'reaction':
       return 'Yay Boo'
   }
@@ -1337,7 +1337,7 @@ function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { na
       scene = <ShowScene slide={slide} teams={teams} />
       break
     case 'slideshow':
-      scene = <div className="slidethumb__ph">▶ Slideshow</div>
+      scene = <div className="slidethumb__ph">🌐 Web page</div>
       break
     case 'reaction':
       scene = <ReactionScene reaction={null} nonce={0} />
@@ -1613,19 +1613,17 @@ function SlidesConfig({ deck }: { deck: SlideDeck }) {
             >
               Full-screen image
             </button>
-            {/* Never on Games — a games queue is cards you cut between, not a
-                deck you present through. It wasn't there before either. */}
-            {deck === 'show' && (
-              <button
-                className="slide-add__item"
-                onClick={() => {
-                  dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
-                  setAddOpen(false)
-                }}
-              >
-                Google Slides link
-              </button>
-            )}
+            {/* On both decks: a Google Slides deck on Show, and on Games a site
+                a game needs (Wikipedia, say) to click around in on the board. */}
+            <button
+              className="slide-add__item"
+              onClick={() => {
+                dispatch({ type: 'slide.addSlideshow', id: newSlideId('show'), deck })
+                setAddOpen(false)
+              }}
+            >
+              Web page / Google Slides
+            </button>
             {/* One entry. Which logo — either of the built-ins, or one you
                 upload — is chosen on the card, the way the background is. */}
             {deck === 'show' && (
@@ -2319,8 +2317,9 @@ function TextSlideCard({
   )
 }
 
-// A slideshow slide: holds one published Google Slides embed link. Reveal plays
-// it; Black stops it. (The old Pre-show tab, folded in as a slide type.)
+// A web page slide: holds one URL — a Google Slides deck that plays itself, or
+// any site you click around in on the projector. Reveal shows it; Black stops
+// it. (The old Pre-show tab, folded in as a slide type, then widened.)
 // A scripted show-intro beat in the deck: a labeled card with the beat's name,
 // plus its one editable field (a name, a roster, or nothing) inline.
 // Effect + music for one slide, on every slide.
@@ -2596,13 +2595,14 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
   // onto the slide — or paste a custom link below.
   const slideshows = useAppState((s) => s.savedSlideshows)
   const matched = slideshows.find((s) => s.url && s.url === slide.url)
+  const onAir = useAppState((s) => s.scene === 'slides' && s.slides.live?.id === slide.id)
   return (
     <div
       className={`logo-card ${selected ? 'logo-card--active' : ''}`}
       onClick={() => dispatch({ type: 'slide.select', id: slide.id })}
     >
       <div className="logo-card__preview slideshow-card__preview">
-        <span className="slideshow-card__tag">▶ Slideshow</span>
+        <span className="slideshow-card__tag">🌐 Web page</span>
       </div>
       {slideshows.length > 0 && (
         <select
@@ -2627,15 +2627,28 @@ function SlideshowSlideCard({ slide, selected }: { slide: SlideshowSlide; select
         className="logo-card__site"
         type="text"
         value={slide.url}
-        placeholder="…or paste a link (Google …/pub, or a Canva present / …/watch?embed link)"
-        aria-label="Slideshow link"
+        placeholder="Paste a link — any site, or a Google Slides / Canva deck"
+        aria-label="Web page link"
         onClick={(e) => e.stopPropagation()}
         onCommit={(v) => dispatch({ type: 'slide.setSlideshowUrl', id: slide.id, url: v })}
       />
+      {/* Click around on the projector itself; these just get you back from a
+          wrong turn without walking the mouse over there. */}
+      {onAir && (
+        <div className="webnav" onClick={(e) => e.stopPropagation()}>
+          <button className="webnav__btn" onClick={() => dispatch({ type: 'web.nav', action: 'back' })}>
+            ← Back
+          </button>
+          <button className="webnav__btn" onClick={() => dispatch({ type: 'web.nav', action: 'home' })}>
+            ⌂ Home
+          </button>
+          <span className="webnav__hint">Click around on the projector screen</span>
+        </div>
+      )}
       <SlideCueRow slide={slide} />
       <button
         className="logo-card__remove"
-        aria-label="Remove slideshow slide"
+        aria-label="Remove web page slide"
         onClick={(e) => {
           e.stopPropagation()
           setConfirming(true)
