@@ -170,8 +170,10 @@ function DualCard({ title, animate }: { title: string; animate: boolean }) {
 // from its own bottom corner — the team that's ahead glowing strong, the other
 // faint, even for a tie — then HALFTIME switches on letter by letter in the
 // score font, flickering like an LED sign powering up, and the optional line
-// comes on last. Leader and sides come from the LIVE board, so a pending edit
-// never leaks. Opacity only, beyond the static gradients.
+// comes on last. Then it settles into a slow breath: the word's glow (its own
+// pre-drawn layer) pulses in opacity, and the team glows drift and stretch on
+// long, out-of-step loops. Leader and sides come from the LIVE board, so a
+// pending edit never leaks. Transform/opacity only — no blur ever animates.
 const HALFTIME = 'HALFTIME'
 function HalftimeCard({
   line,
@@ -192,7 +194,7 @@ function HalftimeCard({
     ['--glow-right' as string]: `var(--glow-${right})`,
   } as CSSProperties
   return (
-    <div className="show show--halftime" style={glowStyle}>
+    <div className={`show show--halftime ${animate ? 'show--halftime-enter' : ''}`} style={glowStyle}>
       {(['left', 'right'] as const).map((side) => (
         <motion.div
           key={side}
@@ -205,6 +207,11 @@ function HalftimeCard({
       ))}
       <div className="ht__copy">
         <div className="ht__word" aria-label="Halftime">
+          {/* The glow, drawn once on its own layer behind the letters; only its
+              opacity breathes. */}
+          <span className="ht__word-glow" aria-hidden>
+            {HALFTIME}
+          </span>
           {Array.from(HALFTIME).map((ch, i) => (
             <motion.span
               key={i}
