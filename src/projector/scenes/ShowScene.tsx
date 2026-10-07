@@ -8,7 +8,6 @@
 
 import { motion } from 'motion/react'
 import type { ShowSlide, TeamId } from '../../core/state'
-import { formatScore } from '../../core/score'
 import { logoSrc } from './LogoScene'
 import { CenterConfetti } from './CenterConfetti'
 
@@ -163,78 +162,47 @@ function DualCard({ title, animate }: { title: string; animate: boolean }) {
   )
 }
 
-// Going into halftime: the blue and red halves rush together like the players
-// card, HALFTIME slams in, then each team's score pops in on its own side, and
-// an optional line (e.g. "Back in 10 minutes") rises last. Scores are the LIVE
-// ones — what the audience has already been shown — never a pending edit.
-function HalftimeCard({
-  blue,
-  red,
-  line,
-  animate,
-}: {
-  blue: { name: string; score: number }
-  red: { name: string; score: number }
-  line: string
-  animate: boolean
-}) {
-  const slam = { type: 'spring' as const, stiffness: 340, damping: 15, mass: 1.1 }
-  const pop = (delay: number) => ({ type: 'spring' as const, stiffness: 520, damping: 18, delay: animate ? delay : 0 })
+// Going into halftime: the curtains close. Velvet curtains sweep in from both
+// sides and meet in the middle, then a gold marquee sign drops in on a little
+// swing reading HALFTIME, its bulbs twinkling, with an optional line under it
+// ("Back in 10 minutes"). A theater break rather than a sports graphic, so it
+// looks like nothing else in the show. Transform/opacity only.
+function HalftimeCard({ line, animate }: { line: string; animate: boolean }) {
+  const close = { duration: animate ? 1.1 : 0, ease: [0.22, 0.8, 0.3, 1] as const }
   return (
-    <div className="show show--dual show--halftime">
+    <div className="show show--halftime">
+      <div className="ht__spot" aria-hidden />
       <motion.div
-        className="show__half show__half--blue"
-        initial={animate ? { x: '-105%' } : false}
+        className="ht__curtain ht__curtain--left"
+        aria-hidden
+        initial={animate ? { x: '-100%' } : false}
         animate={{ x: 0 }}
-        transition={slam}
+        transition={close}
       />
       <motion.div
-        className="show__half show__half--red"
-        initial={animate ? { x: '105%' } : false}
+        className="ht__curtain ht__curtain--right"
+        aria-hidden
+        initial={animate ? { x: '100%' } : false}
         animate={{ x: 0 }}
-        transition={slam}
+        transition={close}
       />
-      <SheenSweep animate={animate} delay={0.4} />
-      <div className="show__dual-copy">
+      <div className="ht__valance" aria-hidden />
+      <div className="ht__copy">
         <motion.div
-          className="show__title show__title--halftime"
-          initial={animate ? { opacity: 0, scale: 1.55 } : false}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            delay: animate ? 0.34 : 0,
-            opacity: { delay: animate ? 0.34 : 0, duration: 0.08 },
-            type: 'spring',
-            stiffness: 620,
-            damping: 14,
-            mass: 0.9,
-          }}
+          className="ht__sign"
+          initial={animate ? { y: '-160%', rotate: -6 } : false}
+          animate={{ y: 0, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 180, damping: 11, mass: 1.1, delay: animate ? 1.0 : 0 }}
         >
-          Halftime
+          <span className="ht__bulbs" aria-hidden />
+          <span className="ht__word">Halftime</span>
         </motion.div>
-        <AccentBar animate={animate} delay={0.5} />
-        <div className="show__halftime-scores">
-          {([
-            ['blue', blue, 0.75],
-            ['red', red, 0.9],
-          ] as const).map(([side, team, delay]) => (
-            <motion.div
-              key={side}
-              className={`show__halftime-team show__halftime-team--${side}`}
-              initial={animate ? { opacity: 0, y: '40%', scale: 0.8 } : false}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={pop(delay)}
-            >
-              <span className="show__halftime-name">{team.name}</span>
-              <span className="show__halftime-score">{formatScore(team.score)}</span>
-            </motion.div>
-          ))}
-        </div>
         {line && (
           <motion.div
-            className="show__halftime-line"
+            className="ht__line"
             initial={animate ? { opacity: 0, y: '60%' } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut', delay: animate ? 1.2 : 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut', delay: animate ? 1.7 : 0 }}
           >
             {line}
           </motion.div>
@@ -250,7 +218,7 @@ export function ShowScene({
   animate = false,
 }: {
   slide: ShowSlide
-  teams: Record<TeamId, { name: string; liveScore: number }>
+  teams: Record<TeamId, { name: string }>
   animate?: boolean
 }) {
   const blue = teams.blue.name || 'Blue'
@@ -338,14 +306,7 @@ export function ShowScene({
         <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} animate={animate} />
       )
     case 'halftime':
-      return (
-        <HalftimeCard
-          blue={{ name: blue, score: teams.blue.liveScore }}
-          red={{ name: red, score: teams.red.liveScore }}
-          line={slide.name.trim()}
-          animate={animate}
-        />
-      )
+      return <HalftimeCard line={slide.name.trim()} animate={animate} />
     case 'blackout':
     default:
       return <div className="show show--blackout" />

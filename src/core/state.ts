@@ -87,7 +87,7 @@ export type ShowBeat =
   | 'captains' // captains on the field — dual red/blue split
   | 'captain-blue' // the Blue captain — single name
   | 'captain-red' // the Red captain — single name
-  | 'halftime' // going into halftime — dual split + both live scores; name = optional line under it
+  | 'halftime' // going into halftime — the curtains close on a marquee sign; name = optional line under it
 
 /** What every slide has, whatever it renders. The cue lives here rather than on
  *  the show beats alone: firing an effect or a music change belongs to the
