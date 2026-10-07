@@ -8,6 +8,7 @@
 
 import { motion } from 'motion/react'
 import type { ShowSlide, TeamId } from '../../core/state'
+import { formatScore } from '../../core/score'
 import { logoSrc } from './LogoScene'
 import { CenterConfetti } from './CenterConfetti'
 
@@ -162,13 +163,94 @@ function DualCard({ title, animate }: { title: string; animate: boolean }) {
   )
 }
 
+// Going into halftime: the blue and red halves rush together like the players
+// card, HALFTIME slams in, then each team's score pops in on its own side, and
+// an optional line (e.g. "Back in 10 minutes") rises last. Scores are the LIVE
+// ones — what the audience has already been shown — never a pending edit.
+function HalftimeCard({
+  blue,
+  red,
+  line,
+  animate,
+}: {
+  blue: { name: string; score: number }
+  red: { name: string; score: number }
+  line: string
+  animate: boolean
+}) {
+  const slam = { type: 'spring' as const, stiffness: 340, damping: 15, mass: 1.1 }
+  const pop = (delay: number) => ({ type: 'spring' as const, stiffness: 520, damping: 18, delay: animate ? delay : 0 })
+  return (
+    <div className="show show--dual show--halftime">
+      <motion.div
+        className="show__half show__half--blue"
+        initial={animate ? { x: '-105%' } : false}
+        animate={{ x: 0 }}
+        transition={slam}
+      />
+      <motion.div
+        className="show__half show__half--red"
+        initial={animate ? { x: '105%' } : false}
+        animate={{ x: 0 }}
+        transition={slam}
+      />
+      <SheenSweep animate={animate} delay={0.4} />
+      <div className="show__dual-copy">
+        <motion.div
+          className="show__title show__title--halftime"
+          initial={animate ? { opacity: 0, scale: 1.55 } : false}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{
+            delay: animate ? 0.34 : 0,
+            opacity: { delay: animate ? 0.34 : 0, duration: 0.08 },
+            type: 'spring',
+            stiffness: 620,
+            damping: 14,
+            mass: 0.9,
+          }}
+        >
+          Halftime
+        </motion.div>
+        <AccentBar animate={animate} delay={0.5} />
+        <div className="show__halftime-scores">
+          {([
+            ['blue', blue, 0.75],
+            ['red', red, 0.9],
+          ] as const).map(([side, team, delay]) => (
+            <motion.div
+              key={side}
+              className={`show__halftime-team show__halftime-team--${side}`}
+              initial={animate ? { opacity: 0, y: '40%', scale: 0.8 } : false}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={pop(delay)}
+            >
+              <span className="show__halftime-name">{team.name}</span>
+              <span className="show__halftime-score">{formatScore(team.score)}</span>
+            </motion.div>
+          ))}
+        </div>
+        {line && (
+          <motion.div
+            className="show__halftime-line"
+            initial={animate ? { opacity: 0, y: '60%' } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut', delay: animate ? 1.2 : 0 }}
+          >
+            {line}
+          </motion.div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function ShowScene({
   slide,
   teams,
   animate = false,
 }: {
   slide: ShowSlide
-  teams: Record<TeamId, { name: string }>
+  teams: Record<TeamId, { name: string; liveScore: number }>
   animate?: boolean
 }) {
   const blue = teams.blue.name || 'Blue'
@@ -254,6 +336,15 @@ export function ShowScene({
         <TeamCard side="red" eyebrow="Captain" title={red} animate={animate} />
       ) : (
         <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} animate={animate} />
+      )
+    case 'halftime':
+      return (
+        <HalftimeCard
+          blue={{ name: blue, score: teams.blue.liveScore }}
+          red={{ name: red, score: teams.red.liveScore }}
+          line={slide.name.trim()}
+          animate={animate}
+        />
       )
     case 'blackout':
     default:

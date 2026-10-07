@@ -374,6 +374,36 @@
   gap: 1.5cqh;
 }
 
+/* Halftime: the dual split, with the two live scores under the title. The
+   numerals are the scoreboard's own pixel face, glowing (statically) in their
+   team's colour, so it reads as the board taking a breather. */
+.show__title--halftime { font-size: 10cqw; letter-spacing: 0.04em; }
+.show__halftime-scores {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10cqw;
+  margin-top: 3cqh;
+}
+.show__halftime-team { display: flex; flex-direction: column; align-items: center; gap: 0.6cqh; }
+.show__halftime-name {
+  font-size: 2.4cqw; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0.2cqw 0.6cqw rgba(0, 0, 0, 0.5);
+  max-width: 34cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.show__halftime-score {
+  font-family: 'Geist Pixel', 'Courier New', monospace;
+  font-synthesis: none;
+  font-size: 12cqw; line-height: 0.9;
+  color: #fff;
+}
+.show__halftime-team--blue .show__halftime-score { text-shadow: 0 0 1.5cqw rgba(120, 160, 255, 0.9), 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.5); }
+.show__halftime-team--red .show__halftime-score { text-shadow: 0 0 1.5cqw rgba(255, 120, 130, 0.9), 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.5); }
+.show__halftime-line {
+  margin-top: 3cqh;
+  font-size: 2.6cqw; font-weight: 800; letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 0.2cqw 0.6cqw rgba(0, 0, 0, 0.5);
+}
+
 /* Referee: near-black frame. Subtle grey stripes slide behind everything, but a
    black radial gradient swallows all but the bottom-left corner, so the stripes
    read as a quiet moving texture there rather than a full-screen barricode. */

@@ -1008,6 +1008,7 @@ const SHOW_BEAT_META: Record<ShowBeat, { label: string; field?: 'name' | 'roster
   captains: { label: 'Captains on the field', hint: 'Dual red / blue' },
   'captain-blue': { label: 'Blue captain', field: 'name', hint: "Captain's name" },
   'captain-red': { label: 'Red captain', field: 'name', hint: "Captain's name" },
+  halftime: { label: 'Halftime', field: 'name', hint: 'Optional line under it (e.g. Back in 10 minutes)' },
 }
 const SHOW_BEAT_ORDER: ShowBeat[] = [
   'ref',
@@ -1019,6 +1020,7 @@ const SHOW_BEAT_ORDER: ShowBeat[] = [
   'captains',
   'captain-blue',
   'captain-red',
+  'halftime',
 ]
 
 const newSlideId = (p: string) =>
@@ -1321,7 +1323,7 @@ function slideCard(slide: Slide, selectedId: string): ReactNode {
 // components, rendered static (animate=false) inside a size-container box so the
 // cqw/cqh-based scene CSS scales down to thumbnail size. Slideshows (external
 // embeds) and empties show a lightweight placeholder instead of a live iframe.
-function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { name: string }> }) {
+function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { name: string; liveScore: number }> }) {
   let scene: ReactNode
   switch (slide.type) {
     case 'logo':

@@ -87,6 +87,7 @@ export type ShowBeat =
   | 'captains' // captains on the field — dual red/blue split
   | 'captain-blue' // the Blue captain — single name
   | 'captain-red' // the Red captain — single name
+  | 'halftime' // going into halftime — dual split + both live scores; name = optional line under it
 
 /** What every slide has, whatever it renders. The cue lives here rather than on
  *  the show beats alone: firing an effect or a music change belongs to the
@@ -904,7 +905,7 @@ function normCue(v: unknown): SlideCue | undefined {
   else if (typeof c.trackId === 'string' && c.trackId) cue.trackId = c.trackId
   return cue.effect || cue.trackId || cue.silence ? cue : undefined
 }
-const SHOW_BEATS: ShowBeat[] = ['ref', 'logo', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red']
+const SHOW_BEATS: ShowBeat[] = ['ref', 'logo', 'players', 'team-blue', 'team-red', 'blackout', 'captains', 'captain-blue', 'captain-red', 'halftime']
 const asBeat = (v: unknown): ShowBeat => (SHOW_BEATS.includes(v as ShowBeat) ? (v as ShowBeat) : 'blackout')
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
