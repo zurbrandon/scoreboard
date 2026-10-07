@@ -26,6 +26,7 @@ export function ProjectorApp() {
   const animate = useAppState((s) => s.displayWasReveal)
   const liveSlide = useAppState((s) => s.slides.live)
   const teams = useAppState((s) => s.teams)
+  const halfLive = useAppState((s) => s.halfLive)
   const moment = useAppState((s) => s.moment)
   const momentNonce = useAppState((s) => s.momentNonce)
   const reaction = useAppState((s) => s.reaction)
@@ -63,7 +64,7 @@ export function ProjectorApp() {
             {liveSlide?.type === 'text' && <TextScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'image' && <ImageScene slide={liveSlide} animate={animate} />}
             {liveSlide?.type === 'slideshow' && <Slideshow url={liveSlide.url} />}
-            {liveSlide?.type === 'show' && <ShowScene slide={liveSlide} teams={teams} animate={animate} />}
+            {liveSlide?.type === 'show' && <ShowScene slide={liveSlide} teams={teams} half={halfLive} animate={animate} />}
             {liveSlide?.type === 'reaction' && <ReactionScene reaction={reaction} nonce={reactionNonce} />}
             {!liveSlide && <div className="scene-logo" />}
           </motion.div>

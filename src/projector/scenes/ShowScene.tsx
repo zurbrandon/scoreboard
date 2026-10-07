@@ -6,8 +6,11 @@
 // Animation follows the projector rule: transform/opacity only, never per-frame
 // blur — the ref stripes are one wide striped element sliding on translateX.
 
+import type { CSSProperties } from 'react'
 import { motion } from 'motion/react'
-import type { ShowSlide, TeamId } from '../../core/state'
+import type { Half, ShowSlide, TeamId } from '../../core/state'
+import { determineWinner } from '../../core/winner'
+import { teamOnSide } from '../../core/sides'
 import { logoSrc } from './LogoScene'
 import { CenterConfetti } from './CenterConfetti'
 
@@ -162,47 +165,64 @@ function DualCard({ title, animate }: { title: string; animate: boolean }) {
   )
 }
 
-// Going into halftime: the curtains close. Velvet curtains sweep in from both
-// sides and meet in the middle, then a gold marquee sign drops in on a little
-// swing reading HALFTIME, its bulbs twinkling, with an optional line under it
-// ("Back in 10 minutes"). A theater break rather than a sports graphic, so it
-// looks like nothing else in the show. Transform/opacity only.
-function HalftimeCard({ line, animate }: { line: string; animate: boolean }) {
-  const close = { duration: animate ? 1.1 : 0, ease: [0.22, 0.8, 0.3, 1] as const }
+// Going into halftime: the scoreboard itself takes a breather. The board's
+// black LED face (scan lines and all) fills the screen, each team's glow rises
+// from its own bottom corner — the team that's ahead glowing strong, the other
+// faint, even for a tie — then HALFTIME switches on letter by letter in the
+// score font, flickering like an LED sign powering up, and the optional line
+// comes on last. Leader and sides come from the LIVE board, so a pending edit
+// never leaks. Opacity only, beyond the static gradients.
+const HALFTIME = 'HALFTIME'
+function HalftimeCard({
+  line,
+  left,
+  right,
+  leader,
+  animate,
+}: {
+  line: string
+  left: TeamId
+  right: TeamId
+  leader: TeamId | 'tie'
+  animate: boolean
+}) {
+  const strength = (team: TeamId) => (leader === 'tie' ? 0.45 : leader === team ? 0.7 : 0.22)
+  const glowStyle = {
+    ['--glow-left' as string]: `var(--glow-${left})`,
+    ['--glow-right' as string]: `var(--glow-${right})`,
+  } as CSSProperties
   return (
-    <div className="show show--halftime">
-      <div className="ht__spot" aria-hidden />
-      <motion.div
-        className="ht__curtain ht__curtain--left"
-        aria-hidden
-        initial={animate ? { x: '-100%' } : false}
-        animate={{ x: 0 }}
-        transition={close}
-      />
-      <motion.div
-        className="ht__curtain ht__curtain--right"
-        aria-hidden
-        initial={animate ? { x: '100%' } : false}
-        animate={{ x: 0 }}
-        transition={close}
-      />
-      <div className="ht__valance" aria-hidden />
-      <div className="ht__copy">
+    <div className="show show--halftime" style={glowStyle}>
+      {(['left', 'right'] as const).map((side) => (
         <motion.div
-          className="ht__sign"
-          initial={animate ? { y: '-160%', rotate: -6 } : false}
-          animate={{ y: 0, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 180, damping: 11, mass: 1.1, delay: animate ? 1.0 : 0 }}
-        >
-          <span className="ht__bulbs" aria-hidden />
-          <span className="ht__word">Halftime</span>
-        </motion.div>
+          key={side}
+          className={`ht__glow ht__glow--${side}`}
+          aria-hidden
+          initial={animate ? { opacity: 0 } : false}
+          animate={{ opacity: strength(side === 'left' ? left : right) }}
+          transition={{ duration: animate ? 1.1 : 0, ease: 'easeOut' }}
+        />
+      ))}
+      <div className="ht__copy">
+        <div className="ht__word" aria-label="Halftime">
+          {Array.from(HALFTIME).map((ch, i) => (
+            <motion.span
+              key={i}
+              aria-hidden
+              initial={animate ? { opacity: 0 } : false}
+              animate={animate ? { opacity: [0, 1, 0.15, 1, 0.5, 1] } : { opacity: 1 }}
+              transition={{ duration: 0.45, times: [0, 0.15, 0.3, 0.5, 0.7, 1], delay: animate ? 0.6 + i * 0.09 : 0 }}
+            >
+              {ch}
+            </motion.span>
+          ))}
+        </div>
         {line && (
           <motion.div
             className="ht__line"
-            initial={animate ? { opacity: 0, y: '60%' } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: 'easeOut', delay: animate ? 1.7 : 0 }}
+            initial={animate ? { opacity: 0 } : false}
+            animate={animate ? { opacity: [0, 1, 0.3, 1] } : { opacity: 1 }}
+            transition={{ duration: 0.4, delay: animate ? 0.6 + HALFTIME.length * 0.09 + 0.35 : 0 }}
           >
             {line}
           </motion.div>
@@ -215,10 +235,13 @@ function HalftimeCard({ line, animate }: { line: string; animate: boolean }) {
 export function ShowScene({
   slide,
   teams,
+  half = 'first',
   animate = false,
 }: {
   slide: ShowSlide
-  teams: Record<TeamId, { name: string }>
+  teams: Record<TeamId, { name: string; liveScore: number }>
+  /** The live half — Halftime puts each team's glow on the side it plays. */
+  half?: Half
   animate?: boolean
 }) {
   const blue = teams.blue.name || 'Blue'
@@ -306,7 +329,15 @@ export function ShowScene({
         <TeamCard side="red" eyebrow={`${red} captain`} title={slide.name || 'Captain'} animate={animate} />
       )
     case 'halftime':
-      return <HalftimeCard line={slide.name.trim()} animate={animate} />
+      return (
+        <HalftimeCard
+          line={slide.name.trim()}
+          left={teamOnSide('left', half)}
+          right={teamOnSide('right', half)}
+          leader={determineWinner(teams.blue.liveScore, teams.red.liveScore)}
+          animate={animate}
+        />
+      )
     case 'blackout':
     default:
       return <div className="show show--blackout" />

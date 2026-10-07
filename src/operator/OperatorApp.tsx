@@ -1323,7 +1323,7 @@ function slideCard(slide: Slide, selectedId: string): ReactNode {
 // components, rendered static (animate=false) inside a size-container box so the
 // cqw/cqh-based scene CSS scales down to thumbnail size. Slideshows (external
 // embeds) and empties show a lightweight placeholder instead of a live iframe.
-function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { name: string }> }) {
+function SlideThumb({ slide, teams }: { slide: Slide; teams: Record<TeamId, { name: string; liveScore: number }> }) {
   let scene: ReactNode
   switch (slide.type) {
     case 'logo':

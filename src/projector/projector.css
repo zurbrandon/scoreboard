@@ -374,72 +374,41 @@
   gap: 1.5cqh;
 }
 
-/* Halftime: the curtains close on a marquee sign. Wine-dark velvet with gold
-   trim — a stage curtain, not the red team. Every gradient here is static; only
-   transforms (curtains, sign) and the bulbs' opacity move. */
-.show--halftime { display: block; background: #07040a; overflow: hidden; }
-.ht__spot {
-  position: absolute; inset: 0;
-  background: radial-gradient(45% 55% at 50% 48%, rgba(255, 226, 170, 0.16), transparent 70%);
+/* Halftime: the scoreboard's black LED face, full screen. Each team's glow is a
+   pre-drawn radial gradient from its bottom corner (the board's own background
+   glow, turned up); only its opacity is set — the leader's strong, the other's
+   faint. The word is the score face, glowing statically. */
+.show--halftime {
+  --glow-blue: rgba(47, 107, 255, 1);
+  --glow-red: rgba(255, 59, 70, 1);
+  display: block; overflow: hidden;
+  background: #04060b;
 }
-.ht__curtain {
-  position: absolute; top: 0; bottom: 0; width: 51%;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55)),
-    repeating-linear-gradient(90deg, #3d0614 0, #6b0f22 2.2cqw, #8c1a2e 3.4cqw, #5a0b1c 4.8cqw, #3d0614 6cqw);
-  will-change: transform;
+.show--halftime::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 4px);
 }
-.ht__curtain--left { left: 0; box-shadow: inset -1.2cqw 0 2cqw rgba(0, 0, 0, 0.55); }
-.ht__curtain--right { right: 0; box-shadow: inset 1.2cqw 0 2cqw rgba(0, 0, 0, 0.55); }
-/* The swagged valance across the top, with a gold fringe under it. */
-.ht__valance {
-  position: absolute; left: 0; right: 0; top: 0; height: 14cqh;
-  background:
-    radial-gradient(circle at 50% 0, #7a1427 0 62%, #4a0816 63% 66%, transparent 67%) 0 0 / 12.5cqw 14cqh repeat-x,
-    linear-gradient(180deg, #4a0816, #4a0816) 0 0 / 100% 4cqh no-repeat;
-  filter: drop-shadow(0 0.4cqh 0 #c99a3a) drop-shadow(0 0.8cqh 1cqh rgba(0, 0, 0, 0.6));
-  z-index: 2;
-}
+.ht__glow { position: absolute; inset: 0; will-change: opacity; }
+.ht__glow--left { background: radial-gradient(85% 95% at 12% 108%, var(--glow-left), transparent 62%); }
+.ht__glow--right { background: radial-gradient(85% 95% at 88% 108%, var(--glow-right), transparent 62%); }
 .ht__copy {
   position: absolute; inset: 0; z-index: 3;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.5cqh;
-}
-/* The marquee sign: a gold frame around a dark face, bulbs chasing round it. */
-.ht__sign {
-  position: relative;
-  padding: 4.5cqh 6cqw;
-  border-radius: 2cqw;
-  background: linear-gradient(180deg, #1c1208, #0e0904);
-  box-shadow:
-    0 0 0 0.6cqw #e0b04a,
-    0 0 0 1.1cqw #8a6420,
-    0 2cqh 4cqh rgba(0, 0, 0, 0.7);
-  transform-origin: 50% -40%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4cqh;
 }
 .ht__word {
-  position: relative;
-  display: block;
-  font-size: 9cqw; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1;
-  color: #fff3d6;
-  text-shadow: 0 0 1.2cqw rgba(255, 210, 120, 0.75), 0 0.3cqw 0 #7a5418;
+  font-family: 'Geist Pixel', 'Courier New', monospace;
+  font-synthesis: none;
+  font-size: 14cqw; line-height: 0.9; letter-spacing: 0.04em;
+  color: #f4f8ff;
+  text-shadow: 0 0 1cqw rgba(255, 255, 255, 0.85), 0 0 3.5cqw rgba(170, 200, 255, 0.55);
 }
-/* The marquee bulbs: one dotted ring inside the frame, twinkling (opacity). */
-.ht__bulbs {
-  position: absolute; inset: 1.4cqh 1.2cqw;
-  border-radius: 1.4cqw;
-  pointer-events: none;
-  border: 0.9cqw dotted #ffe8a8;
-  animation: ht-twinkle 1.2s steps(1, end) infinite;
-  will-change: opacity;
-}
-@keyframes ht-twinkle {
-  0% { opacity: 0.95; }
-  50% { opacity: 0.55; }
-}
+.ht__word span { display: inline-block; }
 .ht__line {
-  font-size: 2.8cqw; font-weight: 800; letter-spacing: 0.05em;
-  color: #f6e2b0;
-  text-shadow: 0 0.2cqw 0.6cqw rgba(0, 0, 0, 0.7);
+  font-family: 'Geist Pixel', 'Courier New', monospace;
+  font-synthesis: none;
+  font-size: 3.4cqw; letter-spacing: 0.06em;
+  color: rgba(234, 240, 255, 0.82);
+  text-shadow: 0 0 0.6cqw rgba(255, 255, 255, 0.5);
 }
 
 /* Referee: near-black frame. Subtle grey stripes slide behind everything, but a
